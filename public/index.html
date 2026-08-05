@@ -407,12 +407,13 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
             <button class="btn btn-primary" onclick="adminOpenQuestion()">Open question</button>
             <button class="btn btn-ghost" onclick="adminCloseQuestion()">Close question</button>
             <button class="btn btn-ghost" onclick="adminRevealAnswer()">Reveal answer &amp; move</button>
+            <button class="btn btn-danger" id="undoBtn" title="Roll back the last reveal — every aircraft returns to where it was before that question was scored" onclick="adminUndoReveal()">↩️ Undo last reveal</button>
             <button class="btn btn-ghost" onclick="adminNextQuestion()">Next question →</button>
             <button class="btn btn-ghost" onclick="adminPauseToggle()" id="pauseBtn">Pause game</button>
             <button class="btn btn-ghost" title="Reset progress — back to Leg 1, all aircraft to start" onclick="resetProgress()">🔄 Reset progress</button>
             <button class="btn btn-ghost" id="powerQBtn" title="Force this leg's question to be drawn from Q21-30 and award a x2 bonus to the fastest correct player" onclick="adminTogglePowerQuestion()">⚡ Power Question</button>
           </div>
-          <p style="margin:14px 0 0; font-size:12px; color:rgba(255,255,255,.5);">Turbo Boost unlocks for players from Leg 5 (departing MUC) onward · Turbulence auto-applies on legs 6 &amp; 10.</p>
+          <p style="margin:14px 0 0; font-size:12px; color:rgba(255,255,255,.5);">Turbo Boost unlocks per player once their own aircraft reaches MUC · Turbulence auto-applies on legs 6 &amp; 10 · Power Question cannot be armed on a turbulence leg.</p>
         </div>
         <div class="panel glass">
           <h3>Award ceremony</h3>
@@ -445,7 +446,8 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
       <div id="tab-players" class="hidden">
         <div class="panel glass">
           <h3>Registered players</h3>
-          <table id="playersTable"><thead><tr><th>Aircraft</th><th>Name</th><th>Position</th><th>Correct</th><th>Actions</th></tr></thead><tbody></tbody></table>
+          <p style="margin:-6px 0 14px; font-size:12.5px; color:rgba(255,255,255,.55);">Use <b>−1 / +1</b> to correct a player's position by hand — for a phone that died mid-question, a lost connection, or a dispute settled on stage.</p>
+          <table id="playersTable"><thead><tr><th>Aircraft</th><th>Name</th><th>Position</th><th>Correct</th><th>Turbo</th><th>Adjust</th><th>Actions</th></tr></thead><tbody></tbody></table>
         </div>
       </div>
 
@@ -485,10 +487,12 @@ const ROUTE = [
   {code:'FRA',    city:'Frankfurt',          icon:'🏦', x:197, y:80,  checkpoint:false},
   {code:'FINISH', city:'Finish',             icon:'🏁', x:150, y:40,  checkpoint:true},
 ];
-// Note: the question bank below has 22 questions — more than the 12 legs on the map.
-// Aircraft advance one leg per correct answer up through Question 12 / FINISH; any
-// questions after that (13-22) can still be opened as bonus trivia, they just won't
-// move aircraft further since every player will already be at FINISH.
+// Question bank: 30 questions, drawn at random from a pool that depends on the leg.
+//   legs 1-4  -> questions 1-10   (easy warm-up)
+//   legs 5-8  -> questions 11-20  (mid difficulty)
+//   legs 9-12 -> questions 21-30  (hard) — also the Power Question pool
+// The map has 12 legs, so a leg never runs out of questions; the same question can
+// repeat across a long game, which is fine because each leg only asks one.
 
 const QUESTIONS = [
   {q:"What is Vietnam Airlines' Skytrax rating target by 2030?", opts:["3-Star Airline","4-Star Airline","5-Star Airline","6-Star Airline"], correct:2},
@@ -526,7 +530,7 @@ const QUESTIONS = [
 const AVATARS = ["😎","😊","🔥","👑","🎉","🚀","🤩","🥳","😇","🦸","🧑‍🚀","⚡"];
 
 /* ---- game mechanics: question pools, turbo boost, power question, turbulence ---- */
-const TURBO_MIN_LEG = ROUTE.findIndex(r=>r.code==='MUC'); // turbo unlocks once the race departs MUC
+const TURBO_MIN_LEG = ROUTE.findIndex(r=>r.code==='MUC'); // a player unlocks Turbo once their own aircraft reaches MUC
 const TURBULENCE_LEGS = [5, 9]; // 0-based leg index = "lượt chơi thứ 6 và thứ 10"
 function randInt(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
 function pickQuestionIndex(legIndex, powerActive){
@@ -565,6 +569,8 @@ function defaultState(){
     powerQuestionActive: false,
     powerQuestionUsed: false, // Power Question can only ever be activated once per game
     questionOpenedAt: null,
+    revealedLegs: {},   // leg index -> true once scored, so Reveal can never double-move
+    undoSnapshot: null, // one-step rollback of the last Reveal
     paused: false,
     players: {}, // id -> {id,name,avatar,position,correctCount,answers:{legIdx:{choice,submitted,turbo,timeTaken}},totalAnswerTime,turboUsed}
     winnerId: null,
@@ -724,14 +730,23 @@ function playerSubmitAnswer(choiceIdx){
   renderPlayer();
 }
 function isTurboEligibleNow(){
-  return !me_turbulenceActive() && !state.powerQuestionActive && state.currentQ >= TURBO_MIN_LEG;
+  const me = state.players[myPlayerId];
+  if(!me) return false;
+  // Unlocks PER PLAYER: only once this player's own aircraft has reached MUC or beyond.
+  // A player who is still behind MUC cannot arm Turbo, no matter which leg the race is on.
+  return !me_turbulenceActive() && !state.powerQuestionActive && me.position >= TURBO_MIN_LEG;
 }
 function me_turbulenceActive(){ return isTurbulenceLeg(state.currentQ); }
 function playerToggleTurbo(){
   const me = state.players[myPlayerId];
   if(!me) return;
   if(me.turboUsed){ toast('Turbo Boost already used'); return; }
-  if(!isTurboEligibleNow()){ toast('Turbo Boost unlocks from MUC onward (not during turbulence)'); return; }
+  if(!isTurboEligibleNow()){
+    if(me_turbulenceActive()) toast('🌪 Turbo Boost is disabled during turbulence');
+    else if(state.powerQuestionActive) toast('⚡ Turbo Boost is disabled on a Power Question');
+    else toast('Turbo Boost unlocks when your aircraft reaches MUC');
+    return;
+  }
   const existing = me.answers[state.currentQ] || { choice:null, submitted:false, turbo:false };
   if(existing.submitted) return;
   existing.turbo = !existing.turbo;
@@ -1162,10 +1177,30 @@ function adminCloseQuestion(){
 function adminRevealAnswer(){
   if(state.gameState!=='locked' && state.gameState!=='question'){ toast('Close the question first'); return; }
   if(state.currentQuestionIndex===null || state.currentQuestionIndex===undefined){ toast('Open a question first'); return; }
+  // ---- idempotency guard: a leg can only ever be scored once ----
+  state.revealedLegs = state.revealedLegs || {};
+  if(state.revealedLegs[state.currentQ]){
+    state.gameState = 'reveal';
+    saveState();
+    toast('Leg '+(state.currentQ+1)+' was already revealed — aircraft not moved again.');
+    return;
+  }
+
+  // ---- snapshot for one-step undo (see adminUndoReveal) ----
+  state.undoSnapshot = {
+    leg: state.currentQ,
+    players: JSON.parse(JSON.stringify(state.players)),
+    milestones: JSON.parse(JSON.stringify(state.milestones||{})),
+    winnerId: state.winnerId,
+    gameState: state.gameState,
+  };
+
   state.gameState = 'reveal';
   const correctIdx = QUESTIONS[state.currentQuestionIndex].correct;
   const turbulent = isTurbulenceLeg(state.currentQ);
-  const isPower = state.powerQuestionActive;
+  // Turbulence always outranks Power Question, so the two can never both apply.
+  // Arming Power on a turbulence leg is blocked in adminTogglePowerQuestion; this is a backstop.
+  const isPower = state.powerQuestionActive && !turbulent;
 
   // find the fastest correct answerer for Power Question bonus
   let fastestId = null, fastestTime = Infinity;
@@ -1182,6 +1217,9 @@ function adminRevealAnswer(){
   Object.values(state.players).forEach(p=>{
     const a = p.answers[state.currentQ];
     const correct = !!(a && a.submitted && a.choice===correctIdx);
+    // Turbo only counts if it was actually submitted. Arming it and never pressing
+    // Submit must not cost a leg — otherwise the player is penalised AND keeps the boost.
+    const turboArmed = !!(a && a.submitted && a.turbo);
     if(correct) p.correctCount = (p.correctCount||0)+1;
 
     let delta;
@@ -1189,7 +1227,7 @@ function adminRevealAnswer(){
       delta = correct ? 0 : -1;
     } else if(isPower){
       delta = correct ? (p.id===fastestId ? 2 : 1) : 0;
-    } else if(a && a.turbo){
+    } else if(turboArmed){
       delta = correct ? 2 : -1;
     } else {
       delta = correct ? 1 : 0;
@@ -1202,17 +1240,48 @@ function adminRevealAnswer(){
     }
   });
 
-  const finisher = Object.values(state.players).find(p=>p.position===ROUTE.length-1);
-  if(finisher){
+  state.revealedLegs[state.currentQ] = true;
+
+  // Winner: several aircraft can land on FINISH in the same reveal (Turbo/Power give +2).
+  // Rank them by score then total answer time instead of letting object order pick at random.
+  const finishers = Object.values(state.players).filter(p=>p.position===ROUTE.length-1);
+  if(finishers.length){
+    finishers.sort((a,b)=>
+      (b.correctCount||0) - (a.correctCount||0) ||
+      (a.totalAnswerTime||0) - (b.totalAnswerTime||0)
+    );
     state.gameState='finished';
-    state.winnerId = finisher.id;
+    state.winnerId = finishers[0].id;
   }
   saveState();
-  toast('Answer revealed — aircraft moved');
+  toast(finishers.length>1
+    ? `Revealed — ${finishers.length} aircraft reached FINISH, ranked by score then time`
+    : 'Answer revealed — aircraft moved');
+}
+
+/* One-step rollback of the last Reveal. The safety net for: wrong answer key,
+   a disputed question, or opening the wrong leg by mistake. */
+function adminUndoReveal(){
+  const snap = state.undoSnapshot;
+  if(!snap){ toast('Nothing to undo'); return; }
+  if(!confirm(`Undo the reveal of Leg ${snap.leg+1}? Every aircraft goes back to where it was before that question was scored.`)) return;
+  state.players = JSON.parse(JSON.stringify(snap.players));
+  state.milestones = JSON.parse(JSON.stringify(snap.milestones||{}));
+  state.winnerId = snap.winnerId;
+  state.currentQ = snap.leg;
+  state.gameState = 'locked'; // back to just-before-reveal, so it can be revealed again
+  if(state.revealedLegs) delete state.revealedLegs[snap.leg];
+  state.undoSnapshot = null;
+  saveState();
+  toast('Reveal of Leg '+(snap.leg+1)+' undone');
 }
 function adminNextQuestion(){
   if(state.gameState==='finished'){ toast('Race finished — reset to play again.'); return; }
   if(state.currentQ >= (ROUTE.length-1)-1){ toast('This was the last leg'); return; }
+  // armed but the leg was never scored -> hand the Power Question charge back
+  if(state.powerQuestionActive && !(state.revealedLegs && state.revealedLegs[state.currentQ])){
+    state.powerQuestionUsed = false;
+  }
   state.currentQ += 1;
   state.gameState = 'lobby';
   state.questionOpenedAt = null;
@@ -1224,6 +1293,10 @@ function adminNextQuestion(){
 function adminPrevQuestion(){
   if(state.currentQ <= 0){ toast('Already at Leg 1'); return; }
   if(!confirm('Go back to Leg '+state.currentQ+'? A fresh question will be drawn for it (aircraft positions stay as they are).')) return;
+  // armed but the leg was never scored -> hand the Power Question charge back
+  if(state.powerQuestionActive && !(state.revealedLegs && state.revealedLegs[state.currentQ])){
+    state.powerQuestionUsed = false;
+  }
   state.currentQ -= 1;
   state.gameState = 'lobby';
   state.questionOpenedAt = null;
@@ -1235,12 +1308,15 @@ function adminPrevQuestion(){
 }
 function adminTogglePowerQuestion(){
   if(state.gameState!=='lobby'){ toast('Power Question can only be toggled before opening the question'); return; }
-  if(state.powerQuestionUsed && !state.powerQuestionActive){ toast('Power Question has already been used this game'); return; }
+  if(isTurbulenceLeg(state.currentQ)){ toast('🌪 Leg '+(state.currentQ+1)+' is a turbulence leg — Power Question cannot be armed here'); return; }
+  if(state.powerQuestionUsed && !state.powerQuestionActive){ toast('Power Question has already been played this game'); return; }
   state.powerQuestionActive = !state.powerQuestionActive;
   state.currentQuestionIndex = null; // force a fresh pick from the right pool
-  if(state.powerQuestionActive) state.powerQuestionUsed = true; // consumed the moment it's armed
+  // Cancelling before the question opens gives the charge back, so a mis-click does not
+  // burn the single Power Question for the whole game.
+  state.powerQuestionUsed = state.powerQuestionActive;
   saveState();
-  toast(state.powerQuestionActive ? '⚡ Power Question armed for this leg' : 'Power Question cancelled');
+  toast(state.powerQuestionActive ? '⚡ Power Question armed for this leg' : 'Power Question cancelled — charge returned');
 }
 function adminPauseToggle(){
   state.paused = !state.paused;
@@ -1249,7 +1325,14 @@ function adminPauseToggle(){
   toast(state.paused ? 'Game paused' : 'Game resumed');
 }
 function resetGame(){
-  if(!confirm('Reset the entire game? All players and progress will be cleared.')) return;
+  // Hard gate while a race is live: this button wipes every registered player, and
+  // during an event that is unrecoverable. Requires typing the word to confirm.
+  const live = state.gameState!=='lobby' || Object.keys(state.players).length>0;
+  if(live){
+    const typed = prompt('This clears ALL '+Object.keys(state.players).length+' players and the whole race.\n\nType  RESET  to confirm:');
+    if(typed===null) return;
+    if(typed.trim().toUpperCase()!=='RESET'){ toast('Reset cancelled'); return; }
+  } else if(!confirm('Reset the entire game?')) return;
   state = defaultState();
   saveState();
   toast('Game reset');
@@ -1272,6 +1355,9 @@ function resetProgress(){
   state.winnerId = null;
   state.milestones = { HAN:null, SPC:null, SGN:null };
   state.awardShown = false;
+  state.revealedLegs = {};
+  state.undoSnapshot = null;
+  state.powerQuestionUsed = false;
   saveState();
   toast('Progress reset — back to Leg 1');
 }
@@ -1286,8 +1372,29 @@ function hideAward(){
   saveState();
 }
 function removePlayer(id){
+  const p = state.players[id];
+  if(!p) return;
+  if(!confirm('Remove "'+p.name+'" from the race? This cannot be undone — they would have to join again as a new player.')) return;
   delete state.players[id];
   saveState();
+  toast(p.name+' removed');
+}
+
+/* Manual override — the universal escape hatch during a live event.
+   Covers everything the rules cannot: a phone that died mid-question, someone who
+   lost signal, a dispute settled on stage, a player who rejoined as a new entry. */
+function adminNudgePlayer(id, delta){
+  const p = state.players[id];
+  if(!p) return;
+  const before = p.position;
+  p.position = Math.max(0, Math.min(p.position + delta, ROUTE.length-1));
+  if(p.position===before){ toast(p.name+' is already at '+ROUTE[before].code); return; }
+  const landedCode = ROUTE[p.position].code;
+  if(['HAN','SPC','SGN'].includes(landedCode) && !state.milestones[landedCode]){
+    state.milestones[landedCode] = p.id;
+  }
+  saveState();
+  toast(p.name+': '+ROUTE[before].code+' → '+ROUTE[p.position].code+' (manual)');
 }
 
 function renderQuestionEditor(){
@@ -1345,13 +1452,18 @@ function renderAnswersFull(){
 function renderPlayersTable(){
   const tbody = document.querySelector('#playersTable tbody');
   const players = Object.values(state.players);
-  if(players.length===0){ tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(255,255,255,.45);">No players registered yet.</td></tr>`; return; }
+  if(players.length===0){ tbody.innerHTML = `<tr><td colspan="7" style="color:rgba(255,255,255,.45);">No players registered yet.</td></tr>`; return; }
   tbody.innerHTML = players.map(p=>`
     <tr>
       <td>${avatarHTML(p.avatar)}</td>
       <td>${escapeHtml(p.name)}${milestoneDotsFor(p.id)}</td>
-      <td class="mono">${ROUTE[p.position].code}</td>
+      <td class="mono">${ROUTE[p.position].code} <span style="opacity:.5;">(${p.position}/${ROUTE.length-1})</span></td>
       <td>${p.correctCount||0}</td>
+      <td>${p.turboUsed ? '<span class="tag">used</span>' : (p.position>=TURBO_MIN_LEG ? '<span class="tag" style="color:var(--vna-gold-light);">ready</span>' : '<span class="tag" style="opacity:.45;">locked</span>')}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-ghost btn-sm" onclick="adminNudgePlayer('${p.id}',-1)">−1</button>
+        <button class="btn btn-ghost btn-sm" onclick="adminNudgePlayer('${p.id}',1)">+1</button>
+      </td>
       <td><button class="btn btn-danger btn-sm" onclick="removePlayer('${p.id}')">Remove</button></td>
     </tr>
   `).join('');
@@ -1367,7 +1479,7 @@ function renderLeaderTable(){
       <td>${avatarHTML(p.avatar)}</td>
       <td>${escapeHtml(p.name)}${milestoneDotsFor(p.id)}</td>
       <td class="mono">${ROUTE[p.position].code}</td>
-      <td>${p.position}/12</td>
+      <td>${p.position}/${ROUTE.length-1}</td>
       <td class="mono">${formatTime(p.totalAnswerTime)}</td>
     </tr>
   `).join('');
@@ -1392,8 +1504,19 @@ function renderAdmin(){
   if(powerBtn){
     powerBtn.classList.toggle('btn-primary', !!state.powerQuestionActive);
     powerBtn.classList.toggle('btn-ghost', !state.powerQuestionActive);
-    powerBtn.disabled = state.gameState!=='lobby';
+    const powerBlocked = isTurbulenceLeg(state.currentQ) || (state.powerQuestionUsed && !state.powerQuestionActive);
+    powerBtn.disabled = state.gameState!=='lobby' || powerBlocked;
+    powerBtn.textContent = isTurbulenceLeg(state.currentQ) ? '⚡ Power Q (blocked: turbulence)'
+      : (state.powerQuestionUsed && !state.powerQuestionActive) ? '⚡ Power Q (already played)'
+      : '⚡ Power Question';
   }
+  const undoBtn = document.getElementById('undoBtn');
+  if(undoBtn){
+    undoBtn.disabled = !state.undoSnapshot;
+    undoBtn.textContent = state.undoSnapshot ? `↩️ Undo reveal of Leg ${state.undoSnapshot.leg+1}` : '↩️ Undo last reveal';
+  }
+  const pauseBtn = document.getElementById('pauseBtn');
+  if(pauseBtn) pauseBtn.textContent = state.paused ? 'Resume game' : 'Pause game';
 
   if(currentTab==='control') renderAdminAnswerFeed();
   if(currentTab==='answers') renderAnswersFull();
