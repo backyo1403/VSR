@@ -7,6 +7,30 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.2/confetti.browser.min.js"></script>
+
+<!-- ============================================================
+     FIREBASE — fill this in once, from the Firebase console:
+       Project settings  ->  Your apps  ->  Web app  ->  SDK setup and configuration
+     Until apiKey is filled in, the app runs in OFFLINE mode (one device only),
+     which is exactly the old localStorage behaviour and is the venue fallback.
+     ============================================================ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const FIREBASE_CONFIG = {
+  apiKey:            "PASTE_apiKey_HERE",
+  authDomain:        "PASTE_authDomain_HERE",        // e.g. vna-sky-race.firebaseapp.com
+  databaseURL:       "PASTE_databaseURL_HERE",       // e.g. https://vna-sky-race-default-rtdb.asia-southeast1.firebasedatabase.app
+  projectId:         "PASTE_projectId_HERE",
+  storageBucket:     "",
+  messagingSenderId: "",
+  appId:             "PASTE_appId_HERE"
+};
+// The one admin account, created by hand in Firebase console -> Authentication -> Users.
+// Its password is never stored in this file — the admin types it at the gate.
+const ADMIN_EMAIL = "admin@vna-sky-race.local";
+</script>
 <style>
 :root{
   --vna-blue:#005BAC;
@@ -587,11 +611,180 @@ function loadState(){
   }catch(e){}
   return defaultState();
 }
-function saveState(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  if(bc) bc.postMessage({type:'state', state});
+/* ============================================================
+   SYNC LAYER
+   ONLINE  — Firebase Realtime Database. One authoritative copy in the cloud that
+             every phone and screen subscribes to. Writers own disjoint paths, so
+             two clients can never overwrite each other's data:
+               rooms/{ROOM}/admin           <- only the admin client writes
+               rooms/{ROOM}/progress/{uid}  <- only the admin client writes
+               rooms/{ROOM}/profiles/{uid}  <- only that player writes
+               rooms/{ROOM}/answers/{q}/{uid} <- only that player writes, once
+   OFFLINE — falls back to the original localStorage + BroadcastChannel mode so a
+             single-laptop game still runs if there is no network at the venue.
+   ============================================================ */
+const ROOM = (new URLSearchParams(location.search).get('room') || 'SKY01').toUpperCase();
+const ADMIN_KEYS = ['gameState','currentQ','currentQuestionIndex','questionIndexByLeg',
+  'powerQuestionActive','powerQuestionUsed','questionOpenedAt','deadline','revealedLegs',
+  'undoSnapshot','paused','winnerId','milestones','awardShown'];
+
+const FB = { mode:'init', role:'player', db:null, uid:null };
+let _profiles = {}, _progress = {}, _answers = {};
+
+function pickAdminSlice(){
+  const o = {};
+  ADMIN_KEYS.forEach(k=>{ o[k] = (state[k]===undefined ? null : state[k]); });
+  return o;
 }
+function applyAdminSlice(v){
+  if(!v) return;
+  ADMIN_KEYS.forEach(k=>{ if(v[k]!==undefined) state[k] = v[k]; });
+  state.revealedLegs = state.revealedLegs || {};
+  state.milestones = state.milestones || { HAN:null, SPC:null, SGN:null };
+  state.questionIndexByLeg = state.questionIndexByLeg || {};
+}
+function rebuildPlayers(){
+  const out = {};
+  Object.keys(_profiles).forEach(uid=>{
+    const pr = _progress[uid] || {};
+    const ans = {};
+    Object.keys(_answers).forEach(leg=>{
+      if(_answers[leg] && _answers[leg][uid]) ans[leg] = _answers[leg][uid];
+    });
+    out[uid] = {
+      id: uid,
+      name: _profiles[uid].name,
+      avatar: _profiles[uid].avatar,
+      position: pr.position || 0,
+      correctCount: pr.correctCount || 0,
+      totalAnswerTime: pr.totalAnswerTime || 0,
+      turboUsed: !!pr.turboUsed,
+      answers: ans,
+    };
+  });
+  state.players = out;
+}
+
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  if(FB.mode==='online'){
+    if(FB.role==='admin') fbWriteAdmin();
+    if(myPlayerId) fbWriteMine();
+  } else if(bc){
+    // note: BroadcastChannel never delivers to the sender, so the acting tab
+    // must repaint itself — otherwise the admin's own dashboard freezes offline
+    bc.postMessage({type:'state', state});
+  }
+  renderAll();
+}
+function fbWriteAdmin(){
+  if(FB.mode!=='online' || FB.role!=='admin') return;
+  const u = {};
+  u['rooms/'+ROOM+'/admin'] = pickAdminSlice();
+  Object.values(state.players).forEach(p=>{
+    u['rooms/'+ROOM+'/progress/'+p.id] = {
+      position: p.position||0, correctCount: p.correctCount||0,
+      totalAnswerTime: p.totalAnswerTime||0, turboUsed: !!p.turboUsed,
+    };
+  });
+  FB.db.ref().update(u).catch(e=>{ console.warn('[sync] admin write failed', e); toast('⚠️ Sync error — check connection'); });
+}
+function fbWriteMine(){
+  if(FB.mode!=='online' || !myPlayerId) return;
+  const me = state.players[myPlayerId];
+  if(!me) return;
+  const u = {};
+  u['rooms/'+ROOM+'/profiles/'+myPlayerId] = { name: me.name, avatar: me.avatar, joinedAt: me.joinedAt || Date.now() };
+  const a = me.answers[state.currentQ];
+  if(a && a.choice!==null && a.choice!==undefined){
+    u['rooms/'+ROOM+'/answers/'+state.currentQ+'/'+myPlayerId] =
+      { choice:a.choice, turbo:!!a.turbo, submitted:!!a.submitted, timeTaken:a.timeTaken||0 };
+    // keep a local echo: players are not allowed to read other people's answers
+    _answers[state.currentQ] = _answers[state.currentQ] || {};
+    _answers[state.currentQ][myPlayerId] = u['rooms/'+ROOM+'/answers/'+state.currentQ+'/'+myPlayerId];
+  }
+  FB.db.ref().update(u).catch(e=>{ console.warn('[sync] player write failed', e); toast('⚠️ Could not send — check connection'); });
+}
+/* the admin client creates a progress node for anyone who has just joined */
+function reconcileProgress(){
+  if(FB.role!=='admin' || FB.mode!=='online') return;
+  const u = {};
+  Object.keys(_profiles).forEach(uid=>{
+    if(!_progress[uid]) u['rooms/'+ROOM+'/progress/'+uid] = {position:0,correctCount:0,totalAnswerTime:0,turboUsed:false};
+  });
+  if(Object.keys(u).length) FB.db.ref().update(u).catch(()=>{});
+}
+
+function setSyncBadge(){
+  let el = document.getElementById('syncBadge');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'syncBadge';
+    el.style.cssText = 'position:fixed;bottom:10px;right:12px;z-index:300;font-family:var(--font-mono);font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid var(--glass-brd);background:rgba(0,20,45,.75);backdrop-filter:blur(8px);';
+    document.body.appendChild(el);
+  }
+  const map = {
+    online:  ['🟢 LIVE · room '+ROOM, 'rgba(46,204,113,.6)'],
+    offline: ['🟠 OFFLINE · one device only', 'rgba(240,180,60,.6)'],
+    init:    ['⚪ connecting…', 'var(--glass-brd)'],
+  };
+  const [txt, brd] = map[FB.mode] || map.init;
+  el.textContent = txt;
+  el.style.borderColor = brd;
+}
+
+function goOffline(why){
+  if(FB.mode==='offline') return;
+  FB.mode = 'offline';
+  console.warn('[sync] running in offline mode:', why);
+  state = loadState();
+  setSyncBadge();
+  renderAll();
+}
+
+async function fbInit(){
+  setSyncBadge();
+  const cfgMissing = (typeof FIREBASE_CONFIG==='undefined') || !FIREBASE_CONFIG.apiKey ||
+                     String(FIREBASE_CONFIG.apiKey).indexOf('PASTE')===0;
+  if(typeof firebase==='undefined'){ return goOffline('Firebase SDK not loaded'); }
+  if(cfgMissing){ return goOffline('FIREBASE_CONFIG not filled in'); }
+
+  const timer = setTimeout(()=>goOffline('no connection within 8s'), 8000);
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    FB.db = firebase.database();
+    const cred = await firebase.auth().signInAnonymously();
+    FB.uid = cred.user.uid;
+    clearTimeout(timer);
+    FB.mode = 'online';
+
+    // a player's identity is their Firebase uid, so a refresh never loses their aircraft
+    if(location.hash.replace('#','')==='player') myPlayerId = FB.uid;
+
+    const base = FB.db.ref('rooms/'+ROOM);
+    base.child('admin').on('value', s=>{ applyAdminSlice(s.val()); renderAll(); });
+    base.child('profiles').on('value', s=>{ _profiles = s.val()||{}; reconcileProgress(); rebuildPlayers(); renderAll(); });
+    base.child('progress').on('value', s=>{ _progress = s.val()||{}; rebuildPlayers(); renderAll(); });
+
+    FB.db.ref('.info/connected').on('value', s=>{
+      if(FB.mode==='online'){ setSyncBadge(); }
+      if(s.val()===false) console.warn('[sync] disconnected — RTDB will retry automatically');
+    });
+    setSyncBadge();
+    renderAll();
+  }catch(e){
+    clearTimeout(timer);
+    goOffline(e && e.message ? e.message : e);
+  }
+}
+/* admin subscribes to the answer feed only after signing in (rules block it otherwise) */
+function fbSubscribeAnswers(){
+  if(FB.mode!=='online') return;
+  FB.db.ref('rooms/'+ROOM+'/answers').on('value', s=>{ _answers = s.val()||{}; rebuildPlayers(); renderAll(); });
+}
+
 window.addEventListener('storage', (e)=>{
+  if(FB.mode==='online') return;
   if(e.key===STORAGE_KEY && e.newValue){
     state = JSON.parse(e.newValue);
     renderAll();
@@ -599,6 +792,7 @@ window.addEventListener('storage', (e)=>{
 });
 if(bc){
   bc.onmessage = (e)=>{
+    if(FB.mode==='online') return;
     if(e.data && e.data.type==='state'){ state = e.data.state; renderAll(); }
   };
 }
@@ -638,10 +832,17 @@ function go(view){
 }
 window.addEventListener('hashchange', ()=>{
   const v = location.hash.replace('#','');
+  // "#admin" must go through the gate rather than opening the dashboard directly
+  if(v==='admin' && FB.role!=='admin'){ go('landing'); openAdminGate(); return; }
   if(['landing','player','presenter','admin'].includes(v)) go(v);
 });
 
-/* ---------- admin password gate ---------- */
+/* ---------- admin gate ----------
+   ONLINE : a real Firebase account. The password is never in this file, and the
+            database rules refuse every admin write from anyone else — so typing
+            "#admin" in the URL now gets you a dead dashboard, not control of the game.
+   OFFLINE: falls back to the local code below, which is all a single-laptop
+            fallback game needs. */
 const ADMIN_PASSWORD = '738B';
 function openAdminGate(){
   const modal = document.getElementById('adminGateModal');
@@ -654,13 +855,32 @@ function openAdminGate(){
 function closeAdminGate(){
   document.getElementById('adminGateModal').classList.add('hidden');
 }
-function submitAdminGate(){
+async function submitAdminGate(){
   const v = document.getElementById('adminPassInput').value.trim();
-  if(v.toUpperCase() === ADMIN_PASSWORD){
+  const err = document.getElementById('adminGateError');
+  if(!v) return;
+
+  if(FB.mode!=='online'){
+    if(v.toUpperCase() === ADMIN_PASSWORD){ FB.role='admin'; closeAdminGate(); go('admin'); }
+    else err.textContent = 'Incorrect password — please try again.';
+    return;
+  }
+
+  err.textContent = 'Signing in…';
+  try{
+    const cred = await firebase.auth().signInWithEmailAndPassword(ADMIN_EMAIL, v);
+    FB.uid = cred.user.uid;
+    FB.role = 'admin';
+    myPlayerId = null;               // the admin is not a racer
+    fbSubscribeAnswers();            // answer feed is admin-only under the rules
+    reconcileProgress();
     closeAdminGate();
     go('admin');
-  } else {
-    document.getElementById('adminGateError').textContent = 'Incorrect password — please try again.';
+    toast('Signed in as admin · room '+ROOM);
+  }catch(e){
+    err.textContent = (e && e.code==='auth/too-many-requests')
+      ? 'Too many attempts — wait a moment.'
+      : 'Incorrect password — please try again.';
   }
 }
 document.addEventListener('keydown', (e)=>{
@@ -707,10 +927,12 @@ function playerJoin(){
   const name = document.getElementById('pName').value.trim();
   if(!name){ toast('Please enter your name'); return; }
   if(!selectedAvatar){ toast('Please choose an aircraft'); return; }
-  myPlayerId = uid();
+  // Online, the player's identity IS their Firebase uid — it survives a refresh,
+  // a dead battery, or the phone locking, so nobody loses their aircraft mid-race.
+  myPlayerId = (FB.mode==='online' && FB.uid) ? FB.uid : uid();
   localStorage.setItem('vna_my_player_id', myPlayerId);
   state.players[myPlayerId] = {
-    id: myPlayerId, name, avatar: selectedAvatar, position: 0, correctCount:0, answers:{}, totalAnswerTime:0, turboUsed:false
+    id: myPlayerId, name, avatar: selectedAvatar, position: 0, correctCount:0, answers:{}, totalAnswerTime:0, turboUsed:false, joinedAt: Date.now()
   };
   saveState();
   document.getElementById('pRegistration').classList.add('hidden');
@@ -1165,6 +1387,9 @@ function adminOpenQuestion(){
   ensureQuestionPicked();
   state.gameState = 'question';
   state.questionOpenedAt = Date.now();
+  // Hard deadline enforced by the database rules against Firebase server time, so a
+  // late answer is refused even if the admin forgets to press Close or the browser hangs.
+  state.deadline = Date.now() + (TIMER_SECONDS + 3) * 1000;
   saveState();
   toast('Leg '+(state.currentQ+1)+' question opened');
 }
@@ -1541,11 +1766,13 @@ setInterval(()=>{
   if(!document.getElementById('view-player').classList.contains('hidden')) renderPlayer();
 }, 1000);
 
-/* init route from hash */
+/* init route from hash, then bring up the sync layer */
 (function init(){
   const v = location.hash.replace('#','');
-  if(['player','presenter','admin'].includes(v)) go(v);
+  if(v==='admin'){ go('landing'); openAdminGate(); }
+  else if(['player','presenter'].includes(v)) go(v);
   else go('landing');
+  fbInit();
 })();
 </script>
 </body>

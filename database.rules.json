@@ -1,0 +1,40 @@
+{
+  "rules": {
+    "rooms": {
+      "$room": {
+
+        "admin": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.token.email == 'admin@vna-sky-race.local'"
+        },
+
+        "progress": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.token.email == 'admin@vna-sky-race.local'"
+        },
+
+        "profiles": {
+          ".read": "auth != null",
+          "$uid": {
+            ".write": "auth != null && (auth.uid == $uid || auth.token.email == 'admin@vna-sky-race.local')",
+            ".validate": "newData.hasChildren(['name','avatar']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 18"
+          }
+        },
+
+        "answers": {
+          ".read": "auth != null && auth.token.email == 'admin@vna-sky-race.local'",
+          "$q": {
+            "$uid": {
+              ".read": "auth != null && auth.uid == $uid",
+
+              ".write": "auth != null && auth.uid == $uid && !data.child('submitted').val() && root.child('rooms/' + $room + '/admin/gameState').val() == 'question' && (!root.child('rooms/' + $room + '/admin/deadline').exists() || now < root.child('rooms/' + $room + '/admin/deadline').val())",
+
+              ".validate": "newData.hasChildren(['choice']) && newData.child('choice').isNumber() && newData.child('choice').val() >= 0 && newData.child('choice').val() <= 3"
+            }
+          }
+        }
+
+      }
+    }
+  }
+}

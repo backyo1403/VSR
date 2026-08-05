@@ -3,7 +3,11 @@
    the actual source text is evaluated. */
 const fs = require('fs');
 const HTML = fs.readFileSync(process.argv[2], 'utf8');
-const SRC = HTML.match(/<script(?![^>]*src)[^>]*>([\s\S]*?)<\/script>/)[1];
+// the page has several inline <script> blocks (Firebase config, then the app) —
+// the game logic is the largest one
+const SRC = [...HTML.matchAll(/<script(?![^>]*src)[^>]*>([\s\S]*?)<\/script>/g)]
+  .map(m => m[1])
+  .sort((a, b) => b.length - a.length)[0];
 
 function grab(startRe, endMarker) {
   const i = SRC.search(startRe);
