@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Vietnam Airlines Sky Race</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.2/confetti.browser.min.js"></script>
+<style>
+:root{
+  --vna-blue:#005BAC;
+  --vna-blue-deep:#00305A;
+  --vna-blue-mid:#0B71C7;
+  --vna-gold:#D4AF37;
+  --vna-gold-light:#F0D678;
+  --sky-1:#003A6B;
+  --sky-2:#0B5FA0;
+  --sky-3:#4FA8E0;
+  --glass:rgba(255,255,255,.10);
+  --glass-brd:rgba(255,255,255,.22);
+  --ink:#0A2540;
+  --good:#2ECC71;
+  --bad:#E15252;
+  --font-display:'Sora',sans-serif;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family:var(--font-body);
+  color:#fff;
+  background:linear-gradient(180deg,var(--sky-1) 0%,var(--sky-2) 55%,var(--sky-3) 100%);
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+}
+h1,h2,h3,.display{font-family:var(--font-display);}
+.mono{font-family:var(--font-mono); letter-spacing:.04em;}
+
+/* ambient clouds */
+.cloud-field{position:fixed; inset:0; overflow:hidden; z-index:0; pointer-events:none;}
+.cloud{position:absolute; opacity:.35; filter:blur(1px); animation:drift linear infinite;}
+.cloud svg{display:block;}
+@keyframes drift{ from{transform:translateX(-15vw);} to{transform:translateX(115vw);} }
+.glow-orb{position:fixed; border-radius:50%; filter:blur(60px); opacity:.35; z-index:0; pointer-events:none;}
+
+.glass{
+  background:var(--glass);
+  border:1px solid var(--glass-brd);
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+  box-shadow:0 8px 32px rgba(0,20,50,.35);
+}
+.app{position:relative; z-index:1; min-height:100vh;}
+.hidden{display:none !important;}
+
+/* ---------- Landing / role select ---------- */
+.landing{display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding:24px; text-align:center;}
+.brand-mark{display:flex; align-items:center; gap:10px; margin-bottom:28px;}
+.brand-mark .plane{font-size:26px;}
+.brand-mark span{font-family:var(--font-display); font-weight:700; letter-spacing:.06em; font-size:14px; text-transform:uppercase; color:var(--vna-gold-light);}
+.landing h1{font-size:clamp(32px,6vw,56px); font-weight:800; margin:0 0 10px; line-height:1.05;}
+.landing .gold{color:var(--vna-gold);}
+.landing p.sub{color:rgba(255,255,255,.75); max-width:520px; margin:0 0 40px; font-size:16px;}
+.role-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; max-width:900px; width:100%;}
+@media (max-width:760px){.role-grid{grid-template-columns:1fr;}}
+.role-card{
+  border-radius:20px; padding:28px 22px; cursor:pointer; text-align:left;
+  transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+}
+.role-card:hover{transform:translateY(-4px); border-color:var(--vna-gold); box-shadow:0 16px 40px rgba(0,20,50,.5);}
+.role-card .icon{font-size:30px; margin-bottom:14px; display:block;}
+.role-card h3{margin:0 0 6px; font-size:19px; font-weight:700;}
+.role-card p{margin:0; font-size:13.5px; color:rgba(255,255,255,.65); line-height:1.5;}
+.role-card .go{margin-top:16px; font-size:12.5px; color:var(--vna-gold-light); font-weight:600; letter-spacing:.03em;}
+
+/* buttons */
+.btn{
+  font-family:var(--font-body); font-weight:600; border:none; cursor:pointer;
+  border-radius:14px; padding:14px 22px; font-size:15px; transition:transform .15s ease, filter .15s ease, box-shadow .15s ease;
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:linear-gradient(135deg,var(--vna-gold-light),var(--vna-gold)); color:var(--vna-blue-deep); box-shadow:0 8px 24px rgba(212,175,55,.35);}
+.btn-primary:hover{filter:brightness(1.06);}
+.btn-primary:disabled{opacity:.4; cursor:not-allowed; filter:none;}
+.btn-ghost{background:var(--glass); border:1px solid var(--glass-brd); color:#fff;}
+.btn-ghost:hover{border-color:rgba(255,255,255,.5);}
+.btn-danger{background:rgba(225,82,82,.18); border:1px solid rgba(225,82,82,.5); color:#ffb3b3;}
+.btn-sm{padding:9px 14px; font-size:13px; border-radius:10px;}
+.btn-block{width:100%;}
+.back-btn{position:fixed; top:18px; left:18px; z-index:50;}
+
+input[type=text],select{
+  font-family:var(--font-body); background:rgba(255,255,255,.08); border:1px solid var(--glass-brd);
+  color:#fff; border-radius:12px; padding:13px 16px; font-size:15px; width:100%; outline:none;
+}
+input[type=text]::placeholder{color:rgba(255,255,255,.45);}
+input[type=text]:focus{border-color:var(--vna-gold);}
+
+/* ================= PLAYER ================= */
+#view-player{max-width:460px; margin:0 auto; min-height:100vh; padding:20px 18px 40px; display:flex; flex-direction:column;}
+.p-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;}
+.p-header .brand-mark{margin:0;}
+.p-badge{font-family:var(--font-mono); font-size:11px; background:var(--glass); border:1px solid var(--glass-brd); padding:6px 10px; border-radius:20px;}
+
+.reg-card{border-radius:22px; padding:26px 22px; margin-top:10px;}
+.reg-card h2{margin:0 0 4px; font-size:22px;}
+.reg-card p.hint{color:rgba(255,255,255,.65); font-size:13.5px; margin:0 0 20px;}
+.field-label{font-size:12.5px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:rgba(255,255,255,.6); margin:18px 0 8px;}
+.avatar-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+.avatar-opt{
+  border-radius:14px; padding:14px 6px; cursor:pointer;
+  background:rgba(255,255,255,.06); border:1.5px solid var(--glass-brd); font-size:22px;
+  transition:all .15s ease;
+  display:flex; align-items:center; justify-content:center; min-height:58px;
+}
+.avatar-opt.selected{border-color:var(--vna-gold); background:rgba(212,175,55,.16); box-shadow:0 0 0 3px rgba(212,175,55,.18);}
+.avatar-compose{display:inline-flex; align-items:center; justify-content:center; line-height:1;}
+.avatar-compose .plane-ico{display:inline-block; flex-shrink:0;}
+.avatar-compose .face-emoji{display:inline-block; line-height:1; transform:translateY(0.02em);}
+
+.progress-strip{display:flex; align-items:center; gap:4px; margin:16px 0 4px;}
+.progress-dot{flex:1; height:5px; border-radius:3px; background:rgba(255,255,255,.15);}
+.progress-dot.done{background:var(--vna-gold);}
+.progress-dot.current{background:#fff;}
+.progress-text{font-size:12px; color:rgba(255,255,255,.6); text-align:right; margin-bottom:10px;}
+
+.timer-ring-wrap{display:flex; justify-content:center; margin:10px 0 18px;}
+.timer-num{font-family:var(--font-mono); font-weight:700; font-size:15px;}
+
+.q-card{border-radius:22px; padding:22px; flex:1;}
+.q-eyebrow{font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--vna-gold-light); font-weight:700; margin-bottom:10px;}
+.q-text{font-size:19px; font-weight:700; line-height:1.4; margin:0 0 22px;}
+.opt-btn{
+  width:100%; text-align:left; padding:15px 16px; border-radius:14px; margin-bottom:10px;
+  background:rgba(255,255,255,.06); border:1.5px solid var(--glass-brd); color:#fff; font-size:14.5px;
+  cursor:pointer; display:flex; align-items:center; gap:12px; transition:all .15s ease;
+}
+.opt-btn .k{width:26px; height:26px; border-radius:8px; background:rgba(255,255,255,.12); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-weight:700; font-size:12px; flex-shrink:0;}
+.opt-btn:hover{border-color:rgba(255,255,255,.5);}
+.opt-btn.picked{border-color:var(--vna-gold); background:rgba(212,175,55,.16);}
+.opt-btn.correct{border-color:var(--good); background:rgba(46,204,113,.18);}
+.opt-btn.wrong{border-color:var(--bad); background:rgba(225,82,82,.18);}
+.opt-btn:disabled{cursor:default;}
+
+.status-banner{border-radius:16px; padding:16px 18px; text-align:center; margin-top:14px;}
+.status-banner.wait{background:rgba(255,255,255,.08);}
+.status-banner.locked{background:rgba(212,175,55,.14); border:1px solid rgba(212,175,55,.4);}
+.status-banner.correct{background:rgba(46,204,113,.16); border:1px solid rgba(46,204,113,.5);}
+.status-banner.wrong{background:rgba(225,82,82,.14); border:1px solid rgba(225,82,82,.5);}
+
+.dest-strip{display:flex; align-items:center; justify-content:space-between; border-radius:16px; padding:14px 18px; margin-top:14px;}
+.dest-strip .lbl{font-size:11px; color:rgba(255,255,255,.55); text-transform:uppercase; letter-spacing:.05em;}
+.dest-strip .val{font-family:var(--font-mono); font-weight:700; font-size:15px;}
+
+/* ================= PRESENTER ================= */
+#view-presenter{min-height:100vh; padding:22px 28px; display:flex; flex-direction:column;}
+.pres-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+.pres-top h1{font-size:22px; margin:0; font-weight:700;}
+.pres-status-pill{font-family:var(--font-mono); font-size:12.5px; padding:8px 16px; border-radius:20px;}
+.pres-body{display:grid; grid-template-columns:2.4fr 1fr; gap:22px; flex:1; min-height:0;}
+.map-panel{border-radius:26px; padding:26px; position:relative; overflow:hidden; min-height:640px;}
+.route-svg{width:100%; height:100%; display:block;}
+.leader-panel{border-radius:26px; padding:22px; display:flex; flex-direction:column;}
+.leader-panel h3{margin:0 0 16px; font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:rgba(255,255,255,.6);}
+.lead-row{display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:14px; margin-bottom:8px; background:rgba(255,255,255,.05); transition:transform .3s ease;}
+.lead-row .rank{font-family:var(--font-mono); font-weight:700; width:26px; color:rgba(255,255,255,.55); font-size:15px;}
+.lead-row .av{font-size:19px;}
+.lead-row .nm{flex:1; font-size:13.5px; font-weight:600;}
+.lead-row .st{font-family:var(--font-mono); font-size:11px; color:var(--vna-gold-light);}
+.lead-row.top1{background:linear-gradient(90deg,rgba(212,175,55,.22),rgba(255,255,255,.04)); border:1px solid rgba(212,175,55,.4);}
+
+.airport-node{position:absolute; transform:translate(-50%,-50%);}
+.airport-dot{width:14px; height:14px; border-radius:50%; background:#fff; border:3px solid var(--vna-blue-mid); box-shadow:0 0 0 4px rgba(255,255,255,.15);}
+.airport-node.checkpoint .airport-dot{width:24px; height:24px; background:var(--vna-gold); border:4px solid var(--vna-gold-light); box-shadow:0 0 22px 6px rgba(212,175,55,.6);}
+.airport-node.checkpoint .airport-label .code{font-size:15px; font-weight:800; color:var(--vna-gold-light);}
+.airport-node.checkpoint .airport-label .city{font-size:10.5px; font-weight:600;}
+.airport-label{position:absolute; top:20px; left:50%; transform:translateX(-50%); text-align:center; white-space:nowrap;}
+.airport-label .code{font-family:var(--font-mono); font-weight:700; font-size:12.5px; color:#fff;}
+.airport-label .city{font-size:9.5px; color:rgba(255,255,255,.6);}
+.plane-token{position:absolute; transform:translate(-50%,-50%); transition:left 2.2s cubic-bezier(.45,.05,.15,1), top 2.2s cubic-bezier(.45,.05,.15,1); z-index:5;}
+.plane-token .stack{display:flex; flex-direction:column; align-items:center; gap:2px;}
+.plane-token .icon{font-size:18px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.5)); animation:float 2.6s ease-in-out infinite;}
+.plane-token .pname{font-size:8.5px; font-weight:700; background:rgba(0,20,50,.65); padding:1px 6px; border-radius:8px; white-space:nowrap;}
+@keyframes float{0%,100%{transform:translateY(0);} 50%{transform:translateY(-4px);}}
+
+.q-status-card{margin-top:18px; border-radius:18px; padding:18px 20px;}
+
+.winner-overlay{position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; flex-direction:column; background:radial-gradient(circle at 50% 30%, rgba(212,175,55,.35), rgba(0,20,50,.92));}
+.winner-overlay .trophy{font-size:80px; margin-bottom:10px;}
+.winner-overlay h1{font-size:44px; margin:0 0 6px;}
+.winner-overlay .pname{color:var(--vna-gold-light); font-weight:800;}
+.podium{display:flex; align-items:flex-end; gap:14px; margin-top:30px;}
+.podium .col{display:flex; flex-direction:column; align-items:center; gap:8px;}
+.podium .bar{width:90px; border-radius:10px 10px 0 0; background:var(--glass); border:1px solid var(--glass-brd); display:flex; align-items:flex-start; justify-content:center; padding-top:10px; font-family:var(--font-mono); font-weight:700;}
+.podium .c1 .bar{height:120px; background:linear-gradient(180deg,var(--vna-gold-light),var(--vna-gold));color:#1a1200;}
+.podium .c2 .bar{height:88px;}
+.podium .c3 .bar{height:66px;}
+.podium-name{font-size:16px; font-weight:800; color:var(--vna-gold); background:rgba(0,15,35,.65); padding:5px 12px; border-radius:9px; margin-top:2px; white-space:nowrap;}
+
+/* ================= ADMIN ================= */
+#view-admin{min-height:100vh; display:flex;}
+.admin-sidebar{width:250px; flex-shrink:0; padding:24px 18px; display:flex; flex-direction:column; gap:6px;}
+.admin-nav-btn{display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:12px; background:transparent; border:none; color:rgba(255,255,255,.75); font-size:14px; font-weight:600; cursor:pointer; text-align:left;}
+.admin-nav-btn:hover{background:rgba(255,255,255,.06);}
+.admin-nav-btn.active{background:rgba(212,175,55,.16); color:var(--vna-gold-light);}
+.admin-main{flex:1; padding:26px 34px; overflow-y:auto; max-height:100vh;}
+.admin-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:22px;}
+.admin-header h2{margin:0; font-size:24px;}
+.stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px;}
+.stat-card{border-radius:16px; padding:16px 18px;}
+.stat-card .n{font-family:var(--font-mono); font-size:24px; font-weight:700;}
+.stat-card .l{font-size:12px; color:rgba(255,255,255,.6); margin-top:2px;}
+.panel{border-radius:20px; padding:22px; margin-bottom:20px;}
+.panel h3{margin:0 0 16px; font-size:15px; text-transform:uppercase; letter-spacing:.05em; color:rgba(255,255,255,.65);}
+.control-row{display:flex; gap:10px; flex-wrap:wrap;}
+.answer-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px;}
+.answer-tile{border-radius:12px; padding:12px 14px; background:rgba(255,255,255,.05); border:1px solid var(--glass-brd);}
+.answer-tile .nm{font-size:13px; font-weight:700; margin-bottom:3px;}
+.answer-tile .ans{font-family:var(--font-mono); font-size:12px; color:rgba(255,255,255,.6);}
+.answer-tile.correct-tile{border-color:var(--good);}
+.answer-tile.wrong-tile{border-color:var(--bad);}
+table{width:100%; border-collapse:collapse; font-size:13.5px;}
+th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:rgba(255,255,255,.5); padding:8px 10px; border-bottom:1px solid var(--glass-brd);}
+td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
+.tag{display:inline-block; font-family:var(--font-mono); font-size:10.5px; padding:3px 8px; border-radius:6px; background:rgba(255,255,255,.08);}
+.qedit-row{display:grid; grid-template-columns:26px 1fr; gap:10px; align-items:start; padding:12px 0; border-bottom:1px solid rgba(255,255,255,.06);}
+.qedit-row .num{font-family:var(--font-mono); color:rgba(255,255,255,.5); padding-top:6px;}
+.qedit-row .ans-correct{color:var(--good); font-weight:700;}
+.toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(0,30,60,.92); border:1px solid var(--vna-gold); padding:12px 20px; border-radius:12px; font-size:13.5px; z-index:200; opacity:0; transition:opacity .25s ease, transform .25s ease;}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+::-webkit-scrollbar{width:8px;} ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2); border-radius:4px;}
+</style>
+</head>
+<body>
+
+<div class="cloud-field" id="cloudField"></div>
+<div class="glow-orb" style="width:420px;height:420px; background:var(--vna-gold); top:-120px; right:-100px;"></div>
+<div class="glow-orb" style="width:380px;height:380px; background:var(--vna-blue-mid); bottom:-140px; left:-100px;"></div>
+
+<div class="app" id="app">
+
+  <!-- ============ LANDING ============ -->
+  <section id="view-landing" class="landing">
+    <div class="brand-mark"><span class="plane">✈️</span><span>Vietnam Airlines · Live Event</span></div>
+    <h1>Sky<span class="gold">Race</span></h1>
+    <p class="sub">A live multiplayer quiz race across the Vietnam Airlines network. Choose how you'd like to enter the experience — this is a working prototype, all three screens sync in real time across open tabs.</p>
+    <div class="role-grid">
+      <div class="role-card glass" onclick="go('player')">
+        <span class="icon">📱</span>
+        <h3>Player</h3>
+        <p>Join with your name, pick your aircraft, and answer questions from your phone.</p>
+        <div class="go">Join as player →</div>
+      </div>
+      <div class="role-card glass" onclick="go('presenter')">
+        <span class="icon">🖥️</span>
+        <h3>Presenter Screen</h3>
+        <p>Full‑screen live map for the LED display — aircraft, leaderboard, checkpoints.</p>
+        <div class="go">Open presenter →</div>
+      </div>
+      <div class="role-card glass" onclick="openAdminGate()">
+        <span class="icon">🛠️</span>
+        <h3>Admin Dashboard</h3>
+        <p>Run the game: open questions, reveal answers, manage players and results.</p>
+        <div class="go">Enter password →</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ADMIN PASSWORD GATE ============ -->
+  <div id="adminGateModal" class="hidden" style="position:fixed;inset:0;z-index:150;display:flex;align-items:center;justify-content:center;background:rgba(0,20,40,.6);">
+    <div class="glass" style="border-radius:22px;padding:32px 28px;max-width:340px;width:90%;text-align:center;">
+      <div style="font-size:30px;margin-bottom:8px;">🔒</div>
+      <h3 style="margin:0 0 6px; font-size:19px;">Admin access</h3>
+      <p style="margin:0 0 18px;font-size:13.5px;color:rgba(255,255,255,.65);">Enter the admin password to continue.</p>
+      <input type="text" id="adminPassInput" placeholder="Password" style="text-align:center;letter-spacing:.2em;" />
+      <div id="adminGateError" style="color:#ffb3b3;font-size:12.5px;margin-top:8px;height:14px;"></div>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button class="btn btn-ghost btn-block" onclick="closeAdminGate()">Cancel</button>
+        <button class="btn btn-primary btn-block" onclick="submitAdminGate()">Enter</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ PLAYER ============ -->
+  <section id="view-player" class="hidden">
+    <div class="p-header">
+      <div class="brand-mark"><span class="plane">✈️</span><span>Sky Race</span></div>
+      <div class="p-badge mono" id="pStateBadge">LOBBY</div>
+    </div>
+
+    <div id="pRegistration" class="reg-card glass">
+      <h2>Join the race</h2>
+      <p class="hint">Scan complete. Enter your name and choose your aircraft.</p>
+      <div class="field-label">Your name</div>
+      <input type="text" id="pName" maxlength="18" placeholder="e.g. Minh Anh" />
+      <div class="field-label">Choose your aircraft</div>
+      <div class="avatar-grid" id="pAvatarGrid"></div>
+      <button class="btn btn-primary btn-block" style="margin-top:22px;" id="pJoinBtn" onclick="playerJoin()">Board aircraft →</button>
+    </div>
+
+    <div id="pGame" class="hidden" style="display:flex; flex-direction:column; flex:1;">
+      <div class="progress-strip" id="pProgressStrip"></div>
+      <div class="progress-text" id="pProgressText"></div>
+
+      <div class="timer-ring-wrap"><div class="p-badge timer-num mono" id="pTimer">--</div></div>
+
+      <div class="q-card glass" id="pQCard">
+        <div class="q-eyebrow" id="pQEyebrow">WAITING FOR NEXT QUESTION</div>
+        <div class="q-text" id="pQText">Sit tight — the presenter will open the next question shortly.</div>
+        <div id="pOptions"></div>
+      </div>
+
+      <div class="status-banner wait glass hidden" id="pStatusBanner"></div>
+
+      <div class="dest-strip glass">
+        <div><div class="lbl">Current position</div><div class="val mono" id="pDest">START</div></div>
+        <div style="text-align:right;"><div class="lbl">Aircraft</div><div class="val" id="pAvatarShown">—</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PRESENTER ============ -->
+  <section id="view-presenter" class="hidden">
+    <div class="pres-top">
+      <h1>✈️&nbsp; Vietnam Airlines Sky Race</h1>
+      <div class="pres-status-pill glass" id="presStatePill">LOBBY</div>
+    </div>
+    <div class="pres-body">
+      <div class="map-panel glass">
+        <svg class="route-svg" id="routeSvg" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="airportLayer"></div>
+        <div id="planeLayer"></div>
+      </div>
+      <div class="leader-panel glass">
+        <h3>Live Leaderboard</h3>
+        <div id="presLeaderboard"></div>
+      </div>
+    </div>
+    <div class="q-status-card glass mono" id="presQStatus">Waiting for admin to open Question 1…</div>
+  </section>
+
+  <!-- ============ ADMIN ============ -->
+  <section id="view-admin" class="hidden">
+    <div class="admin-sidebar glass" style="border-radius:0 24px 24px 0;">
+      <div class="brand-mark" style="margin-bottom:20px;"><span class="plane">✈️</span><span>Admin</span></div>
+      <button class="admin-nav-btn active" data-tab="control" onclick="adminTab('control')">🎮&nbsp; Game Control</button>
+      <button class="admin-nav-btn" data-tab="answers" onclick="adminTab('answers')">📝&nbsp; Submitted Answers</button>
+      <button class="admin-nav-btn" data-tab="questions" onclick="adminTab('questions')">📋&nbsp; Question Editor</button>
+      <button class="admin-nav-btn" data-tab="players" onclick="adminTab('players')">👥&nbsp; Manage Players</button>
+      <button class="admin-nav-btn" data-tab="leaderboard" onclick="adminTab('leaderboard')">🏆&nbsp; Leaderboard</button>
+      <div style="flex:1;"></div>
+      <button class="btn btn-danger btn-sm btn-block" onclick="resetGame()">🗑️ Reset game (clear players)</button>
+    </div>
+
+    <div class="admin-main">
+      <div class="admin-header">
+        <h2 id="adminTabTitle">Game Control</h2>
+        <div class="p-badge mono" id="adminStateBadge">LOBBY</div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card glass"><div class="n" id="statPlayers">0</div><div class="l">Players joined</div></div>
+        <div class="stat-card glass"><div class="n" id="statQ">0 / 22</div><div class="l">Current question</div></div>
+        <div class="stat-card glass"><div class="n" id="statSubmitted">0</div><div class="l">Answers submitted</div></div>
+        <div class="stat-card glass"><div class="n" id="statLeader">—</div><div class="l">Current leader</div></div>
+      </div>
+
+      <div id="tab-control">
+        <div class="panel glass">
+          <h3>Question control</h3>
+          <p style="margin:0 0 16px; font-size:14px; color:rgba(255,255,255,.75);" id="adminCurrentQ">Question 1 of 22 — not opened yet.</p>
+          <div class="control-row">
+            <button class="btn btn-ghost" onclick="adminPrevQuestion()">← Previous question</button>
+            <button class="btn btn-primary" onclick="adminOpenQuestion()">Open question</button>
+            <button class="btn btn-ghost" onclick="adminCloseQuestion()">Close question</button>
+            <button class="btn btn-ghost" onclick="adminRevealAnswer()">Reveal answer &amp; move</button>
+            <button class="btn btn-ghost" onclick="adminNextQuestion()">Next question →</button>
+            <button class="btn btn-ghost" onclick="adminPauseToggle()" id="pauseBtn">Pause game</button>
+            <button class="btn btn-ghost" title="Reset progress — back to Question 1, all aircraft to start" onclick="resetProgress()">🔄 Reset progress</button>
+          </div>
+        </div>
+        <div class="panel glass">
+          <h3>Award ceremony</h3>
+          <p style="margin:0 0 16px; font-size:14px; color:rgba(255,255,255,.75);">Show the top 3 podium and checkpoint milestone winners on the presenter screen, with fireworks.</p>
+          <div class="control-row">
+            <button class="btn btn-primary" onclick="triggerAward()">🏆 Trao giải / Show award</button>
+            <button class="btn btn-ghost" onclick="hideAward()">Hide award overlay</button>
+          </div>
+        </div>
+        <div class="panel glass">
+          <h3>Live answer feed — question <span id="feedQNum">1</span></h3>
+          <div class="answer-grid" id="adminAnswerFeed"><p style="color:rgba(255,255,255,.5); font-size:13.5px;">No submissions yet.</p></div>
+        </div>
+      </div>
+
+      <div id="tab-answers" class="hidden">
+        <div class="panel glass">
+          <h3>All submitted answers by question</h3>
+          <div id="answersFull"></div>
+        </div>
+      </div>
+
+      <div id="tab-questions" class="hidden">
+        <div class="panel glass">
+          <h3>Question editor <span style="float:right; font-weight:400; text-transform:none; letter-spacing:0; color:rgba(255,255,255,.5);">Correct answers hidden from players</span></h3>
+          <div id="questionEditor"></div>
+        </div>
+      </div>
+
+      <div id="tab-players" class="hidden">
+        <div class="panel glass">
+          <h3>Registered players</h3>
+          <table id="playersTable"><thead><tr><th>Aircraft</th><th>Name</th><th>Position</th><th>Correct</th><th>Actions</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+
+      <div id="tab-leaderboard" class="hidden">
+        <div class="panel glass">
+          <h3>Leaderboard</h3>
+          <table id="leaderTable"><thead><tr><th>Rank</th><th>Aircraft</th><th>Name</th><th>Airport</th><th>Progress</th><th>Total time</th></tr></thead><tbody></tbody></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   VIETNAM AIRLINES SKY RACE — interactive prototype
+   Realtime sync across tabs via BroadcastChannel + localStorage
+   ============================================================ */
+
+// Evenly spaced top-to-bottom, arranged in a smooth "S" curve — 12 legs (13 checkpoints), as originally designed
+const ROUTE = [
+  {code:'START',  city:'Start',              x:150, y:40,  checkpoint:false},
+  {code:'CDG',    city:'Paris',              x:197, y:80,  checkpoint:false},
+  {code:'AMS',    city:'Amsterdam',          x:325, y:120, checkpoint:false},
+  {code:'HAN',    city:'Hanoi',              x:500, y:160, checkpoint:true},
+  {code:'MUC',    city:'Munich',             x:675, y:200, checkpoint:false},
+  {code:'MOW',    city:'Moscow',             x:803, y:240, checkpoint:false},
+  {code:'SPC',    city:'Special Checkpoint', x:850, y:280, checkpoint:true},
+  {code:'LHR',    city:'London',             x:803, y:320, checkpoint:false},
+  {code:'MXP',    city:'Milan',              x:675, y:360, checkpoint:false},
+  {code:'CPH',    city:'Copenhagen',         x:500, y:400, checkpoint:false},
+  {code:'SGN',    city:'Ho Chi Minh City',   x:325, y:440, checkpoint:true},
+  {code:'FRA',    city:'Frankfurt',          x:197, y:480, checkpoint:false},
+  {code:'FINISH', city:'Finish',             x:150, y:520, checkpoint:true},
+];
+// Note: the question bank below has 22 questions — more than the 12 legs on the map.
+// Aircraft advance one leg per correct answer up through Question 12 / FINISH; any
+// questions after that (13-22) can still be opened as bonus trivia, they just won't
+// move aircraft further since every player will already be at FINISH.
+
+const QUESTIONS = [
+  {q:"Which airline alliance did Vietnam Airlines join in 2010?", opts:["SkyTeam","Star Alliance","Oneworld","Value Alliance"], correct:0},
+  {q:"What is the IATA code for Vietnam Airlines?", opts:["VN","VA","VJ","QH"], correct:0},
+  {q:"Which aircraft does Vietnam Airlines operate on many long-haul routes?", opts:["Boeing 787 Dreamliner","Concorde","Airbus A220","ATR 72"], correct:0},
+  {q:"Vietnam Airlines is headquartered in which city?", opts:["Hanoi","Da Nang","Ho Chi Minh City","Hue"], correct:0},
+  {q:"What color is prominently used in the Vietnam Airlines livery, alongside gold?", opts:["Green","Blue","Purple","Black"], correct:1},
+  {q:"Which flower is featured in the Vietnam Airlines logo?", opts:["Rose","Lotus","Orchid","Sunflower"], correct:1},
+  {q:"CDG airport code refers to which city's airport?", opts:["Amsterdam","London","Paris","Milan"], correct:1},
+  {q:"What does 'SGN' stand for in airport codes?", opts:["Singapore","Ho Chi Minh City (Tan Son Nhat)","Seoul","Shanghai"], correct:1},
+  {q:"Which of these is a long-haul cabin class Vietnam Airlines offers?", opts:["Basic Economy Plus","Business Class","Cargo Premium","Silver Class"], correct:2},
+  {q:"LHR is the airport code for which city?", opts:["Los Angeles","Lisbon","London","Lyon"], correct:2},
+  {q:"What is Vietnam Airlines' frequent flyer program called?", opts:["SkyMiles","Golden Lotus Plus","AAdvantage","Miles & More"], correct:2},
+  {q:"Which of these airports is a major hub in Germany served on this route?", opts:["Munich","Frankfurt","Berlin","Hamburg"], correct:2},
+  {q:"Which two Vietnamese cities host Vietnam Airlines' main hub airports?", opts:["Hanoi & Ho Chi Minh City","Hanoi & Da Nang","Hue & Hai Phong","Ho Chi Minh City & Can Tho"], correct:0},
+  {q:"In what year did Vietnam Airlines join the SkyTeam alliance?", opts:["2006","2008","2010","2015"], correct:2},
+  {q:"Which wide-body aircraft did Vietnam Airlines receive in 2015, becoming the second airline in the world to fly it?", opts:["Boeing 777","Airbus A350-900","Boeing 747","Airbus A380"], correct:1},
+  {q:"What is the name of Vietnam Airlines' low-cost carrier subsidiary?", opts:["VietJet Air","Pacific Airlines","Bamboo Airways","AirAsia"], correct:1},
+  {q:"Vietnam Airlines' headquarters is located in which Hanoi district?", opts:["Hoan Kiem","Long Bien","Cau Giay","Ba Dinh"], correct:1},
+  {q:"How many cabin classes does Vietnam Airlines typically offer on long-haul flights?", opts:["Two","Three","Four","Five"], correct:1},
+  {q:"Which airport serves as Vietnam Airlines' hub in Ho Chi Minh City?", opts:["Noi Bai","Da Nang","Tan Son Nhat","Cam Ranh"], correct:2},
+  {q:"In November 2021, Vietnam Airlines launched its first direct flight to which country?", opts:["United States","Australia","Germany","Canada"], correct:0},
+  {q:"Which joint-venture airline did Vietnam Airlines help establish in Cambodia?", opts:["Cambodia Angkor Air","Bassaka Air","JC International Airlines","Lanmei Airlines"], correct:0},
+  {q:"Vietnam Airlines has maintained a strong safety record with no fatal accidents since which year?", opts:["1988","1997","2005","2010"], correct:1},
+];
+
+const AVATARS = ["😎","😊","🔥","👑","🎉","🚀","🤩","🥳","😇","🦸","🧑‍🚀","⚡"];
+function planeSvg(color){
+  return '<svg class="plane-ico" viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.18em;"><path fill="'+color+'" d="M21 16v-1.9l-8-4.95V4.5a1.5 1.5 0 0 0-3 0v4.65l-8 4.95V16l8-2.5v4.9l-2.2 1.6V22l3.7-1.1 3.7 1.1v-1.5L13.5 18v-4.9z"/></svg>';
+}
+function avatarHTML(face, size, color){
+  size = size || '1em';
+  color = color || '#005BAC';
+  return '<span class="avatar-compose" style="font-size:'+size+'; display:inline-flex; align-items:center; gap:.18em;">'+planeSvg(color)+'<span class="face-emoji">'+face+'</span></span>';
+}
+const TIMER_SECONDS = 20;
+const STORAGE_KEY = "vna_sky_race_state_v1";
+let bc = null;
+try { bc = new BroadcastChannel('vna-sky-race'); } catch(e) { bc = null; }
+
+function defaultState(){
+  return {
+    gameState: 'lobby', // lobby | question | locked | reveal | finished
+    currentQ: 0, // 0-based index into QUESTIONS
+    questionOpenedAt: null,
+    paused: false,
+    players: {}, // id -> {id,name,avatar,position,correctCount,answers:{qIdx:{choice,submittedAt}},totalAnswerTime}
+    winnerId: null,
+    milestones: { HAN:null, SPC:null, SGN:null }, // playerId of first arrival at each checkpoint
+    awardShown: false,
+  };
+}
+let state = loadState();
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return Object.assign(defaultState(), JSON.parse(raw));
+  }catch(e){}
+  return defaultState();
+}
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  if(bc) bc.postMessage({type:'state', state});
+}
+window.addEventListener('storage', (e)=>{
+  if(e.key===STORAGE_KEY && e.newValue){
+    state = JSON.parse(e.newValue);
+    renderAll();
+  }
+});
+if(bc){
+  bc.onmessage = (e)=>{
+    if(e.data && e.data.type==='state'){ state = e.data.state; renderAll(); }
+  };
+}
+
+let myPlayerId = localStorage.getItem('vna_my_player_id') || null;
+let selectedAvatar = null;
+let currentTab = 'control';
+let timerInterval = null;
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function uid(){ return 'p_' + Math.random().toString(36).slice(2,9); }
+
+/* ---------- routing between the 3 views ---------- */
+function go(view){
+  document.querySelectorAll('.app > section').forEach(s=>s.classList.add('hidden'));
+  document.getElementById('view-'+view).classList.remove('hidden');
+  let back = document.getElementById('backBtn');
+  if(view!=='landing'){
+    if(!back){
+      back = document.createElement('button');
+      back.id='backBtn'; back.className='btn btn-ghost btn-sm back-btn';
+      back.textContent='← Exit';
+      back.onclick = ()=>go('landing');
+      document.body.appendChild(back);
+    }
+    back.classList.remove('hidden');
+  } else if(back){ back.classList.add('hidden'); }
+  location.hash = view;
+  renderAll();
+}
+window.addEventListener('hashchange', ()=>{
+  const v = location.hash.replace('#','');
+  if(['landing','player','presenter','admin'].includes(v)) go(v);
+});
+
+/* ---------- admin password gate ---------- */
+const ADMIN_PASSWORD = '738B';
+function openAdminGate(){
+  const modal = document.getElementById('adminGateModal');
+  modal.classList.remove('hidden');
+  const input = document.getElementById('adminPassInput');
+  input.value = '';
+  document.getElementById('adminGateError').textContent = '';
+  setTimeout(()=>input.focus(), 50);
+}
+function closeAdminGate(){
+  document.getElementById('adminGateModal').classList.add('hidden');
+}
+function submitAdminGate(){
+  const v = document.getElementById('adminPassInput').value.trim();
+  if(v.toUpperCase() === ADMIN_PASSWORD){
+    closeAdminGate();
+    go('admin');
+  } else {
+    document.getElementById('adminGateError').textContent = 'Incorrect password — please try again.';
+  }
+}
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && !document.getElementById('adminGateModal').classList.contains('hidden')){
+    submitAdminGate();
+  }
+});
+
+/* ---------- ambient clouds ---------- */
+(function initClouds(){
+  const field = document.getElementById('cloudField');
+  for(let i=0;i<6;i++){
+    const c = document.createElement('div');
+    c.className='cloud';
+    const w = 120+Math.random()*180, h=w*0.4;
+    const top = 5+Math.random()*70;
+    const dur = 40+Math.random()*40;
+    const delay = -Math.random()*dur;
+    c.style.top = top+'%';
+    c.style.animationDuration = dur+'s';
+    c.style.animationDelay = delay+'s';
+    c.innerHTML = `<svg width="${w}" height="${h}" viewBox="0 0 200 80"><ellipse cx="60" cy="50" rx="55" ry="28" fill="white"/><ellipse cx="110" cy="35" rx="45" ry="30" fill="white"/><ellipse cx="150" cy="52" rx="42" ry="24" fill="white"/></svg>`;
+    field.appendChild(c);
+  }
+})();
+
+/* ============================================================
+   PLAYER VIEW
+   ============================================================ */
+function initPlayerAvatarGrid(){
+  const grid = document.getElementById('pAvatarGrid');
+  grid.innerHTML = '';
+  AVATARS.forEach(av=>{
+    const d = document.createElement('div');
+    d.className = 'avatar-opt' + (selectedAvatar===av ? ' selected':'');
+    d.innerHTML = avatarHTML(av, '1.3em');
+    d.onclick = ()=>{ selectedAvatar = av; initPlayerAvatarGrid(); };
+    grid.appendChild(d);
+  });
+}
+initPlayerAvatarGrid();
+
+function playerJoin(){
+  const name = document.getElementById('pName').value.trim();
+  if(!name){ toast('Please enter your name'); return; }
+  if(!selectedAvatar){ toast('Please choose an aircraft'); return; }
+  myPlayerId = uid();
+  localStorage.setItem('vna_my_player_id', myPlayerId);
+  state.players[myPlayerId] = {
+    id: myPlayerId, name, avatar: selectedAvatar, position: 0, correctCount:0, answers:{}, totalAnswerTime:0
+  };
+  saveState();
+  document.getElementById('pRegistration').classList.add('hidden');
+  document.getElementById('pGame').classList.remove('hidden');
+  renderPlayer();
+  toast('Welcome aboard, ' + name + '!');
+}
+
+function playerSubmitAnswer(choiceIdx){
+  const me = state.players[myPlayerId];
+  if(!me) return;
+  if(state.gameState !== 'question') return;
+  if(me.answers[state.currentQ] && me.answers[state.currentQ].submitted) return;
+  me.answers[state.currentQ] = { choice: choiceIdx, submitted:false };
+  saveState();
+  renderPlayer();
+}
+function playerConfirmSubmit(){
+  const me = state.players[myPlayerId];
+  if(!me) return;
+  const a = me.answers[state.currentQ];
+  if(!a){ toast('Pick an answer first'); return; }
+  a.submitted = true;
+  a.timeTaken = state.questionOpenedAt ? (Date.now() - state.questionOpenedAt) : 0;
+  me.totalAnswerTime = (me.totalAnswerTime||0) + a.timeTaken;
+  saveState();
+  renderPlayer();
+}
+
+function renderPlayer(){
+  const badge = document.getElementById('pStateBadge');
+  badge.textContent = state.gameState.toUpperCase();
+
+  if(!myPlayerId || !state.players[myPlayerId]){
+    document.getElementById('pRegistration').classList.remove('hidden');
+    document.getElementById('pGame').classList.add('hidden');
+    return;
+  }
+  document.getElementById('pRegistration').classList.add('hidden');
+  document.getElementById('pGame').classList.remove('hidden');
+  const me = state.players[myPlayerId];
+  document.getElementById('pAvatarShown').innerHTML = avatarHTML(me.avatar, '1.2em');
+  document.getElementById('pDest').textContent = ROUTE[me.position].code;
+
+  // progress strip — reflects the 12 legs on the map, independent of question count
+  const strip = document.getElementById('pProgressStrip');
+  strip.innerHTML = '';
+  const totalLegs = ROUTE.length - 1;
+  for(let i=0;i<totalLegs;i++){
+    const d = document.createElement('div');
+    d.className = 'progress-dot' + (i < me.position ? ' done' : (i===me.position && state.gameState!=='lobby' ? ' current':''));
+    strip.appendChild(d);
+  }
+  document.getElementById('pProgressText').textContent = `${me.position} of ${totalLegs} legs complete`;
+
+  // timer
+  const qCard = document.getElementById('pQCard');
+  const timerEl = document.getElementById('pTimer');
+  const bannerEl = document.getElementById('pStatusBanner');
+  const optsEl = document.getElementById('pOptions');
+  const eyebrow = document.getElementById('pQEyebrow');
+  const qText = document.getElementById('pQText');
+
+  if(state.gameState === 'lobby'){
+    eyebrow.textContent = 'WAITING FOR GAME TO START';
+    qText.textContent = 'The admin will open Question 1 shortly. Get ready for takeoff!';
+    optsEl.innerHTML=''; bannerEl.classList.add('hidden'); timerEl.textContent='--';
+    return;
+  }
+  if(state.gameState==='finished'){
+    eyebrow.textContent='RACE COMPLETE';
+    qText.textContent = state.winnerId ? (state.players[state.winnerId].name + ' has landed first and won the race! ✈️🏆') : 'The race has finished.';
+    optsEl.innerHTML=''; bannerEl.classList.add('hidden'); timerEl.textContent='--';
+    return;
+  }
+
+  const qData = QUESTIONS[state.currentQ];
+  eyebrow.textContent = `QUESTION ${state.currentQ+1} OF ${QUESTIONS.length}`;
+  qText.textContent = qData.q;
+
+  const myAns = me.answers[state.currentQ];
+  const revealed = state.gameState==='reveal';
+  optsEl.innerHTML = '';
+  qData.opts.forEach((opt,i)=>{
+    const b = document.createElement('button');
+    let cls = 'opt-btn';
+    if(revealed){
+      if(i===qData.correct) cls+=' correct';
+      else if(myAns && myAns.choice===i) cls+=' wrong';
+    } else if(myAns && myAns.choice===i){
+      cls+=' picked';
+    }
+    b.className = cls;
+    const locked = state.gameState!=='question' || (myAns && myAns.submitted);
+    b.disabled = locked;
+    b.innerHTML = `<span class="k">${String.fromCharCode(65+i)}</span><span>${opt}</span>`;
+    b.onclick = ()=> playerSubmitAnswer(i);
+    optsEl.appendChild(b);
+  });
+
+  // timer countdown display (visual only, admin controls actual state)
+  if(state.gameState==='question' && state.questionOpenedAt){
+    const elapsed = Math.floor((Date.now()-state.questionOpenedAt)/1000);
+    const remain = Math.max(0, TIMER_SECONDS-elapsed);
+    timerEl.textContent = remain+'s';
+  } else {
+    timerEl.textContent = state.gameState==='locked' ? 'LOCKED' : (state.gameState==='reveal' ? 'REVEALED' : '--');
+  }
+
+  // banner + submit button
+  bannerEl.classList.remove('hidden','wait','locked','correct','wrong');
+  if(state.gameState==='question'){
+    if(myAns && myAns.submitted){
+      bannerEl.classList.add('locked');
+      bannerEl.innerHTML = '🔒 Answer locked in. Waiting for other players…';
+    } else if(myAns){
+      bannerEl.classList.add('wait');
+      bannerEl.innerHTML = `<button class="btn btn-primary btn-block" onclick="playerConfirmSubmit()">Submit answer →</button>`;
+    } else {
+      bannerEl.classList.add('wait');
+      bannerEl.innerHTML = 'Select an answer above';
+    }
+  } else if(state.gameState==='locked'){
+    bannerEl.classList.add('locked');
+    bannerEl.innerHTML = '⏳ Answers locked. Revealing shortly…';
+  } else if(state.gameState==='reveal'){
+    const correct = myAns && myAns.choice===qData.correct;
+    bannerEl.classList.add(correct ? 'correct':'wrong');
+    bannerEl.innerHTML = correct ? '✅ Correct! Your aircraft advances one destination.' : (myAns ? '❌ Not quite — your aircraft holds position.' : '⏱️ No answer submitted — aircraft holds position.');
+  }
+}
+
+/* ============================================================
+   PRESENTER VIEW
+   ============================================================ */
+function buildRouteSvg(){
+  const svg = document.getElementById('routeSvg');
+  const points = ROUTE.map(a=>`${a.x},${a.y}`).join(' ');
+  svg.innerHTML = `
+    <defs>
+      <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <polyline points="${points}" fill="none" stroke="#D4AF37" stroke-width="3" stroke-dasharray="3 11" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)" opacity="0.9"/>
+  `;
+
+  const airportLayer = document.getElementById('airportLayer');
+  airportLayer.innerHTML = '';
+  ROUTE.forEach(a=>{
+    const node = document.createElement('div');
+    node.className = 'airport-node' + (a.checkpoint ? ' checkpoint':'');
+    node.style.left = (a.x/1000*100)+'%';
+    node.style.top = (a.y/560*100)+'%';
+    node.innerHTML = `<div class="airport-dot"></div><div class="airport-label"><div class="code">${a.code}</div><div class="city">${a.city}</div></div>`;
+    airportLayer.appendChild(node);
+  });
+}
+buildRouteSvg();
+
+function renderPresenterPlanes(){
+  const layer = document.getElementById('planeLayer');
+  layer.innerHTML = '';
+  const byPos = {};
+  Object.values(state.players).forEach(p=>{
+    byPos[p.position] = byPos[p.position] || [];
+    byPos[p.position].push(p);
+  });
+  Object.entries(byPos).forEach(([pos, plist])=>{
+    const node = ROUTE[+pos];
+    plist.forEach((p, stackIdx)=>{
+      const tok = document.createElement('div');
+      tok.className = 'plane-token';
+      tok.style.left = (node.x/1000*100)+'%';
+      tok.style.top = ((node.y/560*100) - stackIdx*4.2)+'%';
+      tok.innerHTML = `<div class="stack"><div class="icon">${avatarHTML(p.avatar,'1em','#FFFFFF')}</div><div class="pname">${escapeHtml(p.name)}</div></div>`;
+      layer.appendChild(tok);
+    });
+  });
+}
+
+function renderPresenterLeaderboard(){
+  const el = document.getElementById('presLeaderboard');
+  const ranked = rankedPlayers();
+  if(ranked.length===0){ el.innerHTML = '<p style="color:rgba(255,255,255,.5); font-size:13px;">No players yet. Scan the QR code to join.</p>'; return; }
+  el.innerHTML = ranked.map((p,i)=>`
+    <div class="lead-row ${i===0?'top1':''}">
+      <div class="rank">${i<3?RANK_TROPHY[i]:('#'+(i+1))}</div>
+      <div class="av">${avatarHTML(p.avatar,'1em','#FFFFFF')}</div>
+      <div class="nm">${escapeHtml(p.name)}${milestoneDotsFor(p.id)}<div style="font-size:10.5px; color:rgba(255,255,255,.5); font-weight:400;">${ROUTE[p.position].code} · ${ROUTE[p.position].city} · ⏱ ${formatTime(p.totalAnswerTime)}</div></div>
+      <div class="st">${p.position}/12</div>
+    </div>
+  `).join('');
+}
+
+function rankedPlayers(){
+  return Object.values(state.players).slice().sort((a,b)=>
+    b.position - a.position ||
+    (a.totalAnswerTime||0) - (b.totalAnswerTime||0)
+  );
+}
+const RANK_TROPHY = ['🥇','🥈','🥉'];
+function formatTime(ms){
+  ms = ms || 0;
+  return (ms/1000).toFixed(1)+'s';
+}
+function milestoneDotsFor(playerId){
+  let dots = '';
+  ['HAN','SPC','SGN'].forEach(code=>{
+    if(state.milestones && state.milestones[code]===playerId){
+      dots += ` <span title="First to reach ${code}" style="color:var(--vna-gold-light);">●</span>`;
+    }
+  });
+  return dots;
+}
+
+function renderPresenter(){
+  const pill = document.getElementById('presStatePill');
+  pill.textContent = state.gameState.toUpperCase();
+  renderPresenterPlanes();
+  renderPresenterLeaderboard();
+
+  const statusEl = document.getElementById('presQStatus');
+  if(state.gameState==='lobby') statusEl.textContent = 'Waiting for admin to open Question 1…';
+  else if(state.gameState==='question') statusEl.textContent = `Question ${state.currentQ+1} of ${QUESTIONS.length} is open — players are answering.`;
+  else if(state.gameState==='locked') statusEl.textContent = `Question ${state.currentQ+1} locked — preparing to reveal.`;
+  else if(state.gameState==='reveal') statusEl.textContent = `Question ${state.currentQ+1} — correct answer: ${String.fromCharCode(65+QUESTIONS[state.currentQ].correct)}. Aircraft advancing…`;
+  else if(state.gameState==='finished') statusEl.textContent = 'Race complete! 🏆';
+
+  // winner overlay
+  let overlay = document.getElementById('winnerOverlay');
+  if(state.gameState==='finished' && state.winnerId){
+    if(!overlay){
+      overlay = document.createElement('div');
+      overlay.id='winnerOverlay';
+      overlay.className='winner-overlay';
+      document.getElementById('view-presenter').appendChild(overlay);
+      fireConfetti();
+    }
+    const winner = state.players[state.winnerId];
+    const podium = rankedPlayers().slice(0,3);
+    overlay.innerHTML = `
+      <div class="trophy">🏆</div>
+      <h1>Congratulations!</h1>
+      <div style="font-size:20px;">${avatarHTML(winner.avatar,'1.1em','#FFFFFF')} <span class="pname">${escapeHtml(winner.name)}</span> wins the Sky Race!</div>
+      <div class="podium">
+        ${podium[1]?`<div class="col c2"><div>${avatarHTML(podium[1].avatar,'1.3em','#FFFFFF')}</div><div class="bar">2</div><div class="podium-name">${escapeHtml(podium[1].name)}</div></div>`:''}
+        ${podium[0]?`<div class="col c1"><div>${avatarHTML(podium[0].avatar,'1.3em','#FFFFFF')}</div><div class="bar">1</div><div class="podium-name">${escapeHtml(podium[0].name)}</div></div>`:''}
+        ${podium[2]?`<div class="col c3"><div>${avatarHTML(podium[2].avatar,'1.3em','#FFFFFF')}</div><div class="bar">3</div><div class="podium-name">${escapeHtml(podium[2].name)}</div></div>`:''}
+      </div>
+      <button class="btn btn-primary" style="margin-top:34px;" onclick="resetGame()">Play again</button>
+    `;
+  } else if(overlay){
+    overlay.remove();
+  }
+
+  // award ceremony overlay (manually triggered by admin, independent of race finish)
+  let awardOverlay = document.getElementById('awardOverlay');
+  if(state.awardShown){
+    if(!awardOverlay){
+      awardOverlay = document.createElement('div');
+      awardOverlay.id='awardOverlay';
+      awardOverlay.className='winner-overlay';
+      document.getElementById('view-presenter').appendChild(awardOverlay);
+      fireConfettiLight();
+    }
+    const podium = rankedPlayers().slice(0,3);
+    const milestoneRows = ['HAN','SPC','SGN'].map(code=>{
+      const pid = state.milestones[code];
+      const p = pid ? state.players[pid] : null;
+      const label = code==='SPC' ? 'Special Checkpoint' : code;
+      return `<div style="display:flex; align-items:center; gap:8px; justify-content:center; font-size:13.5px; margin-top:6px;">
+        <span class="tag mono">${label}</span>
+        <span>${p ? avatarHTML(p.avatar,'1em','#FFFFFF')+' '+escapeHtml(p.name) : '<span style="color:rgba(255,255,255,.45);">not reached yet</span>'}</span>
+      </div>`;
+    }).join('');
+    awardOverlay.innerHTML = `
+      <div class="trophy">🏆</div>
+      <h1>Award Ceremony</h1>
+      <div class="podium">
+        ${podium[1]?`<div class="col c2"><div>${avatarHTML(podium[1].avatar,'1.3em','#FFFFFF')}</div><div class="bar">2</div><div class="podium-name">${escapeHtml(podium[1].name)}</div></div>`:''}
+        ${podium[0]?`<div class="col c1"><div>${avatarHTML(podium[0].avatar,'1.3em','#FFFFFF')}</div><div class="bar">1</div><div class="podium-name">${escapeHtml(podium[0].name)}</div></div>`:''}
+        ${podium[2]?`<div class="col c3"><div>${avatarHTML(podium[2].avatar,'1.3em','#FFFFFF')}</div><div class="bar">3</div><div class="podium-name">${escapeHtml(podium[2].name)}</div></div>`:''}
+      </div>
+      <div style="margin-top:26px; text-align:center;">
+        <div style="font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:rgba(255,255,255,.55); margin-bottom:4px;">First to reach each checkpoint</div>
+        ${milestoneRows}
+      </div>
+    `;
+  } else if(awardOverlay){
+    awardOverlay.remove();
+  }
+}
+function fireConfettiLight(){
+  if(typeof confetti !== 'function') return;
+  confetti({particleCount:60, spread:100, origin:{y:0.3}, colors:['#D4AF37','#F0D678','#005BAC','#ffffff'], scalar:0.9});
+}
+function fireConfetti(){
+  if(typeof confetti !== 'function') return;
+  const duration = 3000;
+  const end = Date.now()+duration;
+  (function frame(){
+    confetti({particleCount:5, angle:60, spread:70, origin:{x:0}, colors:['#D4AF37','#F0D678','#005BAC','#ffffff']});
+    confetti({particleCount:5, angle:120, spread:70, origin:{x:1}, colors:['#D4AF37','#F0D678','#005BAC','#ffffff']});
+    if(Date.now()<end) requestAnimationFrame(frame);
+  })();
+}
+
+/* ============================================================
+   ADMIN VIEW
+   ============================================================ */
+function adminTab(tab){
+  currentTab = tab;
+  document.querySelectorAll('.admin-nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  ['control','answers','questions','players','leaderboard'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('hidden', t!==tab);
+  });
+  const titles = {control:'Game Control', answers:'Submitted Answers', questions:'Question Editor', players:'Manage Players', leaderboard:'Leaderboard'};
+  document.getElementById('adminTabTitle').textContent = titles[tab];
+  renderAdmin();
+}
+
+function adminOpenQuestion(){
+  if(state.gameState==='finished'){ toast('Race already finished — reset to play again.'); return; }
+  state.gameState = 'question';
+  state.questionOpenedAt = Date.now();
+  saveState();
+  toast('Question '+(state.currentQ+1)+' opened');
+}
+function adminCloseQuestion(){
+  if(state.gameState!=='question'){ toast('No question is currently open'); return; }
+  state.gameState = 'locked';
+  saveState();
+  toast('Answers locked');
+}
+function adminRevealAnswer(){
+  if(state.gameState!=='locked' && state.gameState!=='question'){ toast('Close the question first'); return; }
+  state.gameState = 'reveal';
+  const correctIdx = QUESTIONS[state.currentQ].correct;
+  Object.values(state.players).forEach(p=>{
+    const a = p.answers[state.currentQ];
+    if(a && a.choice===correctIdx){
+      p.position = Math.min(p.position+1, ROUTE.length-1);
+      p.correctCount = (p.correctCount||0)+1;
+      const landedCode = ROUTE[p.position].code;
+      if(['HAN','SPC','SGN'].includes(landedCode) && !state.milestones[landedCode]){
+        state.milestones[landedCode] = p.id;
+      }
+    }
+  });
+  // check winner
+  const finisher = Object.values(state.players).find(p=>p.position===ROUTE.length-1);
+  if(finisher){
+    state.gameState='finished';
+    state.winnerId = finisher.id;
+  }
+  saveState();
+  toast('Answer revealed — aircraft moved');
+}
+function adminNextQuestion(){
+  if(state.gameState==='finished'){ toast('Race finished — reset to play again.'); return; }
+  if(state.currentQ >= QUESTIONS.length-1){ toast('This was the last question'); return; }
+  state.currentQ += 1;
+  state.gameState = 'lobby';
+  state.questionOpenedAt = null;
+  saveState();
+  toast('Advanced to question '+(state.currentQ+1));
+}
+function adminPrevQuestion(){
+  if(state.currentQ <= 0){ toast('Already at Question 1'); return; }
+  if(!confirm('Go back to Question '+state.currentQ+'? The game state for it will reopen at lobby (aircraft positions stay as they are).')) return;
+  state.currentQ -= 1;
+  state.gameState = 'lobby';
+  state.questionOpenedAt = null;
+  if(state.winnerId){ state.winnerId = null; }
+  saveState();
+  toast('Went back to question '+(state.currentQ+1));
+}
+function adminPauseToggle(){
+  state.paused = !state.paused;
+  saveState();
+  document.getElementById('pauseBtn').textContent = state.paused ? 'Resume game' : 'Pause game';
+  toast(state.paused ? 'Game paused' : 'Game resumed');
+}
+function resetGame(){
+  if(!confirm('Reset the entire game? All players and progress will be cleared.')) return;
+  state = defaultState();
+  saveState();
+  toast('Game reset');
+}
+function resetProgress(){
+  if(!confirm('Reset progress? Question will return to 1 and every aircraft goes back to START. Players stay registered.')) return;
+  Object.values(state.players).forEach(p=>{
+    p.position = 0;
+    p.correctCount = 0;
+    p.answers = {};
+    p.totalAnswerTime = 0;
+  });
+  state.currentQ = 0;
+  state.gameState = 'lobby';
+  state.questionOpenedAt = null;
+  state.winnerId = null;
+  state.milestones = { HAN:null, SPC:null, SGN:null };
+  state.awardShown = false;
+  saveState();
+  toast('Progress reset — back to Question 1');
+}
+function triggerAward(){
+  if(Object.keys(state.players).length===0){ toast('No players yet'); return; }
+  state.awardShown = true;
+  saveState();
+  toast('Award ceremony shown on presenter screen');
+}
+function hideAward(){
+  state.awardShown = false;
+  saveState();
+}
+function removePlayer(id){
+  delete state.players[id];
+  saveState();
+}
+
+function renderQuestionEditor(){
+  const el = document.getElementById('questionEditor');
+  el.innerHTML = QUESTIONS.map((q,i)=>`
+    <div class="qedit-row">
+      <div class="num">Q${i+1}</div>
+      <div>
+        <div style="font-weight:600; font-size:14px; margin-bottom:6px;">${escapeHtml(q.q)}</div>
+        <div style="font-size:12.5px; color:rgba(255,255,255,.65); display:flex; gap:14px; flex-wrap:wrap;">
+          ${q.opts.map((o,oi)=>`<span class="${oi===q.correct?'ans-correct':''}">${String.fromCharCode(65+oi)}. ${escapeHtml(o)}${oi===q.correct?' ✓':''}</span>`).join('')}
+        </div>
+      </div>
+    </div>
+  `).join('') + `<p style="margin-top:16px; font-size:12.5px; color:rgba(255,255,255,.5);">Full inline editing, Excel import/export, and question reordering are next on the build list for the production version.</p>`;
+}
+
+function renderAdminAnswerFeed(){
+  const feed = document.getElementById('adminAnswerFeed');
+  document.getElementById('feedQNum').textContent = state.currentQ+1;
+  const entries = Object.values(state.players).filter(p=>p.answers[state.currentQ]);
+  if(entries.length===0){ feed.innerHTML = '<p style="color:rgba(255,255,255,.5); font-size:13.5px;">No submissions yet.</p>'; return; }
+  const correctIdx = QUESTIONS[state.currentQ].correct;
+  const revealed = state.gameState==='reveal' || state.gameState==='finished';
+  feed.innerHTML = entries.map(p=>{
+    const a = p.answers[state.currentQ];
+    let cls='answer-tile';
+    if(revealed) cls += a.choice===correctIdx ? ' correct-tile' : ' wrong-tile';
+    return `<div class="${cls}"><div class="nm">${avatarHTML(p.avatar)} ${escapeHtml(p.name)}</div><div class="ans">${a.submitted?'Submitted':'Selecting…'} · Option ${String.fromCharCode(65+a.choice)}</div></div>`;
+  }).join('');
+}
+
+function renderAnswersFull(){
+  const el = document.getElementById('answersFull');
+  let html = '';
+  for(let qi=0; qi<QUESTIONS.length; qi++){
+    const entries = Object.values(state.players).filter(p=>p.answers[qi]);
+    html += `<h3 style="margin:18px 0 8px; font-size:13px;">Question ${qi+1} <span class="tag">${entries.length} answers</span></h3>`;
+    if(entries.length===0){ html += `<p style="font-size:12.5px; color:rgba(255,255,255,.45); margin:0 0 10px;">No submissions.</p>`; continue; }
+    html += `<div class="answer-grid" style="margin-bottom:10px;">` + entries.map(p=>{
+      const a = p.answers[qi];
+      return `<div class="answer-tile"><div class="nm">${avatarHTML(p.avatar)} ${escapeHtml(p.name)}</div><div class="ans">Option ${String.fromCharCode(65+a.choice)} ${a.submitted?'✓':'(pending)'}</div></div>`;
+    }).join('') + `</div>`;
+  }
+  el.innerHTML = html;
+}
+
+function renderPlayersTable(){
+  const tbody = document.querySelector('#playersTable tbody');
+  const players = Object.values(state.players);
+  if(players.length===0){ tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(255,255,255,.45);">No players registered yet.</td></tr>`; return; }
+  tbody.innerHTML = players.map(p=>`
+    <tr>
+      <td>${avatarHTML(p.avatar)}</td>
+      <td>${escapeHtml(p.name)}${milestoneDotsFor(p.id)}</td>
+      <td class="mono">${ROUTE[p.position].code}</td>
+      <td>${p.correctCount||0}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="removePlayer('${p.id}')">Remove</button></td>
+    </tr>
+  `).join('');
+}
+
+function renderLeaderTable(){
+  const tbody = document.querySelector('#leaderTable tbody');
+  const ranked = rankedPlayers();
+  if(ranked.length===0){ tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(255,255,255,.45);">No players yet.</td></tr>`; return; }
+  tbody.innerHTML = ranked.map((p,i)=>`
+    <tr>
+      <td class="mono">${i<3?RANK_TROPHY[i]:('#'+(i+1))}</td>
+      <td>${avatarHTML(p.avatar)}</td>
+      <td>${escapeHtml(p.name)}${milestoneDotsFor(p.id)}</td>
+      <td class="mono">${ROUTE[p.position].code}</td>
+      <td>${p.position}/12</td>
+      <td class="mono">${formatTime(p.totalAnswerTime)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderAdmin(){
+  const players = Object.values(state.players);
+  document.getElementById('statPlayers').textContent = players.length;
+  document.getElementById('statQ').textContent = `${state.gameState==='lobby' && state.currentQ===0 && !state.questionOpenedAt ? 0 : state.currentQ+1} / ${QUESTIONS.length}`;
+  document.getElementById('statSubmitted').textContent = players.filter(p=>p.answers[state.currentQ]).length;
+  const ranked = rankedPlayers();
+  document.getElementById('statLeader').textContent = ranked.length ? ranked[0].name : '—';
+  document.getElementById('adminStateBadge').textContent = state.gameState.toUpperCase();
+  document.getElementById('adminCurrentQ').textContent = `Question ${state.currentQ+1} of ${QUESTIONS.length} — status: ${state.gameState}. "${QUESTIONS[state.currentQ].q}"`;
+
+  if(currentTab==='control') renderAdminAnswerFeed();
+  if(currentTab==='answers') renderAnswersFull();
+  if(currentTab==='questions') renderQuestionEditor();
+  if(currentTab==='players') renderPlayersTable();
+  if(currentTab==='leaderboard') renderLeaderTable();
+}
+
+/* ---------- utils ---------- */
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+}
+
+function renderAll(){
+  renderPlayer();
+  renderPresenter();
+  renderAdmin();
+}
+
+/* live timer tick for player screen */
+setInterval(()=>{
+  if(!document.getElementById('view-player').classList.contains('hidden')) renderPlayer();
+}, 1000);
+
+/* init route from hash */
+(function init(){
+  const v = location.hash.replace('#','');
+  if(['player','presenter','admin'].includes(v)) go(v);
+  else go('landing');
+})();
+</script>
+</body>
+</html>
