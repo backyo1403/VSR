@@ -10,8 +10,7 @@ VNA_Race/
 ├── firebase.json            ← cấu hình database rules deploy (không dùng Firebase Hosting)
 ├── vercel.json              ← deploy tĩnh public/ lên Vercel, không cần build step
 ├── scripts/vendor-assets.mjs
-├── test/rules.test.js       ← 29 test luật chơi
-└── vna-sky-race (1).html    ← bản sao lưu của public/index.html (đồng bộ thủ công)
+└── test/rules.test.js       ← 29 test luật chơi
 ```
 
 ---
