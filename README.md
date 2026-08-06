@@ -10,7 +10,7 @@ VNA_Race/
 ├── firebase.json            ← cấu hình hosting + database
 ├── scripts/vendor-assets.mjs
 ├── test/rules.test.js       ← 29 test luật chơi
-└── vna-sky-race (1).html    ← bản localStorage cũ, giữ làm dự phòng
+└── vna-sky-race (1).html    ← bản sao lưu của public/index.html (đồng bộ thủ công)
 ```
 
 ---
@@ -32,6 +32,10 @@ VNA_Race/
 **Power Question** — nút của admin, **một lần duy nhất cả ván**, bấm trước khi mở câu hỏi. Câu hỏi rút từ 21–30, màn LED hiện ⚡ POWER QUESTION. Người **trả lời đúng nhanh nhất** được **+2 chặng**, người đúng khác +1, người sai đứng nguyên. Không bật được trên chặng turbulence. Huỷ trước khi mở câu thì được trả lại lượt.
 
 **Turbulence** — tự động ở **chặng 6 và chặng 10**. Màn LED chuyển theme mưa sấm chớp, badge đổi từ 🌈 Clear Skies sang 🌪 Turbulence. Trả lời đúng **đứng nguyên**, **không đúng thì lùi 1 chặng** (kể cả người không trả lời). Turbo bị khoá.
+
+**⛈ Storm** — tự động ở **chặng 8**. Màn LED đổi badge sang ⛈ Storm, theme tối/mưa nặng hơn turbulence. Chỉ **10 người trả lời đúng nhanh nhất** (tính theo thời gian riêng của câu này) được ATC cấp phép bay tiếp **+1 chặng**; tất cả người chơi còn lại đứng nguyên (kể cả đúng nhưng không lọt top 10). Turbo và Power Question đều bị khoá ở chặng này. Sau khi admin bấm Reveal, màn presenter hiện danh sách 10 người được bay tiếp trong 10 giây.
+
+**Kết thúc ván & Overtime** — ván đấu chỉ thực sự kết thúc (`FINISHED`) khi có **ít nhất 3 người chơi về tới FINISH**. Bản đồ chỉ có 12 chặng, nhưng nếu hết chặng 12 mà chưa đủ 3 người về đích, admin vẫn bấm **Next question →** để mở thêm câu hỏi — màn hình hiện **"Overtime round N"** thay vì số chặng, câu hỏi tiếp tục rút ngẫu nhiên từ kho 30 câu (có thể lặp lại). Ai về tới FINISH trước sẽ thấy ngay màn hình cá nhân báo thứ hạng + lời chúc, kể cả khi ván vẫn đang tiếp diễn cho người khác.
 
 **Thắng:** ai tới FINISH trước. Nhiều người cùng tới trong một lượt thì xếp theo *số câu đúng → tổng thời gian trả lời*.
 

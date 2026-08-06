@@ -19,11 +19,11 @@ function grab(startRe, endMarker) {
 const pieces = [
   grab(/const ROUTE = \[/, '\n];'),
   grab(/const QUESTIONS = \[/, '\n];'),
-  grab(/const TURBO_MIN_LEG/, 'isTurbulenceLeg(legIndex){ return TURBULENCE_LEGS.includes(legIndex); }'),
+  grab(/const TURBO_MIN_LEG/, 'isStormLeg(legIndex){ return legIndex === STORM_LEG; }'),
   grab(/function adminRevealAnswer\(\)\{/, '\n}'),
   grab(/function adminTogglePowerQuestion\(\)\{/, '\n}'),
   grab(/function isTurboEligibleNow\(\)\{/, '\n}'),
-  grab(/function me_turbulenceActive\(\)/, 'isTurbulenceLeg(state.currentQ); }'),
+  grab(/function me_turbulenceActive\(\)/, 'isStormLeg(state.currentQ); }'),
 ].join('\n');
 
 let state, myPlayerId, toasts;
@@ -165,15 +165,29 @@ G.adminRevealAnswer();
 check('reveal twice does not double-move', s.players.p.position, afterFirst);
 check('correctCount not double-counted', s.players.p.correctCount, 1);
 
-/* ---------- 7. winner tie-break ---------- */
+/* ---------- 7. race keeps going until 3 have landed, then ranks by true arrival order ---------- */
+s = mkState({ currentQ: 11 });
+s.players.onlyFinisher = mkPlayer('onlyFinisher', { position: FINISH - 1, correctCount: 9, totalAnswerTime: 9000,
+                           answers: { 11: { choice: CORRECT(), submitted: true, timeTaken: 1000 } } });
+s.players.stillRacing = mkPlayer('stillRacing', { position: 3 });
+G.setState(s, null); toasts = [];
+G.adminRevealAnswer();
+check('a lone finisher reaches FINISH', s.players.onlyFinisher.position, FINISH);
+check('race stays open with fewer than 3 finishers', s.gameState, 'reveal');
+check('no winner declared yet with fewer than 3 finishers', s.winnerId, null);
+
 s = runLeg({ currentQ: 11 }, [
   mkPlayer('slowFinisher', { position: FINISH - 1, correctCount: 9, totalAnswerTime: 90000,
                              answers: { 11: { choice: CORRECT(), submitted: true, timeTaken: 9000 } } }),
   mkPlayer('fastFinisher', { position: FINISH - 1, correctCount: 9, totalAnswerTime: 30000,
                              answers: { 11: { choice: CORRECT(), submitted: true, timeTaken: 1000 } } }),
+  mkPlayer('thirdFinisher', { position: FINISH - 1, correctCount: 8, totalAnswerTime: 50000,
+                             answers: { 11: { choice: CORRECT(), submitted: true, timeTaken: 5000 } } }),
 ]);
-check('both reached FINISH', [s.players.slowFinisher.position, s.players.fastFinisher.position], [FINISH, FINISH]);
-check('winner is the faster of the tied finishers', s.winnerId, 'fastFinisher');
+check('all three reached FINISH', [s.players.slowFinisher.position, s.players.fastFinisher.position, s.players.thirdFinisher.position], [FINISH, FINISH, FINISH]);
+check('race ends once the 3rd aircraft lands', s.gameState, 'finished');
+check('winner is the fastest of the finishers', s.winnerId, 'fastFinisher');
+check('finishRank reflects true arrival order', [s.players.fastFinisher.finishRank, s.players.thirdFinisher.finishRank, s.players.slowFinisher.finishRank], [1, 2, 3]);
 
 /* ---------- 8. undo snapshot captured ---------- */
 check('undo snapshot recorded for the revealed leg', s.undoSnapshot && s.undoSnapshot.leg, 11);

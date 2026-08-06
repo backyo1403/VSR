@@ -2,11 +2,35 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Vietnam Airlines Sky Race</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.2/confetti.browser.min.js"></script>
+
+<!-- ============================================================
+     FIREBASE — fill this in once, from the Firebase console:
+       Project settings  ->  Your apps  ->  Web app  ->  SDK setup and configuration
+     Until apiKey is filled in, the app runs in OFFLINE mode (one device only),
+     which is exactly the old localStorage behaviour and is the venue fallback.
+     ============================================================ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+const FIREBASE_CONFIG = {
+  apiKey:            "PASTE_apiKey_HERE",
+  authDomain:        "PASTE_authDomain_HERE",        // e.g. vna-sky-race.firebaseapp.com
+  databaseURL:       "PASTE_databaseURL_HERE",       // e.g. https://vna-sky-race-default-rtdb.asia-southeast1.firebasedatabase.app
+  projectId:         "PASTE_projectId_HERE",
+  storageBucket:     "",
+  messagingSenderId: "",
+  appId:             "PASTE_appId_HERE"
+};
+// The one admin account, created by hand in Firebase console -> Authentication -> Users.
+// Its password is never stored in this file — the admin types it at the gate.
+const ADMIN_EMAIL = "admin@vna-sky-race.local";
+</script>
 <style>
 :root{
   --vna-blue:#005BAC;
@@ -34,7 +58,9 @@ body{
   background:linear-gradient(180deg,var(--sky-1) 0%,var(--sky-2) 55%,var(--sky-3) 100%);
   min-height:100vh;
   overflow-x:hidden;
+  overscroll-behavior-y:none;
   position:relative;
+  -webkit-tap-highlight-color:transparent;
 }
 h1,h2,h3,.display{font-family:var(--font-display);}
 .mono{font-family:var(--font-mono); letter-spacing:.04em;}
@@ -61,6 +87,7 @@ h1,h2,h3,.display{font-family:var(--font-display);}
 .brand-mark{display:flex; align-items:center; gap:10px; margin-bottom:28px;}
 .brand-mark .plane{font-size:26px;}
 .brand-mark span{font-family:var(--font-display); font-weight:700; letter-spacing:.06em; font-size:14px; text-transform:uppercase; color:var(--vna-gold-light);}
+.brand-logo{height:30px; width:auto; display:block; image-rendering:-webkit-optimize-contrast;}
 .landing h1{font-size:clamp(32px,6vw,56px); font-weight:800; margin:0 0 10px; line-height:1.05;}
 .landing .gold{color:var(--vna-gold);}
 .landing p.sub{color:rgba(255,255,255,.75); max-width:520px; margin:0 0 40px; font-size:16px;}
@@ -76,11 +103,25 @@ h1,h2,h3,.display{font-family:var(--font-display);}
 .role-card p{margin:0; font-size:13.5px; color:rgba(255,255,255,.65); line-height:1.5;}
 .role-card .go{margin-top:16px; font-size:12.5px; color:var(--vna-gold-light); font-weight:600; letter-spacing:.03em;}
 
+.rules-help-btn{
+  position:fixed; left:calc(18px + env(safe-area-inset-left)); bottom:calc(18px + env(safe-area-inset-bottom)); z-index:60;
+  border:1px solid var(--glass-brd); color:#fff; font-family:var(--font-body); font-weight:600; font-size:12.5px;
+  padding:9px 15px; border-radius:20px; cursor:pointer; touch-action:manipulation;
+}
+.rules-help-btn:hover{border-color:var(--vna-gold);}
+.rules-modal-card{border-radius:22px; padding:26px; max-width:560px; width:100%; max-height:85vh; overflow-y:auto;}
+.rules-section{margin-bottom:18px;}
+.rules-section:last-child{margin-bottom:0;}
+.rules-section h4{margin:0 0 8px; font-size:14px; color:var(--vna-gold-light); text-transform:uppercase; letter-spacing:.04em;}
+.rules-section p{margin:0 0 8px; font-size:13.5px; line-height:1.55; color:rgba(255,255,255,.85);}
+.rules-section p:last-child{margin-bottom:0;}
+
 /* buttons */
 .btn{
   font-family:var(--font-body); font-weight:600; border:none; cursor:pointer;
   border-radius:14px; padding:14px 22px; font-size:15px; transition:transform .15s ease, filter .15s ease, box-shadow .15s ease;
   display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  touch-action:manipulation;
 }
 .btn:active{transform:scale(.97);}
 .btn-primary{background:linear-gradient(135deg,var(--vna-gold-light),var(--vna-gold)); color:var(--vna-blue-deep); box-shadow:0 8px 24px rgba(212,175,55,.35);}
@@ -91,17 +132,20 @@ h1,h2,h3,.display{font-family:var(--font-display);}
 .btn-danger{background:rgba(225,82,82,.18); border:1px solid rgba(225,82,82,.5); color:#ffb3b3;}
 .btn-sm{padding:9px 14px; font-size:13px; border-radius:10px;}
 .btn-block{width:100%;}
-.back-btn{position:fixed; top:18px; left:18px; z-index:50;}
+.back-btn{position:fixed; top:calc(18px + env(safe-area-inset-top)); left:calc(18px + env(safe-area-inset-left)); z-index:50;}
 
 input[type=text],select{
   font-family:var(--font-body); background:rgba(255,255,255,.08); border:1px solid var(--glass-brd);
-  color:#fff; border-radius:12px; padding:13px 16px; font-size:15px; width:100%; outline:none;
+  color:#fff; border-radius:12px; padding:13px 16px; font-size:16px; width:100%; outline:none;
 }
 input[type=text]::placeholder{color:rgba(255,255,255,.45);}
 input[type=text]:focus{border-color:var(--vna-gold);}
 
 /* ================= PLAYER ================= */
-#view-player{max-width:460px; margin:0 auto; min-height:100vh; padding:20px 18px 40px; display:flex; flex-direction:column;}
+#view-player{
+  max-width:460px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column;
+  padding:calc(20px + env(safe-area-inset-top)) calc(18px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left));
+}
 .p-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;}
 .p-header .brand-mark{margin:0;}
 .p-badge{font-family:var(--font-mono); font-size:11px; background:var(--glass); border:1px solid var(--glass-brd); padding:6px 10px; border-radius:20px;}
@@ -114,7 +158,7 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .avatar-opt{
   border-radius:14px; padding:14px 6px; cursor:pointer;
   background:rgba(255,255,255,.06); border:1.5px solid var(--glass-brd); font-size:22px;
-  transition:all .15s ease;
+  transition:all .15s ease; touch-action:manipulation;
   display:flex; align-items:center; justify-content:center; min-height:58px;
 }
 .avatar-opt.selected{border-color:var(--vna-gold); background:rgba(212,175,55,.16); box-shadow:0 0 0 3px rgba(212,175,55,.18);}
@@ -137,7 +181,7 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .opt-btn{
   width:100%; text-align:left; padding:15px 16px; border-radius:14px; margin-bottom:10px;
   background:rgba(255,255,255,.06); border:1.5px solid var(--glass-brd); color:#fff; font-size:14.5px;
-  cursor:pointer; display:flex; align-items:center; gap:12px; transition:all .15s ease;
+  cursor:pointer; display:flex; align-items:center; gap:12px; transition:all .15s ease; touch-action:manipulation;
 }
 .opt-btn .k{width:26px; height:26px; border-radius:8px; background:rgba(255,255,255,.12); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-weight:700; font-size:12px; flex-shrink:0;}
 .opt-btn:hover{border-color:rgba(255,255,255,.5);}
@@ -151,18 +195,26 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .status-banner.locked{background:rgba(212,175,55,.14); border:1px solid rgba(212,175,55,.4);}
 .status-banner.correct{background:rgba(46,204,113,.16); border:1px solid rgba(46,204,113,.5);}
 .status-banner.wrong{background:rgba(225,82,82,.14); border:1px solid rgba(225,82,82,.5);}
+.power-note{margin:2px 0 16px; padding:10px 14px; border-radius:12px; text-align:center; font-size:12.5px;
+  background:linear-gradient(135deg, rgba(255,196,0,.18), rgba(255,140,0,.12)); border:1px solid rgba(255,196,0,.45); color:#ffe6b0;}
+.storm-note{margin:2px 0 16px; padding:10px 14px; border-radius:12px; text-align:center; font-size:12.5px;
+  background:linear-gradient(135deg, rgba(90,140,255,.2), rgba(60,90,200,.14)); border:1px solid rgba(140,170,255,.5); color:#dbe4ff;}
 
 .dest-strip{display:flex; align-items:center; justify-content:space-between; border-radius:16px; padding:14px 18px; margin-top:14px;}
+.turbo-btn{font-size:13.5px;}
+.turbo-note{text-align:center; font-size:12px; color:rgba(255,255,255,.5); padding:8px; background:rgba(255,255,255,.04); border-radius:10px;}
 .dest-strip .lbl{font-size:11px; color:rgba(255,255,255,.55); text-transform:uppercase; letter-spacing:.05em;}
 .dest-strip .val{font-family:var(--font-mono); font-weight:700; font-size:15px;}
 
 /* ================= PRESENTER ================= */
-#view-presenter{min-height:100vh; padding:22px 28px; display:flex; flex-direction:column;}
+#view-presenter{min-height:100vh; padding:22px 28px; display:flex; flex-direction:column; position:relative;}
 .pres-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
-.pres-top h1{font-size:22px; margin:0; font-weight:700;}
+.pres-top h1{font-size:22px; margin:0; font-weight:700; display:flex; align-items:center; gap:12px;}
+.pres-top h1 .brand-logo{height:50px;}
 .pres-status-pill{font-family:var(--font-mono); font-size:12.5px; padding:8px 16px; border-radius:20px;}
 .pres-body{display:grid; grid-template-columns:2.4fr 1fr; gap:22px; flex:1; min-height:0;}
 .map-panel{border-radius:26px; padding:26px; position:relative; overflow:hidden; min-height:640px;}
+.map-panel.glass{backdrop-filter:none; -webkit-backdrop-filter:none;}
 .route-svg{width:100%; height:100%; display:block;}
 .leader-panel{border-radius:26px; padding:22px; display:flex; flex-direction:column;}
 .leader-panel h3{margin:0 0 16px; font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:rgba(255,255,255,.6);}
@@ -172,22 +224,149 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .lead-row .nm{flex:1; font-size:13.5px; font-weight:600;}
 .lead-row .st{font-family:var(--font-mono); font-size:11px; color:var(--vna-gold-light);}
 .lead-row.top1{background:linear-gradient(90deg,rgba(212,175,55,.22),rgba(255,255,255,.04)); border:1px solid rgba(212,175,55,.4);}
+.lead-row .sub{font-size:10.5px; color:rgba(255,255,255,.5); font-weight:400;}
+.lead-row .stats{font-size:10px; color:rgba(255,255,255,.42); font-weight:400; margin-top:1px;}
+.lead-row .fire-tag{filter:drop-shadow(0 0 4px rgba(255,120,0,.8)); animation:fireWiggle .6s ease-in-out infinite alternate;}
+@keyframes fireWiggle{ from{transform:scale(1) rotate(-6deg);} to{transform:scale(1.15) rotate(6deg);} }
 
-.airport-node{position:absolute; transform:translate(-50%,-50%);}
-.airport-dot{width:14px; height:14px; border-radius:50%; background:#fff; border:3px solid var(--vna-blue-mid); box-shadow:0 0 0 4px rgba(255,255,255,.15);}
-.airport-node.checkpoint .airport-dot{width:24px; height:24px; background:var(--vna-gold); border:4px solid var(--vna-gold-light); box-shadow:0 0 22px 6px rgba(212,175,55,.6);}
+.airport-node{position:absolute; transform:translate(-50%,-50%); cursor:pointer;}
+.airport-dot{width:34px; height:34px; border-radius:50%; background:rgba(11,113,199,.85); border:2.5px solid #fff; box-shadow:0 0 0 4px rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center; transition:transform .15s ease, box-shadow .15s ease;}
+.airport-icon{font-size:17px; line-height:1;}
+.airport-node.checkpoint .airport-dot{width:60px; height:60px; background:var(--vna-gold); border:4px solid var(--vna-gold-light); box-shadow:0 0 24px 7px rgba(212,175,55,.6);}
+.airport-node.checkpoint .airport-icon{font-size:30px;}
+.airport-node:hover .airport-dot{transform:scale(1.12); box-shadow:0 0 0 6px rgba(255,255,255,.28);}
+.airport-node.checkpoint:hover .airport-dot{box-shadow:0 0 30px 10px rgba(212,175,55,.8);}
 .airport-node.checkpoint .airport-label .code{font-size:15px; font-weight:800; color:var(--vna-gold-light);}
 .airport-node.checkpoint .airport-label .city{font-size:10.5px; font-weight:600;}
-.airport-label{position:absolute; top:20px; left:50%; transform:translateX(-50%); text-align:center; white-space:nowrap;}
+.airport-label{position:absolute; top:40px; left:50%; transform:translateX(-50%); text-align:center; white-space:nowrap;}
+.airport-node.checkpoint .airport-label{top:68px;}
 .airport-label .code{font-family:var(--font-mono); font-weight:700; font-size:12.5px; color:#fff;}
 .airport-label .city{font-size:9.5px; color:rgba(255,255,255,.6);}
 .plane-token{position:absolute; transform:translate(-50%,-50%); transition:left 2.2s cubic-bezier(.45,.05,.15,1), top 2.2s cubic-bezier(.45,.05,.15,1); z-index:5;}
 .plane-token .stack{display:flex; flex-direction:column; align-items:center; gap:2px;}
 .plane-token .icon{font-size:18px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.5)); animation:float 2.6s ease-in-out infinite;}
+.plane-token.leader{z-index:6;}
+.plane-token.leader .icon{font-size:21.6px;} /* the current #1 player's plane, 20% bigger */
 .plane-token .pname{font-size:8.5px; font-weight:700; background:rgba(0,20,50,.65); padding:1px 6px; border-radius:8px; white-space:nowrap;}
 @keyframes float{0%,100%{transform:translateY(0);} 50%{transform:translateY(-4px);}}
+/* 5+ correct answers in a row — a flame trails behind the aircraft */
+.plane-token.on-fire .icon{filter:drop-shadow(0 2px 6px rgba(0,0,0,.5)) drop-shadow(0 0 9px rgba(255,120,0,.9));}
+.plane-token .flame-trail{display:none;}
+.plane-token.on-fire .flame-trail{
+  display:block; position:absolute; left:50%; top:52%; transform:translate(-50%,0);
+  font-size:13px; pointer-events:none; z-index:-1; animation:flameFlicker .45s ease-in-out infinite alternate;
+}
+@keyframes flameFlicker{ 0%{transform:translate(-50%,0) scale(.82) rotate(-6deg); opacity:.7;} 100%{transform:translate(-50%,3px) scale(1.08) rotate(6deg); opacity:1;} }
+
+/* New Leader overtake — the two planes involved grow/shrink slowly (2s), independent of
+   the normal .leader 20%-bigger rule, which resumes once the transient classes clear. */
+.plane-token.overtaking .icon{transition:font-size 1.8s ease, filter 1.8s ease; font-size:36px !important; filter:drop-shadow(0 4px 16px rgba(255,196,0,.95));}
+.plane-token.falling-behind .icon{transition:font-size 1.8s ease, opacity 1.8s ease; font-size:12px !important; opacity:.5;}
+.plane-token.landing-flourish{animation:landingSwoop 2.6s ease-in-out; z-index:25;}
+@keyframes landingSwoop{
+  0%{transform:translate(-50%,-50%) rotate(0deg) scale(1);}
+  35%{transform:translate(-50%,-50%) rotate(190deg) scale(1.35) translateY(-34px);}
+  70%{transform:translate(-50%,-50%) rotate(360deg) scale(1.15) translateY(-8px);}
+  100%{transform:translate(-50%,-50%) rotate(360deg) scale(1) translateY(0);}
+}
+
+.new-leader-banner{
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(.7); z-index:80;
+  background:linear-gradient(135deg, rgba(255,196,0,.96), rgba(255,90,0,.94));
+  color:#2a1500; text-align:center; padding:26px 50px; border-radius:22px;
+  box-shadow:0 24px 70px rgba(255,140,0,.6); opacity:0; pointer-events:none;
+  transition:opacity .4s ease, transform .4s ease;
+}
+.new-leader-banner.show{opacity:1; transform:translate(-50%,-50%) scale(1);}
+.new-leader-banner .tag{font-family:var(--font-display); font-weight:800; font-size:22px; letter-spacing:.05em;}
+.new-leader-banner .who{font-family:var(--font-display); font-weight:800; font-size:36px; margin-top:6px;}
+
+/* Location-themed backdrop — tracks whoever is currently in the lead. Stylised
+   gradient + floating watermark icon per stop rather than a fully illustrated scene. */
+.map-panel{transition:background 1.6s ease;}
+.map-zoom-wrap{position:absolute; inset:0; transition:transform 1.8s cubic-bezier(.45,.05,.15,1); transform-origin:50% 50%;}
+.scene-watermark{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:220px; line-height:1; opacity:.09; filter:blur(.5px); pointer-events:none;
+  transition:opacity .8s ease; animation:sceneFloat 8s ease-in-out infinite;
+}
+@keyframes sceneFloat{0%,100%{transform:translateY(0) scale(1);} 50%{transform:translateY(-16px) scale(1.03);}}
+.map-panel.scene-cdg{background:linear-gradient(160deg, rgba(255,150,130,.18), rgba(120,70,150,.15));}
+.map-panel.scene-ams{background:linear-gradient(160deg, rgba(255,170,190,.16), rgba(110,200,150,.13));}
+.map-panel.scene-han{background:linear-gradient(160deg, rgba(255,190,90,.2), rgba(220,60,60,.13));}
+.map-panel.scene-muc{background:linear-gradient(160deg, rgba(255,190,80,.22), rgba(150,90,30,.15));}
+.map-panel.scene-mow{background:linear-gradient(160deg, rgba(180,220,255,.2), rgba(90,120,180,.15));}
+.map-panel.scene-spc{background:linear-gradient(160deg, rgba(255,215,120,.22), rgba(255,255,255,.1));}
+.map-panel.scene-lhr{background:linear-gradient(160deg, rgba(185,195,215,.17), rgba(200,70,70,.1));}
+.map-panel.scene-mxp{background:linear-gradient(160deg, rgba(190,150,255,.17), rgba(255,210,120,.13));}
+.map-panel.scene-cph{background:linear-gradient(160deg, rgba(100,220,210,.17), rgba(60,140,180,.15));}
+.map-panel.scene-sgn{background:linear-gradient(160deg, rgba(255,220,90,.2), rgba(80,200,120,.15));}
+.map-panel.scene-fra{background:linear-gradient(160deg, rgba(160,190,230,.17), rgba(100,120,160,.15));}
+.map-panel.scene-finish{background:linear-gradient(160deg, rgba(255,210,90,.24), rgba(255,255,255,.13));}
 
 .q-status-card{margin-top:18px; border-radius:18px; padding:18px 20px;}
+
+#weatherBadge.weather-storm{background:rgba(120,60,180,.25); border-color:rgba(200,160,255,.5); color:#e8d8ff;}
+
+/* storm / turbulence theme */
+#view-presenter.storm-theme{ animation:stormDarken .6s ease forwards; }
+@keyframes stormDarken{ to{ filter:brightness(.78) saturate(.85); } }
+.storm-fx{position:absolute; inset:0; pointer-events:none; z-index:40; overflow:hidden;}
+.lightning-flash{position:absolute; inset:0; background:#fff; opacity:0; animation:flash 4.5s ease-in-out infinite;}
+@keyframes flash{ 0%,92%,100%{opacity:0;} 93%{opacity:.55;} 94%{opacity:0;} 96%{opacity:.35;} 97%{opacity:0;} }
+.rain-drop{position:absolute; top:-5%; width:1.5px; height:60px; background:linear-gradient(180deg, transparent, rgba(200,220,255,.55)); animation-name:rainfall; animation-iteration-count:infinite; animation-timing-function:linear;}
+@keyframes rainfall{ from{transform:translateY(-10%);} to{transform:translateY(115vh);} }
+
+#weatherBadge.weather-power{background:linear-gradient(135deg, rgba(255,196,0,.35), rgba(255,140,0,.28)); border-color:rgba(255,196,0,.65); color:#fff3d6;}
+
+/* power question / sunny theme */
+#view-presenter.sunny-theme{ animation:sunnyBrighten .6s ease forwards; }
+@keyframes sunnyBrighten{ to{ filter:brightness(1.12) saturate(1.2) hue-rotate(-4deg); } }
+.sunny-fx{position:absolute; inset:0; pointer-events:none; z-index:3; overflow:hidden;
+  background:radial-gradient(circle at 50% -8%, rgba(255,214,120,.4), transparent 55%);
+  animation:sunnyPulse 3.2s ease-in-out infinite;}
+@keyframes sunnyPulse{ 0%,100%{opacity:.65;} 50%{opacity:1;} }
+.sun-ray{position:absolute; top:-12%; left:50%; width:2400px; height:2400px; margin-left:-1200px;
+  background:conic-gradient(from 0deg, rgba(255,214,120,0) 0deg, rgba(255,214,120,.16) 4deg, rgba(255,214,120,0) 9deg);
+  border-radius:50%; transform-origin:50% 12%; animation:sunSpin 26s linear infinite;}
+@keyframes sunSpin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+
+#weatherBadge.weather-thunder{background:linear-gradient(135deg, rgba(30,60,140,.5), rgba(10,20,60,.4)); border-color:rgba(150,190,255,.7); color:#eaf1ff;}
+
+/* ⛈ Storm theme — a heavier, more electric variant of the turbulence rain */
+#view-presenter.thunder-theme{ animation:thunderDarken .6s ease forwards; }
+@keyframes thunderDarken{ to{ filter:brightness(.65) saturate(1.15) contrast(1.2); } }
+.thunder-flash{animation-name:thunderFlash; animation-duration:2.6s; background:#cfe0ff;}
+@keyframes thunderFlash{ 0%,88%,100%{opacity:0;} 89%{opacity:.7;} 90%{opacity:0;} 92%{opacity:.5;} 93%{opacity:0;} 95%{opacity:.4;} 96%{opacity:0;} }
+.thunder-drop{background:linear-gradient(180deg, transparent, rgba(180,210,255,.75));}
+
+.storm-clear-overlay{
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:50;
+  background:linear-gradient(160deg, rgba(10,25,60,.94), rgba(20,45,110,.9));
+  border:1px solid rgba(150,190,255,.6); border-radius:20px; padding:22px 28px;
+  min-width:320px; max-width:80%; box-shadow:0 20px 60px rgba(0,10,40,.6);
+  animation:stormClearIn .35s ease;
+}
+@keyframes stormClearIn{ from{opacity:0; transform:translate(-50%,-50%) scale(.92);} to{opacity:1; transform:translate(-50%,-50%) scale(1);} }
+.storm-clear-title{font-weight:800; font-size:16px; color:#eaf1ff; text-align:center; margin-bottom:14px; letter-spacing:.03em;}
+.storm-clear-list{display:grid; grid-template-columns:1fr 1fr; gap:8px 18px; max-height:280px; overflow:auto;}
+.storm-clear-row{display:flex; align-items:center; gap:8px; font-size:13.5px; color:#fff;}
+.storm-clear-row .rank{font-family:var(--font-mono); color:rgba(200,220,255,.7); width:24px; flex-shrink:0;}
+
+/* one shared "what's the rule right now" banner for the presenter screen, themed per
+   weather/event so players watching the LED display know the rule without needing
+   their own phone — turbulence (purple), storm (blue), power question (gold) */
+.weather-rule-banner{
+  position:absolute; top:70px; left:50%; transform:translateX(-50%) scale(1); z-index:45;
+  padding:12px 28px; border-radius:14px; text-align:center; max-width:min(640px, 86%);
+  font-family:var(--font-display); animation:weatherBannerPulse 1.3s ease-in-out infinite;
+}
+.weather-rule-banner .title{font-weight:800; font-size:19px; letter-spacing:.05em;}
+.weather-rule-banner .rule{font-family:var(--font-body); font-weight:600; font-size:12.5px; letter-spacing:normal; margin-top:4px; opacity:.92;}
+@keyframes weatherBannerPulse{ 0%,100%{ transform:translateX(-50%) scale(1);} 50%{ transform:translateX(-50%) scale(1.035);} }
+.weather-rule-banner.wx-power{ background:linear-gradient(135deg, rgba(255,196,0,.92), rgba(255,120,0,.88)); color:#2a1500; box-shadow:0 10px 34px rgba(255,150,0,.5); }
+.weather-rule-banner.wx-turbulence{ background:linear-gradient(135deg, rgba(150,90,220,.92), rgba(90,50,160,.88)); color:#fff; box-shadow:0 10px 34px rgba(120,60,180,.5); }
+.weather-rule-banner.wx-storm{ background:linear-gradient(135deg, rgba(60,110,220,.92), rgba(20,40,110,.9)); color:#fff; box-shadow:0 10px 34px rgba(30,60,160,.5); }
 
 .winner-overlay{position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; flex-direction:column; background:radial-gradient(circle at 50% 30%, rgba(212,175,55,.35), rgba(0,20,50,.92));}
 .winner-overlay .trophy{font-size:80px; margin-bottom:10px;}
@@ -230,7 +409,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
 .qedit-row{display:grid; grid-template-columns:26px 1fr; gap:10px; align-items:start; padding:12px 0; border-bottom:1px solid rgba(255,255,255,.06);}
 .qedit-row .num{font-family:var(--font-mono); color:rgba(255,255,255,.5); padding-top:6px;}
 .qedit-row .ans-correct{color:var(--good); font-weight:700;}
-.toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(0,30,60,.92); border:1px solid var(--vna-gold); padding:12px 20px; border-radius:12px; font-size:13.5px; z-index:200; opacity:0; transition:opacity .25s ease, transform .25s ease;}
+.toast{position:fixed; bottom:calc(24px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); background:rgba(0,30,60,.92); border:1px solid var(--vna-gold); padding:12px 20px; border-radius:12px; font-size:13.5px; z-index:200; opacity:0; transition:opacity .25s ease, transform .25s ease; max-width:calc(100vw - 32px);}
 .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
 ::-webkit-scrollbar{width:8px;} ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2); border-radius:4px;}
 </style>
@@ -245,9 +424,9 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
 
   <!-- ============ LANDING ============ -->
   <section id="view-landing" class="landing">
-    <div class="brand-mark"><span class="plane">✈️</span><span>Vietnam Airlines · Live Event</span></div>
+    <img src="public/vendor/vna-logo.png" alt="Vietnam Airlines" style="max-width:260px; width:60%; height:auto; margin-bottom:22px;" />
     <h1>Sky<span class="gold">Race</span></h1>
-    <p class="sub">A live multiplayer quiz race across the Vietnam Airlines network. Choose how you'd like to enter the experience — this is a working prototype, all three screens sync in real time across open tabs.</p>
+    <p class="sub">Vietnam Airlines Conference for Vietnamese Travel Agents Serving the Vietnamese Community<br><br>📍 Milan, Italy<br>📅 23 September 2026<br><br>Thank you for joining us at this special gathering of Vietnam Airlines and our valued travel partners.<br><br>We wish you an inspiring conference, meaningful connections, and an enjoyable experience throughout today's event.</p>
     <div class="role-grid">
       <div class="role-card glass" onclick="go('player')">
         <span class="icon">📱</span>
@@ -268,7 +447,45 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
         <div class="go">Enter password →</div>
       </div>
     </div>
+    <button class="rules-help-btn glass" onclick="openRulesModal()">📖 How to play</button>
   </section>
+
+  <!-- ============ RULES / HOW TO PLAY ============ -->
+  <div id="rulesModal" class="hidden" style="position:fixed;inset:0;z-index:150;display:flex;align-items:center;justify-content:center;background:rgba(0,20,40,.7); padding:20px;">
+    <div class="glass rules-modal-card">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;">
+        <h3 style="margin:0; font-size:20px;">✈️ How to Play — Sky Race</h3>
+        <button class="btn btn-ghost btn-sm" onclick="closeRulesModal()">Close</button>
+      </div>
+
+      <div class="rules-section">
+        <h4>The race</h4>
+        <p>12 legs from START to FINISH along an S-shaped route. Each leg, everyone answers one trivia question within <strong>20 seconds</strong>. The race keeps going — with extra "Overtime" rounds past leg 12 if needed — until at least <strong>3 aircraft land on FINISH</strong>. Reaching FINISH shows you your own placing right away, even while the race continues for everyone else.</p>
+      </div>
+
+      <div class="rules-section">
+        <h4>📍 Checkpoints</h4>
+        <p>Five stops are marked as big gold checkpoints on the map: <strong>START</strong>, <strong>HAN</strong> (Hanoi), <strong>SPC</strong> (Special Checkpoint), <strong>SGN</strong> (Ho Chi Minh City) and <strong>FINISH</strong>. Whoever is first to reach HAN, SPC or SGN earns a milestone marker next to their name.</p>
+      </div>
+
+      <div class="rules-section">
+        <h4>🌦 Weather</h4>
+        <p><strong>🌈 Clear Skies</strong> (default) — correct answer advances 1 leg, wrong answer holds position.</p>
+        <p><strong>🌪 Turbulence</strong> — automatic on legs 6 and 10. Correct holds your position; anything else (wrong, or no answer) sends you back 1 leg. Turbo Boost is disabled.</p>
+        <p><strong>⛈ Storm</strong> — automatic on leg 8. Only the <strong>10 fastest correct answers</strong> get ATC clearance to advance 1 leg; everyone else holds, no penalty. Turbo Boost and Power Question are both disabled.</p>
+      </div>
+
+      <div class="rules-section">
+        <h4>⚡ Turbo Boost</h4>
+        <p>Your own one-time boost, arming it is free until you submit. Unlocks once your aircraft reaches <strong>MUC</strong> (leg 5). Correct → <strong>+2 legs</strong>. Wrong → <strong>−1 leg</strong>. Can't be used during Turbulence, Storm, or a Power Question.</p>
+      </div>
+
+      <div class="rules-section">
+        <h4>☀️ Power Question</h4>
+        <p>The admin's one-time bonus round for the whole game, armed before the question opens. The <strong>fastest correct</strong> answer gets <strong>+2 legs</strong>, every other correct answer gets <strong>+1</strong>, wrong answers hold position. Can't be armed on a Turbulence or Storm leg.</p>
+      </div>
+    </div>
+  </div>
 
   <!-- ============ ADMIN PASSWORD GATE ============ -->
   <div id="adminGateModal" class="hidden" style="position:fixed;inset:0;z-index:150;display:flex;align-items:center;justify-content:center;background:rgba(0,20,40,.6);">
@@ -288,7 +505,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
   <!-- ============ PLAYER ============ -->
   <section id="view-player" class="hidden">
     <div class="p-header">
-      <div class="brand-mark"><span class="plane">✈️</span><span>Sky Race</span></div>
+      <div class="brand-mark"><img class="brand-logo" src="public/vendor/vna-logo.png" alt="Vietnam Airlines" /><span>Sky Race</span></div>
       <div class="p-badge mono" id="pStateBadge">LOBBY</div>
     </div>
 
@@ -311,9 +528,12 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
       <div class="q-card glass" id="pQCard">
         <div class="q-eyebrow" id="pQEyebrow">WAITING FOR NEXT QUESTION</div>
         <div class="q-text" id="pQText">Sit tight — the presenter will open the next question shortly.</div>
+        <div class="power-note hidden" id="pPowerNote">☀️ Power Question — answer correctly for <strong>+2 legs</strong>!</div>
+        <div class="storm-note hidden" id="pStormNote">⛈ Storm — only the <strong>10 fastest correct answers</strong> get ATC clearance to continue. Everyone else holds position.</div>
         <div id="pOptions"></div>
       </div>
 
+      <div id="pTurboWrap" style="margin-top:12px;"></div>
       <div class="status-banner wait glass hidden" id="pStatusBanner"></div>
 
       <div class="dest-strip glass">
@@ -326,17 +546,23 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
   <!-- ============ PRESENTER ============ -->
   <section id="view-presenter" class="hidden">
     <div class="pres-top">
-      <h1>✈️&nbsp; Vietnam Airlines Sky Race</h1>
-      <div class="pres-status-pill glass" id="presStatePill">LOBBY</div>
+      <h1><img class="brand-logo" src="public/vendor/vna-logo.png" alt="Vietnam Airlines" /> Sky Race</h1>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="pres-status-pill glass" id="weatherBadge">🌈 Clear Skies</div>
+        <div class="pres-status-pill glass" id="presStatePill">LOBBY</div>
+      </div>
     </div>
     <div class="pres-body">
-      <div class="map-panel glass">
-        <svg class="route-svg" id="routeSvg" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet"></svg>
-        <div id="airportLayer"></div>
-        <div id="planeLayer"></div>
+      <div class="map-panel glass" id="mapPanel">
+        <div class="scene-watermark" id="sceneWatermark"></div>
+        <div class="map-zoom-wrap" id="mapZoomWrap">
+          <svg class="route-svg" id="routeSvg" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet"></svg>
+          <div id="airportLayer"></div>
+          <div id="planeLayer"></div>
+        </div>
       </div>
       <div class="leader-panel glass">
-        <h3>Live Leaderboard</h3>
+        <h3 id="presLeaderboardTitle">Live Leaderboard</h3>
         <div id="presLeaderboard"></div>
       </div>
     </div>
@@ -346,7 +572,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
   <!-- ============ ADMIN ============ -->
   <section id="view-admin" class="hidden">
     <div class="admin-sidebar glass" style="border-radius:0 24px 24px 0;">
-      <div class="brand-mark" style="margin-bottom:20px;"><span class="plane">✈️</span><span>Admin</span></div>
+      <div class="brand-mark" style="margin-bottom:20px;"><img class="brand-logo" src="public/vendor/vna-logo.png" alt="Vietnam Airlines" /><span>Admin</span></div>
       <button class="admin-nav-btn active" data-tab="control" onclick="adminTab('control')">🎮&nbsp; Game Control</button>
       <button class="admin-nav-btn" data-tab="answers" onclick="adminTab('answers')">📝&nbsp; Submitted Answers</button>
       <button class="admin-nav-btn" data-tab="questions" onclick="adminTab('questions')">📋&nbsp; Question Editor</button>
@@ -372,15 +598,30 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
       <div id="tab-control">
         <div class="panel glass">
           <h3>Question control</h3>
-          <p style="margin:0 0 16px; font-size:14px; color:rgba(255,255,255,.75);" id="adminCurrentQ">Question 1 of 22 — not opened yet.</p>
+          <p style="margin:0 0 16px; font-size:14px; color:rgba(255,255,255,.75);" id="adminCurrentQ">Leg 1 of 12 — not opened yet.</p>
           <div class="control-row">
             <button class="btn btn-ghost" onclick="adminPrevQuestion()">← Previous question</button>
             <button class="btn btn-primary" onclick="adminOpenQuestion()">Open question</button>
             <button class="btn btn-ghost" onclick="adminCloseQuestion()">Close question</button>
             <button class="btn btn-ghost" onclick="adminRevealAnswer()">Reveal answer &amp; move</button>
+            <button class="btn btn-danger" id="undoBtn" title="Roll back the last reveal — every aircraft returns to where it was before that question was scored" onclick="adminUndoReveal()">↩️ Undo last reveal</button>
             <button class="btn btn-ghost" onclick="adminNextQuestion()">Next question →</button>
             <button class="btn btn-ghost" onclick="adminPauseToggle()" id="pauseBtn">Pause game</button>
-            <button class="btn btn-ghost" title="Reset progress — back to Question 1, all aircraft to start" onclick="resetProgress()">🔄 Reset progress</button>
+            <button class="btn btn-ghost" title="Reset progress — back to Leg 1, all aircraft to start" onclick="resetProgress()">🔄 Reset progress</button>
+            <button class="btn btn-ghost" id="powerQBtn" title="Force this leg's question to be drawn from Q21-30 and award a x2 bonus to the fastest correct player" onclick="adminTogglePowerQuestion()">⚡ Power Question</button>
+          </div>
+          <p style="margin:14px 0 0; font-size:12px; color:rgba(255,255,255,.5);">Turbo Boost unlocks per player once their own aircraft reaches MUC · Turbulence auto-applies on legs 6 &amp; 10 · Power Question cannot be armed on a turbulence leg.</p>
+        </div>
+        <div class="panel glass hidden" id="adminAnswerKeyPanel">
+          <h3>📖 Answer key <span style="font-weight:400; font-size:12px; text-transform:none; letter-spacing:0; color:rgba(255,255,255,.5);">— for you, not shown to players</span></h3>
+          <div id="adminAnswerKeyBody"></div>
+        </div>
+        <div class="panel glass">
+          <h3>Race winner</h3>
+          <p style="margin:0 0 16px; font-size:14px; color:rgba(255,255,255,.75);">Once the race has finished (3 aircraft landed), show the full-screen "Congratulations!" overlay with confetti on the presenter screen. It stays hidden until you press this — reaching FINISH does not show it automatically.</p>
+          <div class="control-row">
+            <button class="btn btn-primary" onclick="triggerCongrats()">🎉 Show Congratulations</button>
+            <button class="btn btn-ghost" onclick="hideCongrats()">Hide congratulations</button>
           </div>
         </div>
         <div class="panel glass">
@@ -414,7 +655,8 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
       <div id="tab-players" class="hidden">
         <div class="panel glass">
           <h3>Registered players</h3>
-          <table id="playersTable"><thead><tr><th>Aircraft</th><th>Name</th><th>Position</th><th>Correct</th><th>Actions</th></tr></thead><tbody></tbody></table>
+          <p style="margin:-6px 0 14px; font-size:12.5px; color:rgba(255,255,255,.55);">Use <b>−1 / +1</b> to correct a player's position by hand — for a phone that died mid-question, a lost connection, or a dispute settled on stage.</p>
+          <table id="playersTable"><thead><tr><th>Aircraft</th><th>Name</th><th>Position</th><th>Correct</th><th>Turbo</th><th>Adjust</th><th>Actions</th></tr></thead><tbody></tbody></table>
         </div>
       </div>
 
@@ -437,53 +679,137 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
    Realtime sync across tabs via BroadcastChannel + localStorage
    ============================================================ */
 
-// Evenly spaced top-to-bottom, arranged in a smooth "S" curve — 12 legs (13 checkpoints), as originally designed
+// True "S" route: x traces one sine period (bulge right, then bulge left) while y
+// climbs from START at the bottom to FINISH at the top. x/y below are placeholders —
+// layoutRouteOnSCurve() overwrites them with points spaced evenly by arc length along
+// that same curve, so every leg on the map is the same visual distance apart.
+// START / HAN / SPC / SGN / FINISH are the 5 big checkpoint nodes.
+// HAN (Turtle Tower) and SGN (Landmark 81) have no matching emoji, so they're inline SVGs.
 const ROUTE = [
-  {code:'START',  city:'Start',              x:150, y:40,  checkpoint:false},
-  {code:'CDG',    city:'Paris',              x:197, y:80,  checkpoint:false},
-  {code:'AMS',    city:'Amsterdam',          x:325, y:120, checkpoint:false},
-  {code:'HAN',    city:'Hanoi',              x:500, y:160, checkpoint:true},
-  {code:'MUC',    city:'Munich',             x:675, y:200, checkpoint:false},
-  {code:'MOW',    city:'Moscow',             x:803, y:240, checkpoint:false},
-  {code:'SPC',    city:'Special Checkpoint', x:850, y:280, checkpoint:true},
-  {code:'LHR',    city:'London',             x:803, y:320, checkpoint:false},
-  {code:'MXP',    city:'Milan',              x:675, y:360, checkpoint:false},
-  {code:'CPH',    city:'Copenhagen',         x:500, y:400, checkpoint:false},
-  {code:'SGN',    city:'Ho Chi Minh City',   x:325, y:440, checkpoint:true},
-  {code:'FRA',    city:'Frankfurt',          x:197, y:480, checkpoint:false},
-  {code:'FINISH', city:'Finish',             x:150, y:520, checkpoint:true},
+  {code:'START',  city:'Start',              icon:'🛫', checkpoint:true},
+  {code:'CDG',    city:'Paris',              icon:'🗼', checkpoint:false},
+  {code:'AMS',    city:'Amsterdam',          icon:'🌷', checkpoint:false},
+  {code:'HAN',    city:'Hanoi',              icon:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.12em"><rect x="7" y="14" width="10" height="7" rx="1" fill="#fff"/><rect x="9" y="8" width="6" height="6" fill="#fff"/><polygon points="12,3 16,8 8,8" fill="#fff"/><rect x="11.3" y="1" width="1.4" height="2.5" fill="#fff"/></svg>', checkpoint:true},
+  {code:'MUC',    city:'Munich',             icon:'🍺', checkpoint:false},
+  {code:'MOW',    city:'Moscow',             icon:'🐻', checkpoint:false},
+  {code:'SPC',    city:'Special Checkpoint', icon:'⭐', checkpoint:true},
+  {code:'LHR',    city:'London',             icon:'🎡', checkpoint:false},
+  {code:'MXP',    city:'Milan',              icon:'👗', checkpoint:false},
+  {code:'CPH',    city:'Copenhagen',         icon:'🧜‍♀️', checkpoint:false},
+  {code:'SGN',    city:'Ho Chi Minh City',   icon:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.12em"><rect x="4" y="14" width="2.3" height="8" fill="#fff"/><rect x="7" y="10" width="2.3" height="12" fill="#fff"/><rect x="10" y="6" width="2.3" height="16" fill="#fff"/><rect x="13" y="9" width="2.3" height="13" fill="#fff"/><rect x="16" y="12" width="2.3" height="10" fill="#fff"/><polygon points="11.15,2 12.3,6 10,6" fill="#fff"/></svg>', checkpoint:true},
+  {code:'FRA',    city:'Frankfurt',          icon:'🏦', checkpoint:false},
+  {code:'FINISH', city:'Finish',             icon:'🏁', checkpoint:true},
 ];
-// Note: the question bank below has 22 questions — more than the 12 legs on the map.
-// Aircraft advance one leg per correct answer up through Question 12 / FINISH; any
-// questions after that (13-22) can still be opened as bonus trivia, they just won't
-// move aircraft further since every player will already be at FINISH.
+(function layoutRouteOnSCurve(){
+  const AMPLITUDE = 280, CENTER_X = 500, Y_START = 480, Y_END = 95;
+  const curveX = t => CENTER_X + AMPLITUDE * Math.sin(2*Math.PI*t);
+  const curveY = t => Y_START + (Y_END - Y_START) * t;
+  const SAMPLES = 4000;
+  const cum = new Array(SAMPLES+1); cum[0] = 0;
+  let prevX = curveX(0), prevY = curveY(0);
+  for(let i=1;i<=SAMPLES;i++){
+    const t = i/SAMPLES, x = curveX(t), y = curveY(t);
+    cum[i] = cum[i-1] + Math.hypot(x-prevX, y-prevY);
+    prevX = x; prevY = y;
+  }
+  const total = cum[SAMPLES];
+  function tAtArcLength(targetLen){
+    let lo=0, hi=SAMPLES;
+    while(lo<hi){ const mid=(lo+hi)>>1; if(cum[mid]<targetLen) lo=mid+1; else hi=mid; }
+    return lo/SAMPLES;
+  }
+  const n = ROUTE.length - 1;
+  ROUTE.forEach((node,i)=>{
+    const t = tAtArcLength((i/n)*total);
+    node.x = Math.round(curveX(t)*10)/10;
+    node.y = Math.round(curveY(t)*10)/10;
+  });
+})();
+// Question bank: 30 questions, drawn at random from a pool that depends on the leg.
+//   legs 1-4  -> questions 1-10   (easy warm-up)
+//   legs 5-8  -> questions 11-20  (mid difficulty)
+//   legs 9-12 -> questions 21-30  (hard) — also the Power Question pool
+// The map has 12 legs, so a leg never runs out of questions; the same question can
+// repeat across a long game, which is fine because each leg only asks one.
 
 const QUESTIONS = [
-  {q:"Which airline alliance did Vietnam Airlines join in 2010?", opts:["SkyTeam","Star Alliance","Oneworld","Value Alliance"], correct:0},
-  {q:"What is the IATA code for Vietnam Airlines?", opts:["VN","VA","VJ","QH"], correct:0},
-  {q:"Which aircraft does Vietnam Airlines operate on many long-haul routes?", opts:["Boeing 787 Dreamliner","Concorde","Airbus A220","ATR 72"], correct:0},
-  {q:"Vietnam Airlines is headquartered in which city?", opts:["Hanoi","Da Nang","Ho Chi Minh City","Hue"], correct:0},
-  {q:"What color is prominently used in the Vietnam Airlines livery, alongside gold?", opts:["Green","Blue","Purple","Black"], correct:1},
-  {q:"Which flower is featured in the Vietnam Airlines logo?", opts:["Rose","Lotus","Orchid","Sunflower"], correct:1},
-  {q:"CDG airport code refers to which city's airport?", opts:["Amsterdam","London","Paris","Milan"], correct:1},
-  {q:"What does 'SGN' stand for in airport codes?", opts:["Singapore","Ho Chi Minh City (Tan Son Nhat)","Seoul","Shanghai"], correct:1},
-  {q:"Which of these is a long-haul cabin class Vietnam Airlines offers?", opts:["Basic Economy Plus","Business Class","Cargo Premium","Silver Class"], correct:2},
-  {q:"LHR is the airport code for which city?", opts:["Los Angeles","Lisbon","London","Lyon"], correct:2},
-  {q:"What is Vietnam Airlines' frequent flyer program called?", opts:["SkyMiles","Golden Lotus Plus","AAdvantage","Miles & More"], correct:2},
-  {q:"Which of these airports is a major hub in Germany served on this route?", opts:["Munich","Frankfurt","Berlin","Hamburg"], correct:2},
-  {q:"Which two Vietnamese cities host Vietnam Airlines' main hub airports?", opts:["Hanoi & Ho Chi Minh City","Hanoi & Da Nang","Hue & Hai Phong","Ho Chi Minh City & Can Tho"], correct:0},
-  {q:"In what year did Vietnam Airlines join the SkyTeam alliance?", opts:["2006","2008","2010","2015"], correct:2},
-  {q:"Which wide-body aircraft did Vietnam Airlines receive in 2015, becoming the second airline in the world to fly it?", opts:["Boeing 777","Airbus A350-900","Boeing 747","Airbus A380"], correct:1},
-  {q:"What is the name of Vietnam Airlines' low-cost carrier subsidiary?", opts:["VietJet Air","Pacific Airlines","Bamboo Airways","AirAsia"], correct:1},
-  {q:"Vietnam Airlines' headquarters is located in which Hanoi district?", opts:["Hoan Kiem","Long Bien","Cau Giay","Ba Dinh"], correct:1},
-  {q:"How many cabin classes does Vietnam Airlines typically offer on long-haul flights?", opts:["Two","Three","Four","Five"], correct:1},
-  {q:"Which airport serves as Vietnam Airlines' hub in Ho Chi Minh City?", opts:["Noi Bai","Da Nang","Tan Son Nhat","Cam Ranh"], correct:2},
-  {q:"In November 2021, Vietnam Airlines launched its first direct flight to which country?", opts:["United States","Australia","Germany","Canada"], correct:0},
-  {q:"Which joint-venture airline did Vietnam Airlines help establish in Cambodia?", opts:["Cambodia Angkor Air","Bassaka Air","JC International Airlines","Lanmei Airlines"], correct:0},
-  {q:"Vietnam Airlines has maintained a strong safety record with no fatal accidents since which year?", opts:["1988","1997","2005","2010"], correct:1},
+  {q:"What is Vietnam Airlines' Skytrax rating target by 2030?", opts:["3-Star Airline","4-Star Airline","5-Star Airline","6-Star Airline"], correct:2},
+  {q:"Vietnam Airlines is a member of which global airline alliance?", opts:["Star Alliance","Oneworld","SkyTeam","Value Alliance"], correct:2},
+  {q:"In which year did Vietnam Airlines officially join SkyTeam?", opts:["2006","2008","2010","2012"], correct:2},
+  {q:"What milestone does Vietnam Airlines celebrate in 2025?", opts:["20th Anniversary","25th Anniversary","30th Anniversary","35th Anniversary"], correct:2},
+  {q:"How many domestic destinations does Vietnam Airlines currently serve?", opts:["19","22","30","39"], correct:1},
+  {q:"Vietnam Airlines operates more than how many domestic flights per day?", opts:["100","150","200","300"], correct:3},
+  {q:"How many Boeing 787 aircraft are currently in Vietnam Airlines' fleet?", opts:["14","15","17","20"], correct:2},
+  {q:"How many Airbus A350 aircraft are currently in Vietnam Airlines' fleet?", opts:["10","12","14","16"], correct:2},
+  {q:"Vietnam Airlines became the first Vietnamese airline to use Sustainable Aviation Fuel (SAF) on flights to which region?", opts:["United States","Japan","Europe","Australia"], correct:2},
+  {q:"Approximately how many tonnes of fuel did Vietnam Airlines save in 2024?", opts:["30,000","50,000","70,000","100,000"], correct:2},
+  {q:"How many international routes does Vietnam Airlines currently operate?", opts:["60","65","70","75"], correct:2},
+  {q:"Vietnam Airlines' international network covers how many geographical regions?", opts:["5","6","7","8"], correct:2},
+  {q:"Vietnam Airlines currently serves how many countries and territories?", opts:["20","22","24","28"], correct:1},
+  {q:"How many direct international destinations does Vietnam Airlines offer?", opts:["98","100","107","115"], correct:2},
+  {q:"How many additional destinations are available through partnership networks?", opts:["80","95","100","130"], correct:3},
+  {q:"How many routes does Vietnam Airlines currently operate within Asia?", opts:["45","50","53","60"], correct:2},
+  {q:"Vietnam Airlines currently operates direct flights to which U.S. city?", opts:["Los Angeles","Seattle","San Francisco","Chicago"], correct:2},
+  {q:"What is the maximum seat pitch in Premium Economy Class?", opts:["96 cm","100 cm","107 cm","112 cm"], correct:2},
+  {q:"Business Class seats on wide-body aircraft can recline to:", opts:["150°","170°","180° (Fully Flat)","200°"], correct:2},
+  {q:"LotusMiles currently has more than how many members?", opts:["2 million","3 million","5 million","8 million"], correct:2},
+  {q:"According to the Sales Kit, Corporate Accounts can receive discounts of up to how much off the Published Fare?", opts:["15%","20%","25%","30%"], correct:3},
+  {q:"Which benefit is available to Tour Series partners?", opts:["Complimentary cabin upgrade","Lower fares than FIT Fare","Free checked baggage","Complimentary tickets"], correct:1},
+  {q:"The Top 3 revenue-generating agents are awarded which status?", opts:["Gold","Diamond","Platinum","Elite"], correct:2},
+  {q:"Agents ranked from 4th to 10th in revenue are awarded which status?", opts:["Platinum","Gold","Silver","Elite"], correct:1},
+  {q:"According to the Sales Kit, what is NDC?", opts:["BSP payment system","A communication standard between airlines and travel agents","A CRM platform","An airline ticketing website"], correct:1},
+  {q:"What is TAP at Vietnam Airlines?", opts:["A CRM system","A loyalty platform","A direct ticketing platform connected to the Passenger Service System (PSS)","A mobile application"], correct:2},
+  {q:"How many Branch Offices does Vietnam Airlines currently have?", opts:["18","19","20","22"], correct:1},
+  {q:"Vietnam Airlines has General Sales Agents (GSAs) in how many countries and territories?", opts:["18","19","20","22"], correct:2},
+  {q:"What is Vietnam Airlines' brand ambition by 2030?", opts:["Become one of the Top 5 low-cost airlines in Asia","Become one of the Top 3 full-service airlines in Southeast Asia","Become one of the Top 10 largest airlines in the world","Become the No.1 low-cost airline in Southeast Asia"], correct:1},
+  {q:"According to Vision 2030, which of the following is NOT one of Vietnam Airlines' seven strategic directions?", opts:["Digital Airline Transformation","Green Airline","Absolute Safety & Security","Become the Largest Low-cost Carrier in Asia"], correct:3},
 ];
 
-const AVATARS = ["😎","😊","🔥","👑","🎉","🚀","🤩","🥳","😇","🦸","🧑‍🚀","⚡"];
+// Flag *emoji* render as plain two-letter codes on Windows (no flag glyphs in Segoe UI
+// Emoji), which is exactly the admin/presenter laptop this app targets — so aircraft
+// icons are small inline SVG flags instead, which look identical on every device.
+function flagSvg(stripes){
+  return '<svg viewBox="0 0 30 20" width="1.3em" height="0.87em" style="vertical-align:-0.15em; border-radius:2px; box-shadow:0 0 0 1px rgba(255,255,255,.35);">'+stripes+'</svg>';
+}
+const AVATARS = [
+  flagSvg('<rect width="30" height="20" fill="#00247d"/><path d="M0 0 L30 20 M30 0 L0 20" stroke="#fff" stroke-width="4"/><path d="M0 0 L30 20 M30 0 L0 20" stroke="#cf142b" stroke-width="2"/><path d="M15 0 V20 M0 10 H30" stroke="#fff" stroke-width="6"/><path d="M15 0 V20 M0 10 H30" stroke="#cf142b" stroke-width="3.6"/>'), // UK
+  flagSvg('<rect width="10" height="20" fill="#002395"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#ED2939"/>'), // France
+  flagSvg('<rect width="30" height="20" fill="#DA251D"/><polygon points="15,4 16.76,9.27 22.5,9.27 17.87,12.73 19.63,18 15,14.55 10.37,18 12.13,12.73 7.5,9.27 13.24,9.27" fill="#FFCD00"/>'), // Vietnam
+  flagSvg('<rect width="10" height="20" fill="#008C45"/><rect x="10" width="10" height="20" fill="#F4F5F0"/><rect x="20" width="10" height="20" fill="#CD212A"/>'), // Italy
+  flagSvg('<rect width="30" height="20" fill="#fff"/><rect y="6.67" width="30" height="6.66" fill="#0039A6"/><rect y="13.33" width="30" height="6.67" fill="#D52B1E"/>'), // Russia
+  flagSvg('<rect width="30" height="20" fill="#AE1C28"/><rect y="6.67" width="30" height="6.66" fill="#fff"/><rect y="13.33" width="30" height="6.67" fill="#21468B"/>'), // Netherlands
+  flagSvg('<rect width="30" height="20" fill="#C60C30"/><rect x="9" width="4" height="20" fill="#fff"/><rect y="8" width="30" height="4" fill="#fff"/>'), // Denmark
+  flagSvg('<rect width="30" height="6.67" fill="#000"/><rect y="6.67" width="30" height="6.66" fill="#DD0000"/><rect y="13.33" width="30" height="6.67" fill="#FFCE00"/>'), // Germany
+]; // UK, France, Vietnam, Italy, Russia, Netherlands, Denmark, Germany
+
+/* ---- game mechanics: question pools, turbo boost, power question, turbulence ---- */
+const TURBO_MIN_LEG = ROUTE.findIndex(r=>r.code==='MUC'); // a player unlocks Turbo once their own aircraft reaches MUC
+const TURBULENCE_LEGS = [5, 9]; // 0-based leg index = "lượt chơi thứ 6 và thứ 10"
+const STORM_LEG = 7; // 0-based leg index = "lượt chơi thứ 8" — ⛈ Storm, ATC clears only the 10 fastest correct answers
+function randInt(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
+function pickQuestionIndex(legIndex, powerActive){
+  if(powerActive) return randInt(20,29);
+  if(legIndex<=3) return randInt(0,9);
+  if(legIndex<=7) return randInt(10,19);
+  return randInt(20,29);
+}
+function ensureQuestionPicked(){
+  if(state.currentQuestionIndex===null || state.currentQuestionIndex===undefined){
+    const idx = pickQuestionIndex(state.currentQ, state.powerQuestionActive);
+    state.currentQuestionIndex = idx;
+    state.questionIndexByLeg[state.currentQ] = idx;
+  }
+}
+function isTurbulenceLeg(legIndex){ return TURBULENCE_LEGS.includes(legIndex); }
+function isStormLeg(legIndex){ return legIndex === STORM_LEG; }
+// The map only has 12 legs, but the race keeps asking questions past leg 12 whenever
+// fewer than 3 aircraft have reached FINISH yet, so latecomers still get a chance to
+// land — those extra rounds are labelled "Overtime" instead of a leg number that would
+// read as past the end of the board (e.g. "Leg 13 of 12").
+function legLabel(legIndex){
+  const totalLegs = ROUTE.length - 1;
+  return legIndex < totalLegs ? `Leg ${legIndex+1} of ${totalLegs}` : `Overtime round ${legIndex+1-totalLegs}`;
+}
 function planeSvg(color){
   return '<svg class="plane-ico" viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.18em;"><path fill="'+color+'" d="M21 16v-1.9l-8-4.95V4.5a1.5 1.5 0 0 0-3 0v4.65l-8 4.95V16l8-2.5v4.9l-2.2 1.6V22l3.7-1.1 3.7 1.1v-1.5L13.5 18v-4.9z"/></svg>';
 }
@@ -500,13 +826,23 @@ try { bc = new BroadcastChannel('vna-sky-race'); } catch(e) { bc = null; }
 function defaultState(){
   return {
     gameState: 'lobby', // lobby | question | locked | reveal | finished
-    currentQ: 0, // 0-based index into QUESTIONS
+    currentQ: 0, // 0-based leg index (0-11), NOT a direct index into QUESTIONS anymore
+    currentQuestionIndex: null, // index into QUESTIONS chosen randomly for this leg
+    questionIndexByLeg: {}, // leg index -> QUESTIONS index, kept for history/review
+    powerQuestionActive: false,
+    powerQuestionUsed: false, // Power Question can only ever be activated once per game
     questionOpenedAt: null,
+    revealedLegs: {},   // leg index -> true once scored, so Reveal can never double-move
+    undoSnapshot: null, // one-step rollback of the last Reveal
     paused: false,
-    players: {}, // id -> {id,name,avatar,position,correctCount,answers:{qIdx:{choice,submittedAt}},totalAnswerTime}
+    players: {}, // id -> {id,name,avatar,position,correctCount,answers:{legIdx:{choice,submitted,turbo,timeTaken}},totalAnswerTime,turboUsed}
     winnerId: null,
     milestones: { HAN:null, SPC:null, SGN:null }, // playerId of first arrival at each checkpoint
     awardShown: false,
+    congratsShown: false, // the presenter's "Congratulations! X wins" overlay only appears once the admin triggers it
+    stormClearedIds: null, // ids of the 10 fastest correct answers on the Storm leg, fastest first
+    stormRevealAt: null,   // Date.now() of the Storm reveal, so the presenter's 10s clearance list can expire
+    finishSeq: 0, // counter handing out p.finishRank in true arrival order as aircraft land on FINISH
   };
 }
 let state = loadState();
@@ -518,11 +854,186 @@ function loadState(){
   }catch(e){}
   return defaultState();
 }
-function saveState(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  if(bc) bc.postMessage({type:'state', state});
+/* ============================================================
+   SYNC LAYER
+   ONLINE  — Firebase Realtime Database. One authoritative copy in the cloud that
+             every phone and screen subscribes to. Writers own disjoint paths, so
+             two clients can never overwrite each other's data:
+               rooms/{ROOM}/admin           <- only the admin client writes
+               rooms/{ROOM}/progress/{uid}  <- only the admin client writes
+               rooms/{ROOM}/profiles/{uid}  <- only that player writes
+               rooms/{ROOM}/answers/{q}/{uid} <- only that player writes, once
+   OFFLINE — falls back to the original localStorage + BroadcastChannel mode so a
+             single-laptop game still runs if there is no network at the venue.
+   ============================================================ */
+const ROOM = (new URLSearchParams(location.search).get('room') || 'SKY01').toUpperCase();
+const ADMIN_KEYS = ['gameState','currentQ','currentQuestionIndex','questionIndexByLeg',
+  'powerQuestionActive','powerQuestionUsed','questionOpenedAt','deadline','revealedLegs',
+  'undoSnapshot','paused','winnerId','milestones','awardShown','congratsShown','stormClearedIds','stormRevealAt','finishSeq'];
+
+const FB = { mode:'init', role:'player', db:null, uid:null };
+let _profiles = {}, _progress = {}, _answers = {};
+
+function pickAdminSlice(){
+  const o = {};
+  ADMIN_KEYS.forEach(k=>{ o[k] = (state[k]===undefined ? null : state[k]); });
+  return o;
 }
+function applyAdminSlice(v){
+  if(!v) return;
+  ADMIN_KEYS.forEach(k=>{ if(v[k]!==undefined) state[k] = v[k]; });
+  state.revealedLegs = state.revealedLegs || {};
+  state.milestones = state.milestones || { HAN:null, SPC:null, SGN:null };
+  state.questionIndexByLeg = state.questionIndexByLeg || {};
+}
+function rebuildPlayers(){
+  const out = {};
+  Object.keys(_profiles).forEach(uid=>{
+    const pr = _progress[uid] || {};
+    const ans = {};
+    Object.keys(_answers).forEach(leg=>{
+      if(_answers[leg] && _answers[leg][uid]) ans[leg] = _answers[leg][uid];
+    });
+    out[uid] = {
+      id: uid,
+      name: _profiles[uid].name,
+      avatar: _profiles[uid].avatar,
+      position: pr.position || 0,
+      correctCount: pr.correctCount || 0,
+      totalAnswerTime: pr.totalAnswerTime || 0,
+      turboUsed: !!pr.turboUsed,
+      finishRank: pr.finishRank || null,
+      currentStreak: pr.currentStreak || 0,
+      longestStreak: pr.longestStreak || 0,
+      answeredCount: pr.answeredCount || 0,
+      answers: ans,
+    };
+  });
+  state.players = out;
+}
+
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  if(FB.mode==='online'){
+    if(FB.role==='admin') fbWriteAdmin();
+    if(myPlayerId) fbWriteMine();
+  } else if(bc){
+    // note: BroadcastChannel never delivers to the sender, so the acting tab
+    // must repaint itself — otherwise the admin's own dashboard freezes offline
+    bc.postMessage({type:'state', state});
+  }
+  renderAll();
+}
+function fbWriteAdmin(){
+  if(FB.mode!=='online' || FB.role!=='admin') return;
+  const u = {};
+  u['rooms/'+ROOM+'/admin'] = pickAdminSlice();
+  Object.values(state.players).forEach(p=>{
+    u['rooms/'+ROOM+'/progress/'+p.id] = {
+      position: p.position||0, correctCount: p.correctCount||0,
+      totalAnswerTime: p.totalAnswerTime||0, turboUsed: !!p.turboUsed,
+      finishRank: p.finishRank || null,
+      currentStreak: p.currentStreak||0, longestStreak: p.longestStreak||0, answeredCount: p.answeredCount||0,
+    };
+  });
+  FB.db.ref().update(u).catch(e=>{ console.warn('[sync] admin write failed', e); toast('⚠️ Sync error — check connection'); });
+}
+function fbWriteMine(){
+  if(FB.mode!=='online' || !myPlayerId) return;
+  const me = state.players[myPlayerId];
+  if(!me) return;
+  const u = {};
+  u['rooms/'+ROOM+'/profiles/'+myPlayerId] = { name: me.name, avatar: me.avatar, joinedAt: me.joinedAt || Date.now() };
+  const a = me.answers[state.currentQ];
+  if(a && a.choice!==null && a.choice!==undefined){
+    u['rooms/'+ROOM+'/answers/'+state.currentQ+'/'+myPlayerId] =
+      { choice:a.choice, turbo:!!a.turbo, submitted:!!a.submitted, timeTaken:a.timeTaken||0 };
+    // keep a local echo: players are not allowed to read other people's answers
+    _answers[state.currentQ] = _answers[state.currentQ] || {};
+    _answers[state.currentQ][myPlayerId] = u['rooms/'+ROOM+'/answers/'+state.currentQ+'/'+myPlayerId];
+  }
+  FB.db.ref().update(u).catch(e=>{ console.warn('[sync] player write failed', e); toast('⚠️ Could not send — check connection'); });
+}
+/* the admin client creates a progress node for anyone who has just joined */
+function reconcileProgress(){
+  if(FB.role!=='admin' || FB.mode!=='online') return;
+  const u = {};
+  Object.keys(_profiles).forEach(uid=>{
+    if(!_progress[uid]) u['rooms/'+ROOM+'/progress/'+uid] = {position:0,correctCount:0,totalAnswerTime:0,turboUsed:false,finishRank:null,currentStreak:0,longestStreak:0,answeredCount:0};
+  });
+  if(Object.keys(u).length) FB.db.ref().update(u).catch(()=>{});
+}
+
+function setSyncBadge(){
+  let el = document.getElementById('syncBadge');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'syncBadge';
+    el.style.cssText = 'position:fixed;bottom:10px;right:12px;z-index:300;font-family:var(--font-mono);font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid var(--glass-brd);background:rgba(0,20,45,.75);backdrop-filter:blur(8px);';
+    document.body.appendChild(el);
+  }
+  const map = {
+    online:  ['🟢 LIVE · room '+ROOM, 'rgba(46,204,113,.6)'],
+    offline: ['🟠 OFFLINE · one device only', 'rgba(240,180,60,.6)'],
+    init:    ['⚪ connecting…', 'var(--glass-brd)'],
+  };
+  const [txt, brd] = map[FB.mode] || map.init;
+  el.textContent = txt;
+  el.style.borderColor = brd;
+}
+
+function goOffline(why){
+  if(FB.mode==='offline') return;
+  FB.mode = 'offline';
+  console.warn('[sync] running in offline mode:', why);
+  state = loadState();
+  setSyncBadge();
+  renderAll();
+}
+
+async function fbInit(){
+  setSyncBadge();
+  const cfgMissing = (typeof FIREBASE_CONFIG==='undefined') || !FIREBASE_CONFIG.apiKey ||
+                     String(FIREBASE_CONFIG.apiKey).indexOf('PASTE')===0;
+  if(typeof firebase==='undefined'){ return goOffline('Firebase SDK not loaded'); }
+  if(cfgMissing){ return goOffline('FIREBASE_CONFIG not filled in'); }
+
+  const timer = setTimeout(()=>goOffline('no connection within 8s'), 8000);
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    FB.db = firebase.database();
+    const cred = await firebase.auth().signInAnonymously();
+    FB.uid = cred.user.uid;
+    clearTimeout(timer);
+    FB.mode = 'online';
+
+    // a player's identity is their Firebase uid, so a refresh never loses their aircraft
+    if(location.hash.replace('#','')==='player') myPlayerId = FB.uid;
+
+    const base = FB.db.ref('rooms/'+ROOM);
+    base.child('admin').on('value', s=>{ applyAdminSlice(s.val()); renderAll(); });
+    base.child('profiles').on('value', s=>{ _profiles = s.val()||{}; reconcileProgress(); rebuildPlayers(); renderAll(); });
+    base.child('progress').on('value', s=>{ _progress = s.val()||{}; rebuildPlayers(); renderAll(); });
+
+    FB.db.ref('.info/connected').on('value', s=>{
+      if(FB.mode==='online'){ setSyncBadge(); }
+      if(s.val()===false) console.warn('[sync] disconnected — RTDB will retry automatically');
+    });
+    setSyncBadge();
+    renderAll();
+  }catch(e){
+    clearTimeout(timer);
+    goOffline(e && e.message ? e.message : e);
+  }
+}
+/* admin subscribes to the answer feed only after signing in (rules block it otherwise) */
+function fbSubscribeAnswers(){
+  if(FB.mode!=='online') return;
+  FB.db.ref('rooms/'+ROOM+'/answers').on('value', s=>{ _answers = s.val()||{}; rebuildPlayers(); renderAll(); });
+}
+
 window.addEventListener('storage', (e)=>{
+  if(FB.mode==='online') return;
   if(e.key===STORAGE_KEY && e.newValue){
     state = JSON.parse(e.newValue);
     renderAll();
@@ -530,6 +1041,7 @@ window.addEventListener('storage', (e)=>{
 });
 if(bc){
   bc.onmessage = (e)=>{
+    if(FB.mode==='online') return;
     if(e.data && e.data.type==='state'){ state = e.data.state; renderAll(); }
   };
 }
@@ -569,10 +1081,17 @@ function go(view){
 }
 window.addEventListener('hashchange', ()=>{
   const v = location.hash.replace('#','');
+  // "#admin" must go through the gate rather than opening the dashboard directly
+  if(v==='admin' && FB.role!=='admin'){ go('landing'); openAdminGate(); return; }
   if(['landing','player','presenter','admin'].includes(v)) go(v);
 });
 
-/* ---------- admin password gate ---------- */
+/* ---------- admin gate ----------
+   ONLINE : a real Firebase account. The password is never in this file, and the
+            database rules refuse every admin write from anyone else — so typing
+            "#admin" in the URL now gets you a dead dashboard, not control of the game.
+   OFFLINE: falls back to the local code below, which is all a single-laptop
+            fallback game needs. */
 const ADMIN_PASSWORD = '738B';
 function openAdminGate(){
   const modal = document.getElementById('adminGateModal');
@@ -585,13 +1104,38 @@ function openAdminGate(){
 function closeAdminGate(){
   document.getElementById('adminGateModal').classList.add('hidden');
 }
-function submitAdminGate(){
+function openRulesModal(){
+  document.getElementById('rulesModal').classList.remove('hidden');
+}
+function closeRulesModal(){
+  document.getElementById('rulesModal').classList.add('hidden');
+}
+async function submitAdminGate(){
   const v = document.getElementById('adminPassInput').value.trim();
-  if(v.toUpperCase() === ADMIN_PASSWORD){
+  const err = document.getElementById('adminGateError');
+  if(!v) return;
+
+  if(FB.mode!=='online'){
+    if(v.toUpperCase() === ADMIN_PASSWORD){ FB.role='admin'; closeAdminGate(); go('admin'); }
+    else err.textContent = 'Incorrect password — please try again.';
+    return;
+  }
+
+  err.textContent = 'Signing in…';
+  try{
+    const cred = await firebase.auth().signInWithEmailAndPassword(ADMIN_EMAIL, v);
+    FB.uid = cred.user.uid;
+    FB.role = 'admin';
+    myPlayerId = null;               // the admin is not a racer
+    fbSubscribeAnswers();            // answer feed is admin-only under the rules
+    reconcileProgress();
     closeAdminGate();
     go('admin');
-  } else {
-    document.getElementById('adminGateError').textContent = 'Incorrect password — please try again.';
+    toast('Signed in as admin · room '+ROOM);
+  }catch(e){
+    err.textContent = (e && e.code==='auth/too-many-requests')
+      ? 'Too many attempts — wait a moment.'
+      : 'Incorrect password — please try again.';
   }
 }
 document.addEventListener('keydown', (e)=>{
@@ -638,10 +1182,12 @@ function playerJoin(){
   const name = document.getElementById('pName').value.trim();
   if(!name){ toast('Please enter your name'); return; }
   if(!selectedAvatar){ toast('Please choose an aircraft'); return; }
-  myPlayerId = uid();
+  // Online, the player's identity IS their Firebase uid — it survives a refresh,
+  // a dead battery, or the phone locking, so nobody loses their aircraft mid-race.
+  myPlayerId = (FB.mode==='online' && FB.uid) ? FB.uid : uid();
   localStorage.setItem('vna_my_player_id', myPlayerId);
   state.players[myPlayerId] = {
-    id: myPlayerId, name, avatar: selectedAvatar, position: 0, correctCount:0, answers:{}, totalAnswerTime:0
+    id: myPlayerId, name, avatar: selectedAvatar, position: 0, correctCount:0, answers:{}, totalAnswerTime:0, turboUsed:false, finishRank:null, currentStreak:0, longestStreak:0, answeredCount:0, joinedAt: Date.now()
   };
   saveState();
   document.getElementById('pRegistration').classList.add('hidden');
@@ -650,23 +1196,61 @@ function playerJoin(){
   toast('Welcome aboard, ' + name + '!');
 }
 
+// Client-side companion to the server-enforced deadline (Firebase rules check `now <
+// deadline` for online games): once a player's own countdown reaches 0, their UI stops
+// taking picks/submits too, rather than staying interactive until admin clicks Close.
+function myTimeUp(){
+  return state.gameState==='question' && !!state.questionOpenedAt && (Date.now()-state.questionOpenedAt) >= TIMER_SECONDS*1000;
+}
 function playerSubmitAnswer(choiceIdx){
   const me = state.players[myPlayerId];
   if(!me) return;
   if(state.gameState !== 'question') return;
-  if(me.answers[state.currentQ] && me.answers[state.currentQ].submitted) return;
-  me.answers[state.currentQ] = { choice: choiceIdx, submitted:false };
+  if(myTimeUp()){ toast("Time's up — no more answers for this leg"); return; }
+  const existing = me.answers[state.currentQ];
+  if(existing && existing.submitted) return;
+  me.answers[state.currentQ] = { choice: choiceIdx, submitted:false, turbo: existing ? !!existing.turbo : false };
+  saveState();
+  renderPlayer();
+}
+function isTurboEligibleNow(){
+  const me = state.players[myPlayerId];
+  if(!me) return false;
+  // Unlocks PER PLAYER: only once this player's own aircraft has reached MUC or beyond.
+  // A player who is still behind MUC cannot arm Turbo, no matter which leg the race is on.
+  return !me_turbulenceActive() && !me_stormActive() && !state.powerQuestionActive && me.position >= TURBO_MIN_LEG;
+}
+function me_turbulenceActive(){ return isTurbulenceLeg(state.currentQ); }
+function me_stormActive(){ return isStormLeg(state.currentQ); }
+function playerToggleTurbo(){
+  const me = state.players[myPlayerId];
+  if(!me) return;
+  if(me.turboUsed){ toast('Turbo Boost already used'); return; }
+  if(myTimeUp()){ toast("Time's up — no more answers for this leg"); return; }
+  if(!isTurboEligibleNow()){
+    if(me_turbulenceActive()) toast('🌪 Turbo Boost is disabled during turbulence');
+    else if(me_stormActive()) toast('⛈ Turbo Boost is disabled during the storm — ATC clearance only');
+    else if(state.powerQuestionActive) toast('⚡ Turbo Boost is disabled on a Power Question');
+    else toast('Turbo Boost unlocks when your aircraft reaches MUC');
+    return;
+  }
+  const existing = me.answers[state.currentQ] || { choice:null, submitted:false, turbo:false };
+  if(existing.submitted) return;
+  existing.turbo = !existing.turbo;
+  me.answers[state.currentQ] = existing;
   saveState();
   renderPlayer();
 }
 function playerConfirmSubmit(){
   const me = state.players[myPlayerId];
   if(!me) return;
+  if(myTimeUp()){ toast("Time's up — no more answers for this leg"); renderPlayer(); return; }
   const a = me.answers[state.currentQ];
-  if(!a){ toast('Pick an answer first'); return; }
+  if(!a || a.choice===null || a.choice===undefined){ toast('Pick an answer first'); return; }
   a.submitted = true;
   a.timeTaken = state.questionOpenedAt ? (Date.now() - state.questionOpenedAt) : 0;
   me.totalAnswerTime = (me.totalAnswerTime||0) + a.timeTaken;
+  if(a.turbo) me.turboUsed = true;
   saveState();
   renderPlayer();
 }
@@ -684,7 +1268,9 @@ function renderPlayer(){
   document.getElementById('pGame').classList.remove('hidden');
   const me = state.players[myPlayerId];
   document.getElementById('pAvatarShown').innerHTML = avatarHTML(me.avatar, '1.2em');
-  document.getElementById('pDest').textContent = ROUTE[me.position].code;
+  const myRankIdx = rankedPlayers().findIndex(p=>p.id===myPlayerId);
+  const myRank = myRankIdx>=0 ? (myRankIdx+1) : '—';
+  document.getElementById('pDest').innerHTML = `#${myRank} <span style="font-size:11px; opacity:.65;">(${ROUTE[me.position].code})</span>`;
 
   // progress strip — reflects the 12 legs on the map, independent of question count
   const strip = document.getElementById('pProgressStrip');
@@ -704,26 +1290,62 @@ function renderPlayer(){
   const optsEl = document.getElementById('pOptions');
   const eyebrow = document.getElementById('pQEyebrow');
   const qText = document.getElementById('pQText');
+  const powerNoteEl = document.getElementById('pPowerNote');
+  const stormNoteEl = document.getElementById('pStormNote');
+
+  // Reaching FINISH is a personal milestone shown the moment it happens — the race
+  // itself keeps going for everyone else until at least 3 aircraft have landed.
+  if(me.finishRank){
+    const medal = me.finishRank===1 ? '🥇' : me.finishRank===2 ? '🥈' : me.finishRank===3 ? '🥉' : '🏅';
+    eyebrow.textContent = '🏁 FINISHED';
+    qText.innerHTML = `<div style="font-size:21px; font-weight:800; margin-bottom:12px;">${medal} You landed in ${ordinal(me.finishRank)} place!</div><div style="font-size:14px; font-weight:400; color:rgba(255,255,255,.82); line-height:1.55;">You've completed the Sky Race — thank you for flying with us today.<br><br>We wish you an inspiring conference, meaningful connections, and an enjoyable experience throughout today's event.</div>`;
+    optsEl.innerHTML=''; bannerEl.classList.add('hidden'); timerEl.textContent='--';
+    if(powerNoteEl) powerNoteEl.classList.add('hidden');
+    if(stormNoteEl) stormNoteEl.classList.add('hidden');
+    const twF = document.getElementById('pTurboWrap'); if(twF) twF.innerHTML='';
+    return;
+  }
 
   if(state.gameState === 'lobby'){
     eyebrow.textContent = 'WAITING FOR GAME TO START';
-    qText.textContent = 'The admin will open Question 1 shortly. Get ready for takeoff!';
+    qText.textContent = 'Question will be open shortly. Get ready for takeoff!';
     optsEl.innerHTML=''; bannerEl.classList.add('hidden'); timerEl.textContent='--';
+    if(powerNoteEl) powerNoteEl.classList.add('hidden');
+    if(stormNoteEl) stormNoteEl.classList.add('hidden');
+    const tw = document.getElementById('pTurboWrap'); if(tw) tw.innerHTML='';
     return;
   }
   if(state.gameState==='finished'){
     eyebrow.textContent='RACE COMPLETE';
-    qText.textContent = state.winnerId ? (state.players[state.winnerId].name + ' has landed first and won the race! ✈️🏆') : 'The race has finished.';
+    qText.textContent = state.winnerId ? (state.players[state.winnerId].name + ' was first to land — the race is complete! ✈️🏆') : 'The race has finished.';
     optsEl.innerHTML=''; bannerEl.classList.add('hidden'); timerEl.textContent='--';
+    if(powerNoteEl) powerNoteEl.classList.add('hidden');
+    if(stormNoteEl) stormNoteEl.classList.add('hidden');
+    const tw2 = document.getElementById('pTurboWrap'); if(tw2) tw2.innerHTML='';
     return;
   }
 
-  const qData = QUESTIONS[state.currentQ];
-  eyebrow.textContent = `QUESTION ${state.currentQ+1} OF ${QUESTIONS.length}`;
+  if(state.currentQuestionIndex===null || state.currentQuestionIndex===undefined){
+    eyebrow.textContent = legLabel(state.currentQ);
+    qText.textContent = 'Waiting for the admin to open this question…';
+    optsEl.innerHTML=''; bannerEl.classList.add('hidden'); timerEl.textContent='--';
+    if(powerNoteEl) powerNoteEl.classList.add('hidden');
+    if(stormNoteEl) stormNoteEl.classList.add('hidden');
+    return;
+  }
+  const qData = QUESTIONS[state.currentQuestionIndex];
+  const powerNow = !!state.powerQuestionActive;
+  const stormNow = isStormLeg(state.currentQ);
+  eyebrow.innerHTML = legLabel(state.currentQ) + (powerNow ? ' &nbsp;⚡ POWER QUESTION' : '') + (stormNow ? ' &nbsp;⛈ STORM' : '');
   qText.textContent = qData.q;
+  if(powerNoteEl) powerNoteEl.classList.toggle('hidden', !powerNow);
+  if(stormNoteEl) stormNoteEl.classList.toggle('hidden', !stormNow);
 
   const myAns = me.answers[state.currentQ];
   const revealed = state.gameState==='reveal';
+  // Once the player's own countdown hits 0, no more picks or submits — an unsubmitted
+  // answer already scores the same as a wrong one in every leg type (see adminRevealAnswer).
+  const timeUp = myTimeUp();
   optsEl.innerHTML = '';
   qData.opts.forEach((opt,i)=>{
     const b = document.createElement('button');
@@ -735,7 +1357,7 @@ function renderPlayer(){
       cls+=' picked';
     }
     b.className = cls;
-    const locked = state.gameState!=='question' || (myAns && myAns.submitted);
+    const locked = state.gameState!=='question' || (myAns && myAns.submitted) || timeUp;
     b.disabled = locked;
     b.innerHTML = `<span class="k">${String.fromCharCode(65+i)}</span><span>${opt}</span>`;
     b.onclick = ()=> playerSubmitAnswer(i);
@@ -751,12 +1373,33 @@ function renderPlayer(){
     timerEl.textContent = state.gameState==='locked' ? 'LOCKED' : (state.gameState==='reveal' ? 'REVEALED' : '--');
   }
 
+  // turbo boost toggle
+  const turboWrap = document.getElementById('pTurboWrap');
+  if(turboWrap){
+    const eligible = isTurboEligibleNow() && !me.turboUsed && state.gameState==='question' && !(myAns && myAns.submitted) && !timeUp;
+    if(me.turboUsed){
+      turboWrap.innerHTML = `<div class="turbo-note">⚡ Turbo Boost already used</div>`;
+    } else if(state.currentQ < TURBO_MIN_LEG){
+      turboWrap.innerHTML = `<div class="turbo-note">⚡ Turbo Boost unlocks from MUC onward</div>`;
+    } else if(me_turbulenceActive()){
+      turboWrap.innerHTML = `<div class="turbo-note">⚡ Turbo Boost disabled during turbulence</div>`;
+    } else if(me_stormActive()){
+      turboWrap.innerHTML = `<div class="turbo-note">⛈ Turbo Boost disabled during the storm — ATC clearance only</div>`;
+    } else {
+      const active = myAns && myAns.turbo;
+      turboWrap.innerHTML = `<button class="btn ${active?'btn-primary':'btn-ghost'} btn-block turbo-btn" ${eligible?'':'disabled'} onclick="playerToggleTurbo()">⚡ ${active?'Turbo Boost ACTIVE — tap to cancel':'Activate Turbo Boost (one-time, x2 legs / -1 if wrong)'}</button>`;
+    }
+  }
+
   // banner + submit button
   bannerEl.classList.remove('hidden','wait','locked','correct','wrong');
   if(state.gameState==='question'){
     if(myAns && myAns.submitted){
       bannerEl.classList.add('locked');
-      bannerEl.innerHTML = '🔒 Answer locked in. Waiting for other players…';
+      bannerEl.innerHTML = '🔒 Answer locked in' + (myAns.turbo?' with ⚡ Turbo Boost':'') + '. Waiting for other players…';
+    } else if(timeUp){
+      bannerEl.classList.add('locked');
+      bannerEl.innerHTML = "⏱️ Time's up — no more answers for this leg.";
     } else if(myAns){
       bannerEl.classList.add('wait');
       bannerEl.innerHTML = `<button class="btn btn-primary btn-block" onclick="playerConfirmSubmit()">Submit answer →</button>`;
@@ -769,8 +1412,22 @@ function renderPlayer(){
     bannerEl.innerHTML = '⏳ Answers locked. Revealing shortly…';
   } else if(state.gameState==='reveal'){
     const correct = myAns && myAns.choice===qData.correct;
+    const turbulent = isTurbulenceLeg(state.currentQ);
+    let msg;
+    if(turbulent){
+      msg = correct ? '🌪 Correct — but turbulence holds your aircraft in place.' : '🌪 Turbulence! Wrong answer sends you back one destination.';
+    } else if(isStormLeg(state.currentQ)){
+      const cleared = !!(state.stormClearedIds && state.stormClearedIds.includes(myPlayerId));
+      msg = cleared ? '⛈ ATC clearance granted — cleared to continue to the next leg!' : (correct ? '⛈ Correct, but ATC only cleared the 10 fastest — you hold position.' : '⛈ Storm — aircraft grounded, hold position.');
+    } else if(state.powerQuestionActive){
+      msg = correct ? '⚡ Correct! Power Question bonus applied for the fastest answer.' : '⚡ Power Question — not correct this time, you hold position.';
+    } else if(myAns && myAns.turbo){
+      msg = correct ? '⚡ Turbo Boost paid off — 2 destinations forward!' : '⚡ Turbo Boost backfired — 1 destination back.';
+    } else {
+      msg = correct ? '✅ Correct! Your aircraft advances one destination.' : (myAns ? '❌ Not quite — your aircraft holds position.' : '⏱️ No answer submitted — aircraft holds position.');
+    }
     bannerEl.classList.add(correct ? 'correct':'wrong');
-    bannerEl.innerHTML = correct ? '✅ Correct! Your aircraft advances one destination.' : (myAns ? '❌ Not quite — your aircraft holds position.' : '⏱️ No answer submitted — aircraft holds position.');
+    bannerEl.innerHTML = msg;
   }
 }
 
@@ -779,6 +1436,7 @@ function renderPlayer(){
    ============================================================ */
 function buildRouteSvg(){
   const svg = document.getElementById('routeSvg');
+  svg.setAttribute('viewBox','0 0 1000 560');
   const points = ROUTE.map(a=>`${a.x},${a.y}`).join(' ');
   svg.innerHTML = `
     <defs>
@@ -789,62 +1447,295 @@ function buildRouteSvg(){
 
   const airportLayer = document.getElementById('airportLayer');
   airportLayer.innerHTML = '';
-  ROUTE.forEach(a=>{
+  ROUTE.forEach((a,idx)=>{
     const node = document.createElement('div');
     node.className = 'airport-node' + (a.checkpoint ? ' checkpoint':'');
     node.style.left = (a.x/1000*100)+'%';
     node.style.top = (a.y/560*100)+'%';
-    node.innerHTML = `<div class="airport-dot"></div><div class="airport-label"><div class="code">${a.code}</div><div class="city">${a.city}</div></div>`;
+    node.innerHTML = `<div class="airport-dot"><span class="airport-icon">${a.icon}</span></div><div class="airport-label"><div class="code">${a.code}</div><div class="city">${a.city}</div></div>`;
+    node.addEventListener('mouseenter', ()=>{ presHoveredLeg = idx; renderPresenterLeaderboard(); });
+    node.addEventListener('mouseleave', ()=>{ presHoveredLeg = null; renderPresenterLeaderboard(); });
     airportLayer.appendChild(node);
   });
 }
 buildRouteSvg();
+// which leg's checkpoint the mouse is currently over on the presenter map — filters the
+// live leaderboard down to just the players parked there until the mouse moves away
+let presHoveredLeg = null;
+
+// Keyed by player id (top-5 named tokens) or by leg position (the '+N others' aggregate
+// bucket) and reused across renders, so the CSS left/top transition on .plane-token can
+// actually animate a glide to the new spot on reveal — a token that never changes its
+// key keeps its element, so an unmoved aircraft has nothing to transition and stays put.
+// Stylised gradient + floating watermark per stop, keyed to whoever currently leads —
+// not a fully illustrated scene, just a tasteful CSS-only mood shift per city.
+const LOCATION_THEMES = {
+  START:  {cls:'',            icon:'🛫'},
+  CDG:    {cls:'scene-cdg',   icon:'🗼'},
+  AMS:    {cls:'scene-ams',   icon:'🌷'},
+  HAN:    {cls:'scene-han',   icon:'🪷'},
+  MUC:    {cls:'scene-muc',   icon:'🍺'},
+  MOW:    {cls:'scene-mow',   icon:'❄️'},
+  SPC:    {cls:'scene-spc',   icon:'⭐'},
+  LHR:    {cls:'scene-lhr',   icon:'🎡'},
+  MXP:    {cls:'scene-mxp',   icon:'⛪'},
+  CPH:    {cls:'scene-cph',   icon:'🧜‍♀️'},
+  SGN:    {cls:'scene-sgn',   icon:'🛵'},
+  FRA:    {cls:'scene-fra',   icon:'🏦'},
+  FINISH: {cls:'scene-finish',icon:'🏁'},
+};
+const ALL_SCENE_CLASSES = Object.values(LOCATION_THEMES).map(t=>t.cls).filter(Boolean);
+let lastLeaderLocationCode = null;
+function updateLocationScene(){
+  const mapPanel = document.getElementById('mapPanel');
+  const watermark = document.getElementById('sceneWatermark');
+  if(!mapPanel || !watermark) return;
+  const leader = rankedPlayers()[0];
+  const code = leader ? ROUTE[leader.position].code : 'START';
+  if(code === lastLeaderLocationCode) return;
+  lastLeaderLocationCode = code;
+  const theme = LOCATION_THEMES[code] || LOCATION_THEMES.START;
+  mapPanel.classList.remove(...ALL_SCENE_CLASSES);
+  if(theme.cls) mapPanel.classList.add(theme.cls);
+  watermark.textContent = theme.icon;
+}
+
+// Finish-moment cinematic: fires once, the instant the race is decided (3rd finisher
+// lands) — zooms the map into FINISH, gives the top-3 tokens a landing swoop, and cheers.
+let finishFlourishIds = new Set();
+let finishCinematicPlayed = false;
+function triggerFinishCinematic(){
+  const finishers = Object.values(state.players).filter(p=>p.finishRank && p.finishRank<=3)
+    .sort((a,b)=>a.finishRank-b.finishRank);
+  finishFlourishIds = new Set(finishers.map(p=>p.id));
+  const zoomWrap = document.getElementById('mapZoomWrap');
+  const finishNode = ROUTE[ROUTE.length-1];
+  if(zoomWrap){
+    zoomWrap.style.transformOrigin = (finishNode.x/1000*100)+'% '+(finishNode.y/560*100)+'%';
+    zoomWrap.style.transform = 'scale(2.1)';
+  }
+  playApplause(2800);
+  renderPresenterPlanes(); // apply the landing flourish now, don't wait for the 1s tick
+  setTimeout(()=>{
+    finishFlourishIds = new Set();
+    if(zoomWrap) zoomWrap.style.transform = 'scale(1)';
+    renderPresenterPlanes();
+  }, 7000);
+}
+
+const presenterPlaneEls = {};
+let lastLeaderId = null;              // who was #1 as of the previous render, to detect a change
+let cinematicOvertakeId = null;       // player id growing during the New Leader cinematic
+let cinematicFallenId = null;         // player id shrinking during the New Leader cinematic
+let leaderCinematicUntil = 0;         // Date.now() timestamp the transient classes above expire
+
+function triggerLeaderChangeCinematic(oldId, newId){
+  cinematicOvertakeId = newId;
+  cinematicFallenId = oldId;
+  leaderCinematicUntil = Date.now() + 2200;
+  playApplause(1800);
+  const p = state.players[newId];
+  showNewLeaderBanner(p ? p.name : '');
+}
+function showNewLeaderBanner(name){
+  const presenterEl = document.getElementById('view-presenter');
+  let el = document.getElementById('newLeaderBanner');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'newLeaderBanner';
+    el.className = 'new-leader-banner';
+    presenterEl.appendChild(el);
+  }
+  el.innerHTML = `<div class="tag">🔥 New Leader</div><div class="who">${escapeHtml(name)}</div>`;
+  // reflow so re-adding "show" retriggers the transition even if a banner is already up
+  el.classList.remove('show'); void el.offsetWidth;
+  el.classList.add('show');
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(()=>{ el.classList.remove('show'); }, 3000);
+}
 
 function renderPresenterPlanes(){
   const layer = document.getElementById('planeLayer');
-  layer.innerHTML = '';
+  const ranked = rankedPlayers();
+  const leaderId = ranked.length ? ranked[0].id : null;
+  // A change of #1 (once there was already a leader, and the race isn't already decided)
+  // gets the slow overtake animation + "New Leader" banner + applause.
+  if(lastLeaderId!==null && leaderId!==null && leaderId!==lastLeaderId && state.gameState!=='finished'){
+    triggerLeaderChangeCinematic(lastLeaderId, leaderId);
+  }
+  lastLeaderId = leaderId;
+  if(leaderCinematicUntil && Date.now() > leaderCinematicUntil){
+    cinematicOvertakeId = null; cinematicFallenId = null; leaderCinematicUntil = 0;
+  }
+  const top5Ids = new Set(ranked.slice(0,5).map(p=>p.id));
   const byPos = {};
   Object.values(state.players).forEach(p=>{
     byPos[p.position] = byPos[p.position] || [];
     byPos[p.position].push(p);
   });
+  const seenKeys = new Set();
+  function tokenFor(key){
+    let tok = presenterPlaneEls[key];
+    if(!tok){
+      tok = document.createElement('div');
+      tok.className = 'plane-token';
+      layer.appendChild(tok);
+      presenterPlaneEls[key] = tok;
+    }
+    seenKeys.add(key);
+    return tok;
+  }
   Object.entries(byPos).forEach(([pos, plist])=>{
     const node = ROUTE[+pos];
-    plist.forEach((p, stackIdx)=>{
-      const tok = document.createElement('div');
-      tok.className = 'plane-token';
+    const topHere = plist.filter(p=>top5Ids.has(p.id));
+    const othersHere = plist.filter(p=>!top5Ids.has(p.id));
+    let stackIdx = 0;
+    topHere.forEach(p=>{
+      const onFire = (p.currentStreak||0) >= 5;
+      const tok = tokenFor('p-'+p.id);
+      tok.className = 'plane-token'
+        + (p.id===leaderId ? ' leader' : '')
+        + (onFire ? ' on-fire' : '')
+        + (p.id===cinematicOvertakeId ? ' overtaking' : '')
+        + (p.id===cinematicFallenId ? ' falling-behind' : '')
+        + (finishFlourishIds.has(p.id) ? ' landing-flourish' : '');
       tok.style.left = (node.x/1000*100)+'%';
       tok.style.top = ((node.y/560*100) - stackIdx*4.2)+'%';
-      tok.innerHTML = `<div class="stack"><div class="icon">${avatarHTML(p.avatar,'1em','#FFFFFF')}</div><div class="pname">${escapeHtml(p.name)}</div></div>`;
-      layer.appendChild(tok);
+      tok.innerHTML = `<div class="stack"><div class="icon">${avatarHTML(p.avatar,'1em','#FFFFFF')}</div><div class="pname">${escapeHtml(p.name)}</div></div><div class="flame-trail">🔥</div>`;
+      stackIdx++;
     });
+    if(othersHere.length>0){
+      const tok = tokenFor('agg-'+pos);
+      tok.style.left = (node.x/1000*100)+'%';
+      tok.style.top = ((node.y/560*100) - stackIdx*4.2)+'%';
+      tok.innerHTML = `<div class="stack"><div class="icon">${planeSvg('#FFFFFF')}</div><div class="pname">+${othersHere.length}</div></div>`;
+    }
+  });
+  // drop tokens for players who left the top 5 or position buckets that emptied out
+  Object.keys(presenterPlaneEls).forEach(key=>{
+    if(!seenKeys.has(key)){ presenterPlaneEls[key].remove(); delete presenterPlaneEls[key]; }
   });
 }
 
+// Rows are kept and reused (keyed by player id) instead of rebuilt from scratch, so a
+// rank swap can FLIP-animate: the row's DOM position moves instantly, then a translateY
+// inverts it back to where it visually was and releases into the CSS transition on
+// .lead-row (transform .3s ease), producing a smooth slide into its new spot.
+const presenterLeaderRowEls = {};
 function renderPresenterLeaderboard(){
   const el = document.getElementById('presLeaderboard');
+  const titleEl = document.getElementById('presLeaderboardTitle');
+  if(presHoveredLeg!==null){
+    const node = ROUTE[presHoveredLeg];
+    const here = Object.values(state.players).filter(p=>p.position===presHoveredLeg)
+      .sort((a,b)=>(a.totalAnswerTime||0)-(b.totalAnswerTime||0));
+    if(titleEl) titleEl.textContent = `📍 ${node.code} · ${node.city}`;
+    el.innerHTML = here.length===0
+      ? `<p style="color:rgba(255,255,255,.5); font-size:13px;">No aircraft parked here right now.</p>`
+      : here.map(p=>`
+        <div class="lead-row">
+          <div class="av">${avatarHTML(p.avatar,'1em','#FFFFFF')}</div>
+          <div class="nm">${escapeHtml(p.name)}${milestoneDotsFor(p.id)}<div style="font-size:10.5px; color:rgba(255,255,255,.5); font-weight:400;">⏱ ${formatTime(p.totalAnswerTime)}</div></div>
+        </div>
+      `).join('');
+    return; // the hover view wipes the DOM, so the row cache below is rebuilt fresh next time
+  }
+  if(titleEl) titleEl.textContent = 'Live Leaderboard';
   const ranked = rankedPlayers();
-  if(ranked.length===0){ el.innerHTML = '<p style="color:rgba(255,255,255,.5); font-size:13px;">No players yet. Scan the QR code to join.</p>'; return; }
-  el.innerHTML = ranked.map((p,i)=>`
-    <div class="lead-row ${i===0?'top1':''}">
+  if(ranked.length===0){
+    el.innerHTML = '<p style="color:rgba(255,255,255,.5); font-size:13px;">No players yet. Scan the QR code to join.</p>';
+    Object.keys(presenterLeaderRowEls).forEach(k=>delete presenterLeaderRowEls[k]);
+    return;
+  }
+  const totalLegs = ROUTE.length - 1;
+  const top5 = ranked.slice(0,5);
+  const rest = ranked.slice(5);
+
+  // Drop anything in the panel that isn't one of our tracked rows — e.g. the "No players
+  // yet" placeholder left over from the empty state above, the first time players join.
+  const trackedEls = new Set(Object.values(presenterLeaderRowEls));
+  [...el.children].forEach(child=>{ if(!trackedEls.has(child)) child.remove(); });
+
+  // FLIP step 1 ("First"): note where every currently-attached row sits before reordering.
+  const firstTop = {};
+  Object.keys(presenterLeaderRowEls).forEach(key=>{
+    const row = presenterLeaderRowEls[key];
+    if(row.isConnected) firstTop[key] = row.getBoundingClientRect().top;
+  });
+
+  const seenKeys = new Set();
+  top5.forEach((p,i)=>{
+    const key = 'p-'+p.id;
+    seenKeys.add(key);
+    let row = presenterLeaderRowEls[key];
+    if(!row){ row = document.createElement('div'); presenterLeaderRowEls[key] = row; }
+    const onFire = (p.currentStreak||0) >= 5;
+    const accuracy = p.answeredCount ? Math.round((p.correctCount||0)/p.answeredCount*100) : 0;
+    row.className = 'lead-row' + (i===0?' top1':'');
+    row.innerHTML = `
       <div class="rank">${i<3?RANK_TROPHY[i]:('#'+(i+1))}</div>
       <div class="av">${avatarHTML(p.avatar,'1em','#FFFFFF')}</div>
-      <div class="nm">${escapeHtml(p.name)}${milestoneDotsFor(p.id)}<div style="font-size:10.5px; color:rgba(255,255,255,.5); font-weight:400;">${ROUTE[p.position].code} · ${ROUTE[p.position].city} · ⏱ ${formatTime(p.totalAnswerTime)}</div></div>
-      <div class="st">${p.position}/12</div>
-    </div>
-  `).join('');
+      <div class="nm">${onFire?'<span class="fire-tag">🔥</span> ':''}${escapeHtml(p.name)}${milestoneDotsFor(p.id)}
+        <div class="sub">${ROUTE[p.position].code} · ${ROUTE[p.position].city} · ⏱ ${formatTime(p.totalAnswerTime)}</div>
+        <div class="stats">🎯 ${accuracy}% accuracy · 🏆 best streak ${p.longestStreak||0}</div>
+      </div>
+      <div class="st">${p.position}/${totalLegs}</div>
+    `;
+    el.appendChild(row); // "Last": (re)places it in rank order — existing nodes just move
+  });
+  if(rest.length>0){
+    const key = 'others';
+    seenKeys.add(key);
+    let row = presenterLeaderRowEls[key];
+    if(!row){ row = document.createElement('div'); presenterLeaderRowEls[key] = row; }
+    row.className = 'lead-row other-row';
+    row.innerHTML = `
+      <div class="rank">—</div>
+      <div class="av">✈️</div>
+      <div class="nm">+${rest.length} other player${rest.length>1?'s':''}<div style="font-size:10.5px; color:rgba(255,255,255,.5); font-weight:400;">outside the top 5</div></div>
+      <div class="st"></div>
+    `;
+    el.appendChild(row);
+  }
+  // players who fell out of the top 5 entirely lose their row
+  Object.keys(presenterLeaderRowEls).forEach(key=>{
+    if(!seenKeys.has(key)){ presenterLeaderRowEls[key].remove(); delete presenterLeaderRowEls[key]; }
+  });
+
+  // FLIP steps 2-3 ("Invert" + "Play"): snap each moved row back to its old spot with no
+  // transition, then release the inline overrides so the CSS transition slides it home.
+  seenKeys.forEach(key=>{
+    const row = presenterLeaderRowEls[key];
+    const first = firstTop[key];
+    if(first===undefined) return; // brand-new row — nothing to animate from
+    const delta = first - row.getBoundingClientRect().top;
+    if(Math.abs(delta) < 1) return;
+    row.style.transition = 'none';
+    row.style.transform = `translateY(${delta}px)`;
+    row.getBoundingClientRect(); // force a reflow so the snapped position takes effect first
+    row.style.transition = '';
+    row.style.transform = '';
+  });
 }
 
 function rankedPlayers(){
-  return Object.values(state.players).slice().sort((a,b)=>
-    b.position - a.position ||
-    (a.totalAnswerTime||0) - (b.totalAnswerTime||0)
-  );
+  // Anyone who has actually landed (finishRank set) outranks everyone still racing,
+  // ordered by true arrival sequence — not just by who happens to share the FINISH tile.
+  return Object.values(state.players).slice().sort((a,b)=>{
+    if(a.finishRank && b.finishRank) return a.finishRank - b.finishRank;
+    if(a.finishRank) return -1;
+    if(b.finishRank) return 1;
+    return b.position - a.position || (a.totalAnswerTime||0) - (b.totalAnswerTime||0);
+  });
 }
 const RANK_TROPHY = ['🥇','🥈','🥉'];
 function formatTime(ms){
   ms = ms || 0;
   return (ms/1000).toFixed(1)+'s';
+}
+function ordinal(n){
+  const s = ['th','st','nd','rd'], v = n % 100;
+  return n + (s[(v-20)%10] || s[v] || s[0]);
 }
 function milestoneDotsFor(playerId){
   let dots = '';
@@ -861,17 +1752,123 @@ function renderPresenter(){
   pill.textContent = state.gameState.toUpperCase();
   renderPresenterPlanes();
   renderPresenterLeaderboard();
+  updateLocationScene();
+  if(state.gameState==='finished' && !finishCinematicPlayed){
+    finishCinematicPlayed = true;
+    triggerFinishCinematic();
+  }
+
+  const totalLegs = ROUTE.length - 1;
+  const turbulent = isTurbulenceLeg(state.currentQ);
+  const qKnown = (state.currentQuestionIndex!==null && state.currentQuestionIndex!==undefined);
+
+  // weather badge + storm / sunny / thunder theme
+  const presenterEl = document.getElementById('view-presenter');
+  const weatherBadge = document.getElementById('weatherBadge');
+  // Turbulence always outranks Power Question — arming Power on a turbulence leg
+  // is already blocked in adminTogglePowerQuestion, this is just a display backstop.
+  const powerOn = state.powerQuestionActive && !turbulent;
+  // "Thunder" is the internal name for the ⛈ Storm feature (leg 8), kept distinct from the
+  // pre-existing "storm" naming used for Turbulence's rain/lightning theme, to avoid confusion.
+  const thunderOn = isStormLeg(state.currentQ) && !turbulent;
+  if(weatherBadge){
+    weatherBadge.innerHTML = turbulent ? '🌪 Turbulence' : (thunderOn ? '⛈ Storm' : (powerOn ? '☀️ Power Question' : '🌈 Clear Skies'));
+    weatherBadge.classList.toggle('weather-storm', turbulent);
+    weatherBadge.classList.toggle('weather-power', powerOn);
+    weatherBadge.classList.toggle('weather-thunder', thunderOn);
+  }
+  presenterEl.classList.toggle('storm-theme', turbulent);
+  presenterEl.classList.toggle('sunny-theme', powerOn);
+  presenterEl.classList.toggle('thunder-theme', thunderOn);
+  let stormFx = document.getElementById('stormFx');
+  if(turbulent && !stormFx){
+    stormFx = document.createElement('div');
+    stormFx.id='stormFx';
+    stormFx.className='storm-fx';
+    stormFx.innerHTML = '<div class="lightning-flash"></div>' + Array.from({length:26}).map(()=>`<div class="rain-drop" style="left:${Math.random()*100}%; animation-delay:${(Math.random()*1.2).toFixed(2)}s; animation-duration:${(0.5+Math.random()*0.4).toFixed(2)}s;"></div>`).join('');
+    presenterEl.appendChild(stormFx);
+  } else if(!turbulent && stormFx){
+    stormFx.remove();
+  }
+  let sunnyFx = document.getElementById('sunnyFx');
+  if(powerOn && !sunnyFx){
+    sunnyFx = document.createElement('div');
+    sunnyFx.id='sunnyFx';
+    sunnyFx.className='sunny-fx';
+    sunnyFx.innerHTML = '<div class="sun-ray"></div>';
+    presenterEl.appendChild(sunnyFx);
+  } else if(!powerOn && sunnyFx){
+    sunnyFx.remove();
+  }
+  let thunderFx = document.getElementById('thunderFx');
+  if(thunderOn && !thunderFx){
+    thunderFx = document.createElement('div');
+    thunderFx.id='thunderFx';
+    thunderFx.className='storm-fx thunder-fx';
+    thunderFx.innerHTML = '<div class="lightning-flash thunder-flash"></div>' + Array.from({length:40}).map(()=>`<div class="rain-drop thunder-drop" style="left:${Math.random()*100}%; animation-delay:${(Math.random()*1.2).toFixed(2)}s; animation-duration:${(0.35+Math.random()*0.3).toFixed(2)}s;"></div>`).join('');
+    presenterEl.appendChild(thunderFx);
+  } else if(!thunderOn && thunderFx){
+    thunderFx.remove();
+  }
+
+  // ⛈ Storm — after reveal, show the 10 ATC-cleared players for 10 seconds
+  let stormClearOverlay = document.getElementById('stormClearOverlay');
+  const showStormClear = !!(state.stormClearedIds && state.stormRevealAt && (Date.now()-state.stormRevealAt) < 10000);
+  if(showStormClear && !stormClearOverlay){
+    stormClearOverlay = document.createElement('div');
+    stormClearOverlay.id = 'stormClearOverlay';
+    stormClearOverlay.className = 'storm-clear-overlay';
+    presenterEl.appendChild(stormClearOverlay);
+  }
+  if(showStormClear){
+    const rows = state.stormClearedIds.map((id,i)=>{
+      const p = state.players[id];
+      if(!p) return '';
+      return `<div class="storm-clear-row"><span class="rank">#${i+1}</span>${avatarHTML(p.avatar,'1.1em','#FFFFFF')}<span class="nm">${escapeHtml(p.name)}</span></div>`;
+    }).join('');
+    stormClearOverlay.innerHTML = `<div class="storm-clear-title">⛈ ATC CLEARANCE — ${state.stormClearedIds.length} aircraft continue</div><div class="storm-clear-list">${rows || '<div class=\"storm-clear-row\">No one answered correctly in time.</div>'}</div>`;
+  } else if(!showStormClear && stormClearOverlay){
+    stormClearOverlay.remove();
+  }
+
+  // weather/event rule banner — spells out the current rule on the big screen so players
+  // don't need to check their own phone to know what turbulence/storm/power question does
+  let wxBanner = document.getElementById('weatherRuleBanner');
+  const wxLive = state.gameState==='question' || state.gameState==='locked';
+  let wxClass = null, wxTitle = '', wxRule = '';
+  if(turbulent && wxLive){
+    wxClass = 'wx-turbulence'; wxTitle = '🌪 TURBULENCE';
+    wxRule = 'Correct holds your position. Wrong or no answer sends you back 1 leg. Turbo Boost is disabled.';
+  } else if(thunderOn && wxLive){
+    wxClass = 'wx-storm'; wxTitle = '⛈ STORM';
+    wxRule = 'Only the 10 fastest correct answers get ATC clearance +1 leg. Everyone else holds position. Turbo Boost and Power Question are disabled.';
+  } else if(powerOn && wxLive){
+    wxClass = 'wx-power'; wxTitle = '⚡ POWER QUESTION ⚡';
+    wxRule = 'Fastest correct answer gets +2 legs. Every other correct answer gets +1. Wrong answers hold position.';
+  }
+  if(wxClass){
+    if(!wxBanner){
+      wxBanner = document.createElement('div');
+      wxBanner.id = 'weatherRuleBanner';
+      presenterEl.appendChild(wxBanner);
+    }
+    wxBanner.className = 'weather-rule-banner ' + wxClass;
+    wxBanner.innerHTML = `<div class="title">${wxTitle}</div><div class="rule">${wxRule}</div>`;
+  } else if(wxBanner){
+    wxBanner.remove();
+  }
 
   const statusEl = document.getElementById('presQStatus');
-  if(state.gameState==='lobby') statusEl.textContent = 'Waiting for admin to open Question 1…';
-  else if(state.gameState==='question') statusEl.textContent = `Question ${state.currentQ+1} of ${QUESTIONS.length} is open — players are answering.`;
-  else if(state.gameState==='locked') statusEl.textContent = `Question ${state.currentQ+1} locked — preparing to reveal.`;
-  else if(state.gameState==='reveal') statusEl.textContent = `Question ${state.currentQ+1} — correct answer: ${String.fromCharCode(65+QUESTIONS[state.currentQ].correct)}. Aircraft advancing…`;
+  if(state.gameState==='lobby') statusEl.textContent = `Waiting for admin to open ${legLabel(state.currentQ)}…`;
+  else if(state.gameState==='question') statusEl.textContent = `${legLabel(state.currentQ)} is open — players are answering.${turbulent?' 🌪 Turbulence in effect.':''}`;
+  else if(state.gameState==='locked') statusEl.textContent = `${legLabel(state.currentQ)} locked — preparing to reveal.`;
+  else if(state.gameState==='reveal') statusEl.textContent = qKnown ? `${legLabel(state.currentQ)} — correct answer: ${String.fromCharCode(65+QUESTIONS[state.currentQuestionIndex].correct)}. Aircraft advancing…` : `${legLabel(state.currentQ)} revealed.`;
   else if(state.gameState==='finished') statusEl.textContent = 'Race complete! 🏆';
 
-  // winner overlay
+  // winner overlay — only appears once the admin explicitly triggers it (Game Control ->
+  // "Show Congratulations"), not automatically the instant the race finishes.
   let overlay = document.getElementById('winnerOverlay');
-  if(state.gameState==='finished' && state.winnerId){
+  if(state.gameState==='finished' && state.winnerId && state.congratsShown){
     if(!overlay){
       overlay = document.createElement('div');
       overlay.id='winnerOverlay';
@@ -948,6 +1945,48 @@ function fireConfetti(){
   })();
 }
 
+// Synthesized crowd applause — the app has no bundled audio asset (keeping it fully
+// offline-capable, see README), so a burst of short filtered-noise "claps" stands in
+// for a real recording. Swap in a <audio> element instead if a real sample is preferred.
+let _audioCtx = null;
+function getAudioCtx(){
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if(!AC) return null;
+  if(!_audioCtx) _audioCtx = new AC();
+  if(_audioCtx.state==='suspended') _audioCtx.resume().catch(()=>{});
+  return _audioCtx;
+}
+function playApplause(durationMs){
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  durationMs = durationMs || 1600;
+  const now = ctx.currentTime;
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0.0001, now);
+  master.gain.linearRampToValueAtTime(0.32, now+0.08);
+  master.gain.linearRampToValueAtTime(0.0001, now + durationMs/1000);
+  master.connect(ctx.destination);
+
+  const clapCount = Math.round(durationMs/38);
+  for(let i=0;i<clapCount;i++){
+    const t = now + (i/clapCount) * (durationMs/1000) * (0.85 + Math.random()*0.3);
+    const bufLen = Math.max(1, Math.floor(ctx.sampleRate*0.03));
+    const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for(let j=0;j<bufLen;j++) data[j] = (Math.random()*2-1) * Math.pow(1-j/bufLen, 2);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1800 + Math.random()*2400;
+    filter.Q.value = 0.7;
+    const g = ctx.createGain();
+    g.gain.value = 0.5 + Math.random()*0.5;
+    src.connect(filter).connect(g).connect(master);
+    src.start(t);
+  }
+}
+
 /* ============================================================
    ADMIN VIEW
    ============================================================ */
@@ -964,10 +2003,14 @@ function adminTab(tab){
 
 function adminOpenQuestion(){
   if(state.gameState==='finished'){ toast('Race already finished — reset to play again.'); return; }
+  ensureQuestionPicked();
   state.gameState = 'question';
   state.questionOpenedAt = Date.now();
+  // Hard deadline enforced by the database rules against Firebase server time, so a
+  // late answer is refused even if the admin forgets to press Close or the browser hangs.
+  state.deadline = Date.now() + (TIMER_SECONDS + 3) * 1000;
   saveState();
-  toast('Question '+(state.currentQ+1)+' opened');
+  toast(legLabel(state.currentQ)+' question opened');
 }
 function adminCloseQuestion(){
   if(state.gameState!=='question'){ toast('No question is currently open'); return; }
@@ -977,46 +2020,198 @@ function adminCloseQuestion(){
 }
 function adminRevealAnswer(){
   if(state.gameState!=='locked' && state.gameState!=='question'){ toast('Close the question first'); return; }
+  if(state.currentQuestionIndex===null || state.currentQuestionIndex===undefined){ toast('Open a question first'); return; }
+  // ---- idempotency guard: a leg can only ever be scored once ----
+  state.revealedLegs = state.revealedLegs || {};
+  if(state.revealedLegs[state.currentQ]){
+    state.gameState = 'reveal';
+    saveState();
+    toast('Leg '+(state.currentQ+1)+' was already revealed — aircraft not moved again.');
+    return;
+  }
+
+  // ---- snapshot for one-step undo (see adminUndoReveal) ----
+  state.undoSnapshot = {
+    leg: state.currentQ,
+    players: JSON.parse(JSON.stringify(state.players)),
+    milestones: JSON.parse(JSON.stringify(state.milestones||{})),
+    winnerId: state.winnerId,
+    gameState: state.gameState,
+    finishSeq: state.finishSeq||0,
+  };
+
   state.gameState = 'reveal';
-  const correctIdx = QUESTIONS[state.currentQ].correct;
+  const correctIdx = QUESTIONS[state.currentQuestionIndex].correct;
+  const turbulent = isTurbulenceLeg(state.currentQ);
+  // Turbulence always outranks Power Question, so the two can never both apply.
+  // Arming Power on a turbulence leg is blocked in adminTogglePowerQuestion; this is a backstop.
+  const isPower = state.powerQuestionActive && !turbulent;
+  // Storm is a fixed leg (STORM_LEG), which never coincides with a turbulence leg, and Power
+  // Question can't be armed on it (blocked in adminTogglePowerQuestion) — this is a backstop.
+  const storm = isStormLeg(state.currentQ) && !turbulent && !isPower;
+
+  // find the fastest correct answerer for Power Question bonus
+  let fastestId = null, fastestTime = Infinity;
+  if(isPower){
+    Object.values(state.players).forEach(p=>{
+      const a = p.answers[state.currentQ];
+      if(a && a.submitted && a.choice===correctIdx){
+        const t = (typeof a.timeTaken==='number') ? a.timeTaken : Infinity;
+        if(t < fastestTime){ fastestTime = t; fastestId = p.id; }
+      }
+    });
+  }
+
+  // Storm: only the 10 fastest correct answers on THIS question get ATC clearance (+1 leg).
+  // Everyone else — wrong, slow, or unanswered — holds position (no penalty).
+  let stormClearedIds = [];
+  if(storm){
+    stormClearedIds = Object.values(state.players)
+      .map(p=>{
+        const a = p.answers[state.currentQ];
+        if(!(a && a.submitted && a.choice===correctIdx)) return null;
+        return { id:p.id, t:(typeof a.timeTaken==='number' ? a.timeTaken : Infinity) };
+      })
+      .filter(Boolean)
+      .sort((a,b)=>a.t-b.t)
+      .slice(0,10)
+      .map(x=>x.id);
+  }
+
   Object.values(state.players).forEach(p=>{
     const a = p.answers[state.currentQ];
-    if(a && a.choice===correctIdx){
-      p.position = Math.min(p.position+1, ROUTE.length-1);
+    const correct = !!(a && a.submitted && a.choice===correctIdx);
+    // Turbo only counts if it was actually submitted. Arming it and never pressing
+    // Submit must not cost a leg — otherwise the player is penalised AND keeps the boost.
+    const turboArmed = !!(a && a.submitted && a.turbo);
+    if(a && a.submitted) p.answeredCount = (p.answeredCount||0)+1;
+    if(correct){
       p.correctCount = (p.correctCount||0)+1;
-      const landedCode = ROUTE[p.position].code;
-      if(['HAN','SPC','SGN'].includes(landedCode) && !state.milestones[landedCode]){
-        state.milestones[landedCode] = p.id;
-      }
+      p.currentStreak = (p.currentStreak||0)+1;
+      p.longestStreak = Math.max(p.longestStreak||0, p.currentStreak);
+    } else {
+      p.currentStreak = 0;
+    }
+
+    let delta;
+    if(turbulent){
+      delta = correct ? 0 : -1;
+    } else if(isPower){
+      delta = correct ? (p.id===fastestId ? 2 : 1) : 0;
+    } else if(storm){
+      delta = stormClearedIds.includes(p.id) ? 1 : 0;
+    } else if(turboArmed){
+      delta = correct ? 2 : -1;
+    } else {
+      delta = correct ? 1 : 0;
+    }
+
+    p.position = Math.max(0, Math.min(p.position + delta, ROUTE.length-1));
+    const landedCode = ROUTE[p.position].code;
+    if(['HAN','SPC','SGN'].includes(landedCode) && !state.milestones[landedCode]){
+      state.milestones[landedCode] = p.id;
     }
   });
-  // check winner
-  const finisher = Object.values(state.players).find(p=>p.position===ROUTE.length-1);
-  if(finisher){
-    state.gameState='finished';
-    state.winnerId = finisher.id;
+
+  if(storm){
+    state.stormClearedIds = stormClearedIds;
+    state.stormRevealAt = Date.now();
+  }
+
+  state.revealedLegs[state.currentQ] = true;
+
+  // The race keeps running until at least 3 aircraft have landed on FINISH — hand out
+  // finishRank in true arrival order (several can land on the same reveal thanks to
+  // Turbo/Power/Storm, so break ties by score then total answer time) rather than
+  // ending the whole race the instant the very first player lands.
+  const newArrivals = Object.values(state.players).filter(p=>p.position===ROUTE.length-1 && !p.finishRank);
+  if(newArrivals.length){
+    newArrivals.sort((a,b)=>
+      (b.correctCount||0) - (a.correctCount||0) ||
+      (a.totalAnswerTime||0) - (b.totalAnswerTime||0)
+    );
+    newArrivals.forEach(p=>{ state.finishSeq = (state.finishSeq||0) + 1; p.finishRank = state.finishSeq; });
+  }
+  const totalFinishers = Object.values(state.players).filter(p=>p.finishRank).length;
+  if(totalFinishers >= 3 && state.gameState !== 'finished'){
+    state.gameState = 'finished';
+    state.winnerId = Object.values(state.players).find(p=>p.finishRank===1).id;
   }
   saveState();
-  toast('Answer revealed — aircraft moved');
+  toast(newArrivals.length
+    ? `Revealed — ${newArrivals.length} aircraft landed at FINISH (${totalFinishers} total so far)`
+    : 'Answer revealed — aircraft moved');
+}
+
+/* One-step rollback of the last Reveal. The safety net for: wrong answer key,
+   a disputed question, or opening the wrong leg by mistake. */
+function adminUndoReveal(){
+  const snap = state.undoSnapshot;
+  if(!snap){ toast('Nothing to undo'); return; }
+  if(!confirm(`Undo the reveal of Leg ${snap.leg+1}? Every aircraft goes back to where it was before that question was scored.`)) return;
+  state.players = JSON.parse(JSON.stringify(snap.players));
+  state.milestones = JSON.parse(JSON.stringify(snap.milestones||{}));
+  state.winnerId = snap.winnerId;
+  state.finishSeq = snap.finishSeq||0;
+  state.currentQ = snap.leg;
+  state.gameState = 'locked'; // back to just-before-reveal, so it can be revealed again
+  if(state.revealedLegs) delete state.revealedLegs[snap.leg];
+  state.undoSnapshot = null;
+  state.stormClearedIds = null;
+  state.stormRevealAt = null;
+  state.congratsShown = false;
+  saveState();
+  toast('Reveal of Leg '+(snap.leg+1)+' undone');
 }
 function adminNextQuestion(){
   if(state.gameState==='finished'){ toast('Race finished — reset to play again.'); return; }
-  if(state.currentQ >= QUESTIONS.length-1){ toast('This was the last question'); return; }
+  // The map only has 12 legs, but with fewer than 3 aircraft landed there's no "last leg" —
+  // the race keeps going into overtime rounds (see legLabel()) until 3 have reached FINISH.
+  // armed but the leg was never scored -> hand the Power Question charge back
+  if(state.powerQuestionActive && !(state.revealedLegs && state.revealedLegs[state.currentQ])){
+    state.powerQuestionUsed = false;
+  }
   state.currentQ += 1;
   state.gameState = 'lobby';
   state.questionOpenedAt = null;
+  state.currentQuestionIndex = null;
+  state.powerQuestionActive = false;
+  state.stormClearedIds = null;
+  state.stormRevealAt = null;
   saveState();
-  toast('Advanced to question '+(state.currentQ+1));
+  toast('Advanced to '+legLabel(state.currentQ).toLowerCase());
 }
 function adminPrevQuestion(){
-  if(state.currentQ <= 0){ toast('Already at Question 1'); return; }
-  if(!confirm('Go back to Question '+state.currentQ+'? The game state for it will reopen at lobby (aircraft positions stay as they are).')) return;
+  if(state.gameState==='finished'){ toast('Race finished — reset to play again.'); return; }
+  if(state.currentQ <= 0){ toast('Already at Leg 1'); return; }
+  if(!confirm('Go back to Leg '+state.currentQ+'? A fresh question will be drawn for it (aircraft positions stay as they are).')) return;
+  // armed but the leg was never scored -> hand the Power Question charge back
+  if(state.powerQuestionActive && !(state.revealedLegs && state.revealedLegs[state.currentQ])){
+    state.powerQuestionUsed = false;
+  }
   state.currentQ -= 1;
   state.gameState = 'lobby';
   state.questionOpenedAt = null;
+  state.currentQuestionIndex = null;
+  state.powerQuestionActive = false;
+  state.stormClearedIds = null;
+  state.stormRevealAt = null;
   if(state.winnerId){ state.winnerId = null; }
   saveState();
-  toast('Went back to question '+(state.currentQ+1));
+  toast('Went back to '+legLabel(state.currentQ).toLowerCase());
+}
+function adminTogglePowerQuestion(){
+  if(state.gameState!=='lobby'){ toast('Power Question can only be toggled before opening the question'); return; }
+  if(isTurbulenceLeg(state.currentQ)){ toast('🌪 Leg '+(state.currentQ+1)+' is a turbulence leg — Power Question cannot be armed here'); return; }
+  if(isStormLeg(state.currentQ)){ toast('⛈ Leg '+(state.currentQ+1)+' is a storm leg — Power Question cannot be armed here'); return; }
+  if(state.powerQuestionUsed && !state.powerQuestionActive){ toast('Power Question has already been played this game'); return; }
+  state.powerQuestionActive = !state.powerQuestionActive;
+  state.currentQuestionIndex = null; // force a fresh pick from the right pool
+  // Cancelling before the question opens gives the charge back, so a mis-click does not
+  // burn the single Power Question for the whole game.
+  state.powerQuestionUsed = state.powerQuestionActive;
+  saveState();
+  toast(state.powerQuestionActive ? '⚡ Power Question armed for this leg' : 'Power Question cancelled — charge returned');
 }
 function adminPauseToggle(){
   state.paused = !state.paused;
@@ -1025,31 +2220,75 @@ function adminPauseToggle(){
   toast(state.paused ? 'Game paused' : 'Game resumed');
 }
 function resetGame(){
-  if(!confirm('Reset the entire game? All players and progress will be cleared.')) return;
+  // Hard gate while a race is live: this button wipes every registered player, and
+  // during an event that is unrecoverable. Requires typing the word to confirm.
+  const live = state.gameState!=='lobby' || Object.keys(state.players).length>0;
+  if(live){
+    const typed = prompt('This clears ALL '+Object.keys(state.players).length+' players and the whole race.\n\nType  RESET  to confirm:');
+    if(typed===null) return;
+    if(typed.trim().toUpperCase()!=='RESET'){ toast('Reset cancelled'); return; }
+  } else if(!confirm('Reset the entire game?')) return;
   state = defaultState();
+  resetPresenterCinematics();
   saveState();
   toast('Game reset');
 }
+// Cinematic trackers live outside `state` (they're purely local presenter-screen visual
+// state, never synced), so a game reset has to clear them explicitly.
+function resetPresenterCinematics(){
+  lastLeaderId = null;
+  cinematicOvertakeId = null;
+  cinematicFallenId = null;
+  leaderCinematicUntil = 0;
+  lastLeaderLocationCode = null;
+  finishFlourishIds = new Set();
+  finishCinematicPlayed = false;
+  const zoomWrap = document.getElementById('mapZoomWrap');
+  if(zoomWrap) zoomWrap.style.transform = 'scale(1)';
+  const mapPanel = document.getElementById('mapPanel');
+  if(mapPanel) mapPanel.classList.remove(...ALL_SCENE_CLASSES);
+  const banner = document.getElementById('newLeaderBanner');
+  if(banner) banner.remove();
+}
 function resetProgress(){
-  if(!confirm('Reset progress? Question will return to 1 and every aircraft goes back to START. Players stay registered.')) return;
+  if(!confirm('Reset progress? Leg will return to 1 and every aircraft goes back to START. Players stay registered.')) return;
   Object.values(state.players).forEach(p=>{
     p.position = 0;
     p.correctCount = 0;
     p.answers = {};
     p.totalAnswerTime = 0;
+    p.turboUsed = false;
+    p.finishRank = null;
+    p.currentStreak = 0;
+    p.longestStreak = 0;
+    p.answeredCount = 0;
   });
   state.currentQ = 0;
+  state.currentQuestionIndex = null;
+  state.questionIndexByLeg = {};
+  state.powerQuestionActive = false;
   state.gameState = 'lobby';
   state.questionOpenedAt = null;
   state.winnerId = null;
   state.milestones = { HAN:null, SPC:null, SGN:null };
   state.awardShown = false;
+  state.congratsShown = false;
+  state.revealedLegs = {};
+  state.undoSnapshot = null;
+  state.powerQuestionUsed = false;
+  state.stormClearedIds = null;
+  state.stormRevealAt = null;
+  state.finishSeq = 0;
+  resetPresenterCinematics();
   saveState();
-  toast('Progress reset — back to Question 1');
+  toast('Progress reset — back to Leg 1');
 }
+// Congratulations and Award Ceremony are both full-screen presenter overlays — showing
+// both at once would stack illegibly, so triggering either one dismisses the other.
 function triggerAward(){
   if(Object.keys(state.players).length===0){ toast('No players yet'); return; }
   state.awardShown = true;
+  state.congratsShown = false;
   saveState();
   toast('Award ceremony shown on presenter screen');
 }
@@ -1057,9 +2296,41 @@ function hideAward(){
   state.awardShown = false;
   saveState();
 }
+function triggerCongrats(){
+  if(state.gameState!=='finished' || !state.winnerId){ toast('Race has not finished yet'); return; }
+  state.awardShown = false;
+  state.congratsShown = true;
+  saveState();
+  toast('Congratulations screen shown on presenter screen');
+}
+function hideCongrats(){
+  state.congratsShown = false;
+  saveState();
+}
 function removePlayer(id){
+  const p = state.players[id];
+  if(!p) return;
+  if(!confirm('Remove "'+p.name+'" from the race? This cannot be undone — they would have to join again as a new player.')) return;
   delete state.players[id];
   saveState();
+  toast(p.name+' removed');
+}
+
+/* Manual override — the universal escape hatch during a live event.
+   Covers everything the rules cannot: a phone that died mid-question, someone who
+   lost signal, a dispute settled on stage, a player who rejoined as a new entry. */
+function adminNudgePlayer(id, delta){
+  const p = state.players[id];
+  if(!p) return;
+  const before = p.position;
+  p.position = Math.max(0, Math.min(p.position + delta, ROUTE.length-1));
+  if(p.position===before){ toast(p.name+' is already at '+ROUTE[before].code); return; }
+  const landedCode = ROUTE[p.position].code;
+  if(['HAN','SPC','SGN'].includes(landedCode) && !state.milestones[landedCode]){
+    state.milestones[landedCode] = p.id;
+  }
+  saveState();
+  toast(p.name+': '+ROUTE[before].code+' → '+ROUTE[p.position].code+' (manual)');
 }
 
 function renderQuestionEditor(){
@@ -1074,34 +2345,41 @@ function renderQuestionEditor(){
         </div>
       </div>
     </div>
-  `).join('') + `<p style="margin-top:16px; font-size:12.5px; color:rgba(255,255,255,.5);">Full inline editing, Excel import/export, and question reordering are next on the build list for the production version.</p>`;
+  `).join('') + `<p style="margin-top:16px; font-size:12.5px; color:rgba(255,255,255,.5);">30 questions total. Legs 1–4 draw randomly from Q1–10, legs 5–8 from Q11–20, legs 9–Finish from Q21–30. Power Question always draws from Q21–30.</p>`;
 }
 
 function renderAdminAnswerFeed(){
   const feed = document.getElementById('adminAnswerFeed');
   document.getElementById('feedQNum').textContent = state.currentQ+1;
+  if(state.currentQuestionIndex===null || state.currentQuestionIndex===undefined){
+    feed.innerHTML = '<p style="color:rgba(255,255,255,.5); font-size:13.5px;">No question opened for this leg yet.</p>'; return;
+  }
   const entries = Object.values(state.players).filter(p=>p.answers[state.currentQ]);
   if(entries.length===0){ feed.innerHTML = '<p style="color:rgba(255,255,255,.5); font-size:13.5px;">No submissions yet.</p>'; return; }
-  const correctIdx = QUESTIONS[state.currentQ].correct;
+  const correctIdx = QUESTIONS[state.currentQuestionIndex].correct;
   const revealed = state.gameState==='reveal' || state.gameState==='finished';
   feed.innerHTML = entries.map(p=>{
     const a = p.answers[state.currentQ];
     let cls='answer-tile';
     if(revealed) cls += a.choice===correctIdx ? ' correct-tile' : ' wrong-tile';
-    return `<div class="${cls}"><div class="nm">${avatarHTML(p.avatar)} ${escapeHtml(p.name)}</div><div class="ans">${a.submitted?'Submitted':'Selecting…'} · Option ${String.fromCharCode(65+a.choice)}</div></div>`;
+    return `<div class="${cls}"><div class="nm">${avatarHTML(p.avatar)} ${escapeHtml(p.name)}${a.turbo?' ⚡':''}</div><div class="ans">${a.submitted?'Submitted':'Selecting…'} · Option ${String.fromCharCode(65+a.choice)}</div></div>`;
   }).join('');
 }
 
 function renderAnswersFull(){
   const el = document.getElementById('answersFull');
   let html = '';
-  for(let qi=0; qi<QUESTIONS.length; qi++){
-    const entries = Object.values(state.players).filter(p=>p.answers[qi]);
-    html += `<h3 style="margin:18px 0 8px; font-size:13px;">Question ${qi+1} <span class="tag">${entries.length} answers</span></h3>`;
+  const totalLegs = ROUTE.length - 1;
+  for(let leg=0; leg<totalLegs; leg++){
+    const qIdx = state.questionIndexByLeg[leg];
+    const entries = Object.values(state.players).filter(p=>p.answers[leg]);
+    const qLabel = (qIdx!==undefined) ? `Q${qIdx+1}: ${escapeHtml(QUESTIONS[qIdx].q)}` : 'not played yet';
+    html += `<h3 style="margin:18px 0 8px; font-size:13px;">Leg ${leg+1} <span class="tag">${entries.length} answers</span></h3>`;
+    html += `<p style="font-size:12px; color:rgba(255,255,255,.5); margin:0 0 8px;">${qLabel}</p>`;
     if(entries.length===0){ html += `<p style="font-size:12.5px; color:rgba(255,255,255,.45); margin:0 0 10px;">No submissions.</p>`; continue; }
     html += `<div class="answer-grid" style="margin-bottom:10px;">` + entries.map(p=>{
-      const a = p.answers[qi];
-      return `<div class="answer-tile"><div class="nm">${avatarHTML(p.avatar)} ${escapeHtml(p.name)}</div><div class="ans">Option ${String.fromCharCode(65+a.choice)} ${a.submitted?'✓':'(pending)'}</div></div>`;
+      const a = p.answers[leg];
+      return `<div class="answer-tile"><div class="nm">${avatarHTML(p.avatar)} ${escapeHtml(p.name)}${a.turbo?' ⚡':''}</div><div class="ans">Option ${String.fromCharCode(65+a.choice)} ${a.submitted?'✓':'(pending)'}</div></div>`;
     }).join('') + `</div>`;
   }
   el.innerHTML = html;
@@ -1110,13 +2388,18 @@ function renderAnswersFull(){
 function renderPlayersTable(){
   const tbody = document.querySelector('#playersTable tbody');
   const players = Object.values(state.players);
-  if(players.length===0){ tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(255,255,255,.45);">No players registered yet.</td></tr>`; return; }
+  if(players.length===0){ tbody.innerHTML = `<tr><td colspan="7" style="color:rgba(255,255,255,.45);">No players registered yet.</td></tr>`; return; }
   tbody.innerHTML = players.map(p=>`
     <tr>
       <td>${avatarHTML(p.avatar)}</td>
       <td>${escapeHtml(p.name)}${milestoneDotsFor(p.id)}</td>
-      <td class="mono">${ROUTE[p.position].code}</td>
+      <td class="mono">${ROUTE[p.position].code} <span style="opacity:.5;">(${p.position}/${ROUTE.length-1})</span></td>
       <td>${p.correctCount||0}</td>
+      <td>${p.turboUsed ? '<span class="tag">used</span>' : (p.position>=TURBO_MIN_LEG ? '<span class="tag" style="color:var(--vna-gold-light);">ready</span>' : '<span class="tag" style="opacity:.45;">locked</span>')}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-ghost btn-sm" onclick="adminNudgePlayer('${p.id}',-1)">−1</button>
+        <button class="btn btn-ghost btn-sm" onclick="adminNudgePlayer('${p.id}',1)">+1</button>
+      </td>
       <td><button class="btn btn-danger btn-sm" onclick="removePlayer('${p.id}')">Remove</button></td>
     </tr>
   `).join('');
@@ -1132,7 +2415,7 @@ function renderLeaderTable(){
       <td>${avatarHTML(p.avatar)}</td>
       <td>${escapeHtml(p.name)}${milestoneDotsFor(p.id)}</td>
       <td class="mono">${ROUTE[p.position].code}</td>
-      <td>${p.position}/12</td>
+      <td>${p.position}/${ROUTE.length-1}</td>
       <td class="mono">${formatTime(p.totalAnswerTime)}</td>
     </tr>
   `).join('');
@@ -1140,13 +2423,61 @@ function renderLeaderTable(){
 
 function renderAdmin(){
   const players = Object.values(state.players);
+  const totalLegs = ROUTE.length - 1;
   document.getElementById('statPlayers').textContent = players.length;
-  document.getElementById('statQ').textContent = `${state.gameState==='lobby' && state.currentQ===0 && !state.questionOpenedAt ? 0 : state.currentQ+1} / ${QUESTIONS.length}`;
+  const statQNum = state.gameState==='lobby' && state.currentQ===0 && !state.questionOpenedAt ? 0 : state.currentQ+1;
+  document.getElementById('statQ').textContent = statQNum<=totalLegs ? `${statQNum} / ${totalLegs}` : `OT+${statQNum-totalLegs}`;
   document.getElementById('statSubmitted').textContent = players.filter(p=>p.answers[state.currentQ]).length;
   const ranked = rankedPlayers();
   document.getElementById('statLeader').textContent = ranked.length ? ranked[0].name : '—';
   document.getElementById('adminStateBadge').textContent = state.gameState.toUpperCase();
-  document.getElementById('adminCurrentQ').textContent = `Question ${state.currentQ+1} of ${QUESTIONS.length} — status: ${state.gameState}. "${QUESTIONS[state.currentQ].q}"`;
+  const qLabel = (state.currentQuestionIndex!==null && state.currentQuestionIndex!==undefined)
+    ? `"${QUESTIONS[state.currentQuestionIndex].q}" (Q${state.currentQuestionIndex+1})`
+    : 'not opened yet';
+  const turbulentNote = isTurbulenceLeg(state.currentQ) ? ' · 🌪 TURBULENCE LEG' : '';
+  document.getElementById('adminCurrentQ').textContent = `${legLabel(state.currentQ)} — status: ${state.gameState}. ${qLabel}${turbulentNote}`;
+
+  // Answer key — appears the moment a question is opened/picked, so the host always
+  // knows the correct answer (and explanation, if one has been written) before revealing.
+  const keyPanel = document.getElementById('adminAnswerKeyPanel');
+  const keyBody = document.getElementById('adminAnswerKeyBody');
+  if(state.currentQuestionIndex!==null && state.currentQuestionIndex!==undefined){
+    const qd = QUESTIONS[state.currentQuestionIndex];
+    keyPanel.classList.remove('hidden');
+    keyBody.innerHTML = `
+      <div style="font-size:15px; font-weight:600; margin-bottom:12px;">${escapeHtml(qd.q)}</div>
+      ${qd.opts.map((o,i)=>`
+        <div class="qedit-row">
+          <div class="num">${String.fromCharCode(65+i)}</div>
+          <div class="${i===qd.correct?'ans-correct':''}">${escapeHtml(o)}${i===qd.correct?' ✓':''}</div>
+        </div>
+      `).join('')}
+      <div style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,.08); font-size:13px; line-height:1.55; color:rgba(255,255,255,.75);">
+        ${qd.explain ? escapeHtml(qd.explain) : '<span style="color:rgba(255,255,255,.4); font-style:italic;">No explanation written for this question — add one to the `explain` field on this question in QUESTIONS.</span>'}
+      </div>
+    `;
+  } else {
+    keyPanel.classList.add('hidden');
+    keyBody.innerHTML = '';
+  }
+
+  const powerBtn = document.getElementById('powerQBtn');
+  if(powerBtn){
+    powerBtn.classList.toggle('btn-primary', !!state.powerQuestionActive);
+    powerBtn.classList.toggle('btn-ghost', !state.powerQuestionActive);
+    const powerBlocked = isTurbulenceLeg(state.currentQ) || (state.powerQuestionUsed && !state.powerQuestionActive);
+    powerBtn.disabled = state.gameState!=='lobby' || powerBlocked;
+    powerBtn.textContent = isTurbulenceLeg(state.currentQ) ? '⚡ Power Q (blocked: turbulence)'
+      : (state.powerQuestionUsed && !state.powerQuestionActive) ? '⚡ Power Q (already played)'
+      : '⚡ Power Question';
+  }
+  const undoBtn = document.getElementById('undoBtn');
+  if(undoBtn){
+    undoBtn.disabled = !state.undoSnapshot;
+    undoBtn.textContent = state.undoSnapshot ? `↩️ Undo reveal of Leg ${state.undoSnapshot.leg+1}` : '↩️ Undo last reveal';
+  }
+  const pauseBtn = document.getElementById('pauseBtn');
+  if(pauseBtn) pauseBtn.textContent = state.paused ? 'Resume game' : 'Pause game';
 
   if(currentTab==='control') renderAdminAnswerFeed();
   if(currentTab==='answers') renderAnswersFull();
@@ -1166,16 +2497,20 @@ function renderAll(){
   renderAdmin();
 }
 
-/* live timer tick for player screen */
+/* live timer tick for player + presenter screens (presenter needs it to expire the
+   10s Storm ATC-clearance overlay even when no new state event arrives) */
 setInterval(()=>{
   if(!document.getElementById('view-player').classList.contains('hidden')) renderPlayer();
+  if(!document.getElementById('view-presenter').classList.contains('hidden')) renderPresenter();
 }, 1000);
 
-/* init route from hash */
+/* init route from hash, then bring up the sync layer */
 (function init(){
   const v = location.hash.replace('#','');
-  if(['player','presenter','admin'].includes(v)) go(v);
+  if(v==='admin'){ go('landing'); openAdminGate(); }
+  else if(['player','presenter'].includes(v)) go(v);
   else go('landing');
+  fbInit();
 })();
 </script>
 </body>
