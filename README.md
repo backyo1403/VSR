@@ -6,8 +6,9 @@ Game quiz đua máy bay 3 màn hình cho sự kiện ~50 người, mỗi ngườ
 VNA_Race/
 ├── public/index.html        ← app (deploy cái này)
 ├── public/vendor/           ← asset offline, sinh ra bởi scripts/vendor-assets.mjs
-├── database.rules.json      ← phân quyền admin/player
-├── firebase.json            ← cấu hình hosting + database
+├── database.rules.json      ← phân quyền admin/player (Firebase Realtime Database)
+├── firebase.json            ← cấu hình database rules deploy (không dùng Firebase Hosting)
+├── vercel.json              ← deploy tĩnh public/ lên Vercel, không cần build step
 ├── scripts/vendor-assets.mjs
 ├── test/rules.test.js       ← 29 test luật chơi
 └── vna-sky-race (1).html    ← bản sao lưu của public/index.html (đồng bộ thủ công)
@@ -49,52 +50,44 @@ node test/rules.test.js public/index.html
 
 ## Dựng lần đầu
 
-### 1. Tạo project Firebase
+Project Firebase (`vietnam-airlines-sky-race`) và `FIREBASE_CONFIG` đã có sẵn, hardcode thẳng trong `public/index.html` — không cần điền gì thêm để chạy. Config này (apiKey, databaseURL...) an toàn khi lộ ra client, vì quyền hạn thật sự nằm ở `database.rules.json`, không phải ở việc giấu mấy giá trị này.
 
-Vào [console.firebase.google.com](https://console.firebase.google.com) → **Add project** → đặt tên `vna-sky-race`.
+### 1. Kiểm tra Firebase project (nếu chưa từng dựng)
 
-- **Realtime Database** → Create Database → chọn vùng **asia-southeast1 (Singapore)** → Start in **locked mode**.
-- **Authentication** → Get started → bật **Anonymous** và **Email/Password**.
+Vào [console.firebase.google.com](https://console.firebase.google.com) → project `vietnam-airlines-sky-race`:
+
+- **Realtime Database** đã bật, databaseURL: `https://vietnam-airlines-sky-race-default-rtdb.firebaseio.com`.
+- **Authentication** → bật **Anonymous** và **Email/Password**.
 - **Authentication → Users → Add user**: email `admin@vna-sky-race.local`, đặt mật khẩu mạnh. Đây là tài khoản admin duy nhất — mật khẩu không nằm trong code.
-- **Project settings → Your apps → Web (`</>`)** → copy khối `firebaseConfig`.
+- **Realtime Database → Rules** → dán nội dung `database.rules.json` (hoặc `firebase deploy --only database` — cần `npm install -g firebase-tools` rồi `firebase login`).
 
-> Với 50 người chơi, hãy **nâng lên gói Blaze** và đặt budget alert $1. Gói Spark có trần 100 kết nối đồng thời; kết nối treo sau mỗi lần F5 khiến 50 người thật có thể chạm trần, và khi chạm thì người vào sau bị chặn im lặng.
+> Với ~50-200 người chơi, hãy **nâng lên gói Blaze** và đặt budget alert $1. Gói Spark có trần 100 kết nối đồng thời; kết nối treo sau mỗi lần F5 khiến người chơi thật có thể chạm trần, và khi chạm thì người vào sau bị chặn im lặng.
 
-### 2. Điền config
-
-Mở `public/index.html`, tìm `FIREBASE_CONFIG` (gần đầu file) và thay các chỗ `PASTE_..._HERE` bằng giá trị vừa copy.
-
-Chưa điền thì app vẫn chạy được ở **chế độ offline** (một máy duy nhất) — đó chính là phương án dự phòng khi hội trường mất mạng.
-
-### 3. Đóng gói asset offline
+### 2. Đóng gói asset offline (tuỳ chọn)
 
 ```bash
 node scripts/vendor-assets.mjs
 ```
 
-Tải font, confetti và Firebase SDK về `public/vendor/` rồi trỏ lại đường dẫn. Sau bước này app không còn phụ thuộc CDN nào; kết nối mạng duy nhất còn lại là WebSocket tới database.
+Tải font và confetti về `public/vendor/` rồi trỏ lại đường dẫn (Firebase SDK vẫn load từ CDN của Google — xem đầu `public/index.html` — vì app đã tự rơi về offline nếu 3 script đó tải lỗi). Cần internet để chạy, làm ở văn phòng chứ không phải tại sự kiện.
 
-### 4. Deploy
-
-```bash
-npm install -g firebase-tools
-```
+### 3. Deploy — GitHub + Vercel
 
 ```bash
-firebase login && firebase init --project vna-sky-race && firebase deploy
+git push
 ```
 
-Khi `firebase init` hỏi, chọn **Hosting** và **Realtime Database**, và **giữ nguyên** `public/`, `firebase.json`, `database.rules.json` đã có sẵn (trả lời **No** khi nó hỏi ghi đè).
+Push lên [github.com/backyo1403/VSR](https://github.com/backyo1403/VSR), Vercel tự build lại (không cần build step — `vercel.json` trỏ thẳng `outputDirectory` vào `public/`). App live tại **https://vsr-seven.vercel.app**.
 
-### 5. Ba đường link
+### 4. Ba đường link
 
 | Vai | Link |
 |---|---|
-| Người chơi | `https://<project>.web.app/#player` ← **in QR khổ lớn, dán nhiều chỗ** |
-| Màn LED | `https://<project>.web.app/#presenter` |
-| Điều phối | `https://<project>.web.app/#admin` → nhập mật khẩu tài khoản admin |
+| Người chơi | `https://vsr-seven.vercel.app/#player` ← **in QR khổ lớn, dán nhiều chỗ** |
+| Màn LED | `https://vsr-seven.vercel.app/#presenter` |
+| Điều phối | `https://vsr-seven.vercel.app/#admin` → nhập mật khẩu tài khoản admin |
 
-Chơi nhiều lượt thì thêm room code: `?room=SKY02#player` (mặc định `SKY01`).
+Chơi nhiều lượt thì thêm room code: `?room=SKY02#player` (mặc định `SKY01`), hoặc người chơi tự gõ room code ở màn đăng ký (giới hạn 200 người/phòng).
 
 ---
 

@@ -9,21 +9,27 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.2/confetti.browser.min.js"></script>
 
 <!-- ============================================================
-     SUPABASE — SUPABASE_URL/SUPABASE_ANON_KEY below are placeholders that
-     scripts/build-config.mjs substitutes at Vercel build time from the
-     NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY environment
-     variables (see .env.example and vercel.json) — never edit them by hand
-     here. Running straight off public/index.html without a build (e.g.
-     double-clicking the file, or opening it before running the build
-     script locally) leaves the placeholders unresolved, which the app
-     detects and treats the same as no config: OFFLINE mode (one device
-     only), the venue fallback if the network or Supabase is unreachable.
+     FIREBASE — Realtime Database + Auth. Loaded straight from Google's CDN
+     (same as canvas-confetti above) — no build step needed, works as-is on
+     Vercel's static hosting. If there's ever no internet at the venue, these
+     three <script> tags simply fail to load and the app detects that,
+     falling back to OFFLINE mode (one device only).
      ============================================================ -->
-<script src="vendor/supabase.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
-const SUPABASE_URL = "__SUPABASE_URL__";
-const SUPABASE_ANON_KEY = "__SUPABASE_ANON_KEY__";
-// The one admin account, created by hand in Supabase -> Authentication -> Users.
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCYPjEOpCIYH7xZzoP0hsS0ZouPwqLb9F4",
+  authDomain: "vietnam-airlines-sky-race.firebaseapp.com",
+  databaseURL: "https://vietnam-airlines-sky-race-default-rtdb.firebaseio.com",
+  projectId: "vietnam-airlines-sky-race",
+  storageBucket: "vietnam-airlines-sky-race.firebasestorage.app",
+  messagingSenderId: "483140542955",
+  appId: "1:483140542955:web:bf533eca97ec11d011b9ae",
+  measurementId: "G-W0CJHWB1DP"
+};
+// The one admin account, created by hand in Firebase console -> Authentication -> Users.
 // Its password is never stored in this file — the admin types it at the gate.
 const ADMIN_EMAIL = "admin@vna-sky-race.local";
 </script>
@@ -729,26 +735,15 @@ const ROUTE = [
 // same question can repeat across a long game, which is fine because each leg
 // only asks one.
 //
-// The bank now lives in Supabase (supabase/schema.sql — the `questions` table,
-// exposed to non-admin clients only through the `questions_public` view, which
-// omits the answer key). QUESTIONS/QUESTIONS_BY_ID below are populated by
-// sbFetchQuestions() once a room is joined — kept in the exact {q,opts,correct}
-// shape the hardcoded array used to have, so every render/reveal function that
-// reads them is unchanged. state.currentQuestionIndex now holds a real
-// `questions.id` (a Postgres row id), not an array position — QUESTIONS_BY_ID
-// is the id-keyed lookup every call site actually uses; QUESTIONS itself is
-// only iterated (e.g. to sample a tier) and never indexed by position anymore.
+// Realtime Database has no server-side view to hide the answer key from players
+// the way a Postgres RLS view could, so the bank is just a plain client-side
+// array — the same tradeoff the original pre-Supabase Firebase version made.
+// QUESTIONS_BY_ID is the id-keyed lookup every render/reveal call site uses;
+// QUESTIONS itself is only iterated (e.g. to sample a tier).
 let QUESTIONS = [];
 let QUESTIONS_BY_ID = {};
 
-// Offline-only fallback: the same 30 questions seeded into Postgres by
-// supabase/migrations/0001_init.sql, kept here too so the single-laptop venue
-// fallback (see goOffline()) still has a question bank when there is no
-// Supabase connection to fetch one from. Keep this in sync with the SQL seed
-// if the question set ever changes. IDs match the seed's row order (1-30) so
-// a `currentQuestionIndex` picked while offline resolves the same way it
-// would online.
-const OFFLINE_QUESTIONS = [
+const QUESTION_BANK = [
   [1,"What is Vietnam Airlines' Skytrax rating target by 2030?",["3-Star Airline","4-Star Airline","5-Star Airline","6-Star Airline"],2,1],
   [2,"Vietnam Airlines is a member of which global airline alliance?",["Star Alliance","Oneworld","SkyTeam","Value Alliance"],2,1],
   [3,"In which year did Vietnam Airlines officially join SkyTeam?",["2006","2008","2010","2012"],2,1],
@@ -780,11 +775,12 @@ const OFFLINE_QUESTIONS = [
   [29,"What is Vietnam Airlines' brand ambition by 2030?",["Become one of the Top 5 low-cost airlines in Asia","Become one of the Top 3 full-service airlines in Southeast Asia","Become one of the Top 10 largest airlines in the world","Become the No.1 low-cost airline in Southeast Asia"],1,3],
   [30,"According to Vision 2030, which of the following is NOT one of Vietnam Airlines' seven strategic directions?",["Digital Airline Transformation","Green Airline","Absolute Safety & Security","Become the Largest Low-cost Carrier in Asia"],3,3],
 ].map(([id,q,opts,correct,tier])=>({id,q,opts,correct,tier}));
-function loadOfflineQuestions(){
-  QUESTIONS = OFFLINE_QUESTIONS;
+function loadQuestions(){
+  QUESTIONS = QUESTION_BANK;
   QUESTIONS_BY_ID = {};
   QUESTIONS.forEach(q=>{ QUESTIONS_BY_ID[q.id] = q; });
 }
+loadQuestions();
 
 // Flag *emoji* render as plain two-letter codes on Windows (no flag glyphs in Segoe UI
 // Emoji), which is exactly the admin/presenter laptop this app targets — so aircraft
@@ -809,8 +805,7 @@ const TURBULENCE_LEGS = [5, 9]; // 0-based leg index = "lượt chơi thứ 6 v�
 const STORM_LEG = 7; // 0-based leg index = "lượt chơi thứ 8" — ⛈ Storm, ATC clears only the 10 fastest correct answers
 function randInt(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
 // tier 1 = legs 1-4, tier 2 = legs 5-8, tier 3 = legs 9-12 and Power Question (any leg).
-// Returns a real `questions.id` (a Postgres row id) sampled from that tier in the
-// Supabase-backed QUESTIONS array — see the note above `let QUESTIONS` further up.
+// Returns a QUESTION_BANK id sampled from that tier — see the note above `let QUESTIONS`.
 function pickQuestionIndex(legIndex, powerActive){
   const tier = powerActive ? 3 : (legIndex<=3 ? 1 : (legIndex<=7 ? 2 : 3));
   const pool = QUESTIONS.filter(q=>q.tier===tier);
@@ -883,89 +878,70 @@ function loadState(){
 }
 /* ============================================================
    SYNC LAYER
-   ONLINE  — Supabase (Postgres + Realtime). One authoritative row per room in
-             game_state, one row per player in players, one row per (leg,player)
-             in answers. Row Level Security — not client discipline — is what
-             actually stops a player writing another player's score or reading
-             the answer key early; see supabase/migrations/0001_init.sql.
+   ONLINE  — Firebase Realtime Database. One authoritative copy in the cloud that
+             every phone and screen subscribes to. Writers own disjoint paths, so
+             two clients can never overwrite each other's data:
+               rooms/{ROOM}/admin           <- only the admin client writes
+               rooms/{ROOM}/progress/{uid}  <- only the admin client writes
+               rooms/{ROOM}/profiles/{uid}  <- only that player writes
+               rooms/{ROOM}/answers/{leg}/{uid} <- only that player writes, once
+             database.rules.json — not client discipline — is what actually stops
+             a player writing another player's score or reading the answer key
+             (answers/ as a whole is admin-read-only; a player never subscribes
+             to it, it just keeps a local echo of its own writes).
    OFFLINE — falls back to the original localStorage + BroadcastChannel mode so a
              single-laptop game still runs if there is no network at the venue.
    ============================================================ */
 let ROOM = (new URLSearchParams(location.search).get('room') || localStorage.getItem('vna_my_room') || 'SKY01').toUpperCase();
+const MAX_PLAYERS_PER_ROOM = 200;
 
-const SB = { mode:'init', role:'player', uid:null };
-let sb = null;           // the Supabase client, created once SUPABASE_URL/ANON_KEY resolve
-let roomChannel = null;  // the current room's realtime subscription
-let _players = {};       // raw `players` rows, keyed by id
-let _answers = {};       // leg -> playerId -> {choice,turbo,submitted,timeTaken}, RLS-filtered
+// Every top-level `state` key except `players` (that's synced separately, per-uid,
+// via profiles/progress below) — this is the admin-owned "game state" slice.
+const ADMIN_KEYS = ['gameState','currentQ','currentQuestionIndex','currentCorrectIndex',
+  'questionIndexByLeg','powerQuestionActive','powerQuestionUsed','questionOpenedAt','deadline',
+  'revealedLegs','undoSnapshot','paused','winnerId','milestones','awardShown','congratsShown',
+  'stormClearedIds','stormRevealAt','finishSeq'];
 
-function stateToGameStateRow(){
-  return {
-    room: ROOM,
-    game_status: state.gameState,
-    current_leg: state.currentQ,
-    current_question_id: state.currentQuestionIndex,
-    current_correct_index: state.currentCorrectIndex,
-    question_index_by_leg: state.questionIndexByLeg || {},
-    power_question_active: !!state.powerQuestionActive,
-    power_question_used: !!state.powerQuestionUsed,
-    question_opened_at: state.questionOpenedAt ? new Date(state.questionOpenedAt).toISOString() : null,
-    deadline: state.deadline ? new Date(state.deadline).toISOString() : null,
-    revealed_legs: state.revealedLegs || {},
-    undo_snapshot: state.undoSnapshot || null,
-    paused: !!state.paused,
-    winner_id: state.winnerId || null,
-    milestones: state.milestones || { HAN:null, SPC:null, SGN:null },
-    award_shown: !!state.awardShown,
-    congrats_shown: !!state.congratsShown,
-    storm_cleared_ids: state.stormClearedIds || [],
-    storm_reveal_at: state.stormRevealAt ? new Date(state.stormRevealAt).toISOString() : null,
-    finish_seq: state.finishSeq || 0,
-  };
+const FB = { mode:'init', role:'player', uid:null };
+let db = null;            // the Realtime Database handle, created once firebase.initializeApp() runs
+let roomRefs = null;      // {admin,profiles,progress,answers} refs currently subscribed, for cleanup on room switch
+let _profiles = {};       // uid -> {name,avatar,joinedAt}
+let _progress = {};       // uid -> {position,correctCount,totalAnswerTime,turboUsed,finishRank,currentStreak,longestStreak,answeredCount}
+let _answers = {};        // leg -> uid -> {choice,turbo,submitted,timeTaken} — only ever populated for the admin
+
+function pickAdminSlice(){
+  const o = {};
+  ADMIN_KEYS.forEach(k=>{ o[k] = (state[k]===undefined ? null : state[k]); });
+  return o;
 }
-function applyGameStateRow(row){
-  if(!row) return;
-  state.gameState = row.game_status;
-  state.currentQ = row.current_leg;
-  state.currentQuestionIndex = row.current_question_id;
-  state.currentCorrectIndex = row.current_correct_index;
-  state.questionIndexByLeg = row.question_index_by_leg || {};
-  state.powerQuestionActive = !!row.power_question_active;
-  state.powerQuestionUsed = !!row.power_question_used;
-  state.questionOpenedAt = row.question_opened_at ? new Date(row.question_opened_at).getTime() : null;
-  state.deadline = row.deadline ? new Date(row.deadline).getTime() : null;
-  state.revealedLegs = row.revealed_legs || {};
-  state.undoSnapshot = row.undo_snapshot || null;
-  state.paused = !!row.paused;
-  state.winnerId = row.winner_id || null;
-  state.milestones = row.milestones || { HAN:null, SPC:null, SGN:null };
-  state.awardShown = !!row.award_shown;
-  state.congratsShown = !!row.congrats_shown;
-  state.stormClearedIds = row.storm_cleared_ids || null;
-  state.stormRevealAt = row.storm_reveal_at ? new Date(row.storm_reveal_at).getTime() : null;
-  state.finishSeq = row.finish_seq || 0;
+function applyAdminSlice(v){
+  if(!v) return;
+  ADMIN_KEYS.forEach(k=>{ if(v[k]!==undefined) state[k] = v[k]; });
+  state.revealedLegs = state.revealedLegs || {};
+  state.milestones = state.milestones || { HAN:null, SPC:null, SGN:null };
+  state.questionIndexByLeg = state.questionIndexByLeg || {};
 }
 function rebuildPlayers(){
   const out = {};
-  Object.keys(_players).forEach(id=>{
-    const pr = _players[id];
+  Object.keys(_profiles).forEach(id=>{
+    const pr = _progress[id] || {};
     const ans = {};
     Object.keys(_answers).forEach(leg=>{
       if(_answers[leg] && _answers[leg][id]) ans[leg] = _answers[leg][id];
     });
     out[id] = {
       id,
-      name: pr.name,
-      avatar: pr.avatar,
+      name: _profiles[id].name,
+      avatar: _profiles[id].avatar,
       position: pr.position || 0,
-      correctCount: pr.correct_count || 0,
-      totalAnswerTime: pr.total_answer_time || 0,
-      turboUsed: !!pr.turbo_used,
-      finishRank: pr.finish_rank || null,
-      currentStreak: pr.current_streak || 0,
-      longestStreak: pr.longest_streak || 0,
-      answeredCount: pr.answered_count || 0,
-      joinedAt: pr.joined_at ? new Date(pr.joined_at).getTime() : Date.now(),
+      correctCount: pr.correctCount || 0,
+      totalAnswerTime: pr.totalAnswerTime || 0,
+      turboUsed: !!pr.turboUsed,
+      finishRank: pr.finishRank || null,
+      currentStreak: pr.currentStreak || 0,
+      longestStreak: pr.longestStreak || 0,
+      answeredCount: pr.answeredCount || 0,
+      joinedAt: _profiles[id].joinedAt || Date.now(),
       answers: ans,
     };
   });
@@ -974,9 +950,9 @@ function rebuildPlayers(){
 
 function saveState(){
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
-  if(SB.mode==='online'){
-    if(SB.role==='admin') sbWriteAdmin();
-    if(myPlayerId) sbWriteMine();
+  if(FB.mode==='online'){
+    if(FB.role==='admin') fbWriteAdmin();
+    if(myPlayerId) fbWriteMine();
   } else if(bc){
     // note: BroadcastChannel never delivers to the sender, so the acting tab
     // must repaint itself — otherwise the admin's own dashboard freezes offline
@@ -984,46 +960,45 @@ function saveState(){
   }
   renderAll();
 }
-async function sbWriteAdmin(){
-  if(SB.mode!=='online' || SB.role!=='admin') return;
-  const { error: gErr } = await sb.from('game_state').upsert(stateToGameStateRow(), { onConflict:'room' });
-  if(gErr) console.warn('[sync] game_state write failed', gErr);
-
-  const playerRows = Object.values(state.players).map(p=>({
-    room: ROOM, id: p.id, name: p.name, avatar: p.avatar,
-    position: p.position||0, correct_count: p.correctCount||0,
-    total_answer_time: p.totalAnswerTime||0, turbo_used: !!p.turboUsed,
-    finish_rank: p.finishRank||null, current_streak: p.currentStreak||0,
-    longest_streak: p.longestStreak||0, answered_count: p.answeredCount||0,
-  }));
-  if(playerRows.length){
-    const { error: pErr } = await sb.from('players').upsert(playerRows, { onConflict:'room,id' });
-    if(pErr){ console.warn('[sync] players write failed', pErr); toast('⚠️ Sync error — check connection'); }
-  }
+function fbWriteAdmin(){
+  if(FB.mode!=='online' || FB.role!=='admin') return;
+  const u = {};
+  u['rooms/'+ROOM+'/admin'] = pickAdminSlice();
+  Object.values(state.players).forEach(p=>{
+    u['rooms/'+ROOM+'/progress/'+p.id] = {
+      position: p.position||0, correctCount: p.correctCount||0,
+      totalAnswerTime: p.totalAnswerTime||0, turboUsed: !!p.turboUsed,
+      finishRank: p.finishRank||null, currentStreak: p.currentStreak||0,
+      longestStreak: p.longestStreak||0, answeredCount: p.answeredCount||0,
+    };
+  });
+  db.ref().update(u).catch(e=>{ console.warn('[sync] admin write failed', e); toast('⚠️ Sync error — check connection'); });
 }
-async function sbWriteMine(){
-  if(SB.mode!=='online' || !myPlayerId) return;
+function fbWriteMine(){
+  if(FB.mode!=='online' || !myPlayerId) return;
   const me = state.players[myPlayerId];
   if(!me) return;
-  const { error: profErr } = await sb.from('players')
-    .update({ name: me.name, avatar: me.avatar })
-    .eq('room', ROOM).eq('id', myPlayerId);
-  if(profErr) console.warn('[sync] player profile write failed', profErr);
-
+  const u = {};
+  u['rooms/'+ROOM+'/profiles/'+myPlayerId] = { name: me.name, avatar: me.avatar, joinedAt: me.joinedAt || Date.now() };
   const a = me.answers[state.currentQ];
   if(a && a.choice!==null && a.choice!==undefined){
-    const row = {
-      room: ROOM, leg: state.currentQ, player_id: myPlayerId,
-      question_id: state.currentQuestionIndex,
-      choice: a.choice, turbo: !!a.turbo, submitted: !!a.submitted,
-      time_taken: (typeof a.timeTaken==='number') ? a.timeTaken : null,
-    };
-    const { error: ansErr } = await sb.from('answers').upsert(row, { onConflict:'room,leg,player_id' });
-    if(ansErr){ console.warn('[sync] answer write failed', ansErr); toast('⚠️ Could not send — check connection'); return; }
+    const row = { choice:a.choice, turbo:!!a.turbo, submitted:!!a.submitted, timeTaken: (typeof a.timeTaken==='number') ? a.timeTaken : null };
+    u['rooms/'+ROOM+'/answers/'+state.currentQ+'/'+myPlayerId] = row;
     // keep a local echo so the option immediately re-renders as picked/locked
+    // (a player is never subscribed to the answers tree — see database.rules.json)
     _answers[state.currentQ] = _answers[state.currentQ] || {};
-    _answers[state.currentQ][myPlayerId] = { choice:row.choice, turbo:row.turbo, submitted:row.submitted, timeTaken:row.time_taken };
+    _answers[state.currentQ][myPlayerId] = row;
   }
+  db.ref().update(u).catch(e=>{ console.warn('[sync] player write failed', e); toast('⚠️ Could not send — check connection'); });
+}
+/* the admin client creates a progress node for anyone who has just joined */
+function reconcileProgress(){
+  if(FB.mode!=='online' || FB.role!=='admin') return;
+  const u = {};
+  Object.keys(_profiles).forEach(id=>{
+    if(!_progress[id]) u['rooms/'+ROOM+'/progress/'+id] = {position:0,correctCount:0,totalAnswerTime:0,turboUsed:false,finishRank:null,currentStreak:0,longestStreak:0,answeredCount:0};
+  });
+  if(Object.keys(u).length) db.ref().update(u).catch(()=>{});
 }
 
 function setSyncBadge(){
@@ -1039,142 +1014,105 @@ function setSyncBadge(){
     offline: ['🟠 OFFLINE · one device only', 'rgba(240,180,60,.6)'],
     init:    ['⚪ connecting…', 'var(--glass-brd)'],
   };
-  const [txt, brd] = map[SB.mode] || map.init;
+  const [txt, brd] = map[FB.mode] || map.init;
   el.textContent = txt;
   el.style.borderColor = brd;
 }
 
 function goOffline(why){
-  if(SB.mode==='offline') return;
-  SB.mode = 'offline';
+  if(FB.mode==='offline') return;
+  FB.mode = 'offline';
   console.warn('[sync] running in offline mode:', why);
-  if(!QUESTIONS.length) loadOfflineQuestions();
   state = loadState();
   setSyncBadge();
   renderAll();
 }
 
-/* fetches everything realtime doesn't backfill on its own (postgres_changes only
-   pushes changes that happen AFTER a subscription starts, never existing rows) */
-async function sbFetchInitial(){
-  const [{ data: gs }, { data: pls }] = await Promise.all([
-    sb.from('game_state').select('*').eq('room', ROOM).maybeSingle(),
-    sb.from('players').select('*').eq('room', ROOM),
-  ]);
-  applyGameStateRow(gs);
-  _players = {};
-  (pls||[]).forEach(p=>{ _players[p.id] = p; });
-
-  // RLS scopes this to "all rows" for admin and "own rows only" for a player —
-  // a presenter session (no admin, no myPlayerId) legitimately gets none back.
-  const { data: ans } = await sb.from('answers').select('*').eq('room', ROOM);
-  _answers = {};
-  (ans||[]).forEach(a=>{
-    _answers[a.leg] = _answers[a.leg] || {};
-    _answers[a.leg][a.player_id] = { choice:a.choice, turbo:a.turbo, submitted:a.submitted, timeTaken:a.time_taken };
-  });
-
-  rebuildPlayers();
+function fbDetachRoom(){
+  if(!roomRefs) return;
+  roomRefs.admin.off();
+  roomRefs.profiles.off();
+  roomRefs.progress.off();
+  if(roomRefs.answers) roomRefs.answers.off();
+  roomRefs = null;
 }
-/* the question bank: admin reads the full `questions` table (has correct_index +
-   explanation), everyone else reads the `questions_public` view (neither column
-   exists there — RLS can't hide columns, so a view is what actually keeps the
-   answer key off the wire before reveal). See the note above `let QUESTIONS`. */
-async function sbFetchQuestions(){
-  const table = SB.role==='admin' ? 'questions' : 'questions_public';
-  const { data, error } = await sb.from(table).select('*').order('id');
-  if(error){ console.warn('[sync] questions fetch failed', error); return; }
-  QUESTIONS = (data||[]).map(q=>({
-    id: q.id, q: q.question, opts: q.options, tier: q.tier,
-    correct: q.correct_index, explain: q.explanation,
-  }));
-  QUESTIONS_BY_ID = {};
-  QUESTIONS.forEach(q=>{ QUESTIONS_BY_ID[q.id] = q; });
+/* admin/profiles/progress are readable by any signed-in client (see database.rules.json);
+   answers is admin-only and subscribed separately once the admin gate succeeds. Firebase
+   RTDB fires 'value' immediately with whatever is already there and again on every change,
+   so there's no separate "fetch initial state" step the way Supabase's REST+realtime split needed. */
+function fbSubscribeRoom(){
+  fbDetachRoom();
+  const base = db.ref('rooms/'+ROOM);
+  const adminRef = base.child('admin');
+  const profilesRef = base.child('profiles');
+  const progressRef = base.child('progress');
+  adminRef.on('value', s=>{ applyAdminSlice(s.val()); renderAll(); });
+  profilesRef.on('value', s=>{ _profiles = s.val()||{}; reconcileProgress(); rebuildPlayers(); renderAll(); });
+  progressRef.on('value', s=>{ _progress = s.val()||{}; rebuildPlayers(); renderAll(); });
+  roomRefs = { admin:adminRef, profiles:profilesRef, progress:progressRef, answers:null };
+  if(FB.role==='admin') fbSubscribeAnswers();
 }
-function sbSubscribeRoom(){
-  if(roomChannel){ sb.removeChannel(roomChannel); roomChannel = null; }
-  roomChannel = sb.channel('room-'+ROOM)
-    .on('postgres_changes', { event:'*', schema:'public', table:'game_state', filter:'room=eq.'+ROOM }, payload=>{
-      if(payload.eventType==='DELETE') return;
-      applyGameStateRow(payload.new);
-      renderAll();
-    })
-    .on('postgres_changes', { event:'*', schema:'public', table:'players', filter:'room=eq.'+ROOM }, payload=>{
-      if(payload.eventType==='DELETE'){ delete _players[payload.old.id]; }
-      else { _players[payload.new.id] = payload.new; }
-      rebuildPlayers();
-      renderAll();
-    })
-    .on('postgres_changes', { event:'*', schema:'public', table:'answers', filter:'room=eq.'+ROOM }, payload=>{
-      const row = payload.eventType==='DELETE' ? payload.old : payload.new;
-      if(!row) return;
-      if(payload.eventType==='DELETE'){
-        if(_answers[row.leg]) delete _answers[row.leg][row.player_id];
-      } else {
-        _answers[row.leg] = _answers[row.leg] || {};
-        _answers[row.leg][row.player_id] = { choice:row.choice, turbo:row.turbo, submitted:row.submitted, timeTaken:row.time_taken };
-      }
-      rebuildPlayers();
-      renderAll();
-    })
-    .subscribe();
+/* admin subscribes to the answer feed only after signing in (rules block it otherwise) */
+function fbSubscribeAnswers(){
+  if(FB.mode!=='online' || !roomRefs) return;
+  const answersRef = db.ref('rooms/'+ROOM+'/answers');
+  answersRef.on('value', s=>{ _answers = s.val()||{}; rebuildPlayers(); renderAll(); });
+  roomRefs.answers = answersRef;
 }
 
-async function sbInit(){
+async function fbInit(){
   setSyncBadge();
-  const cfgMissing = (typeof SUPABASE_URL==='undefined') || !SUPABASE_URL ||
-                     String(SUPABASE_URL).indexOf('__SUPABASE')===0;
-  if(typeof supabase==='undefined'){ return goOffline('Supabase SDK not loaded'); }
-  if(cfgMissing){ return goOffline('SUPABASE_URL/SUPABASE_ANON_KEY not filled in'); }
+  const cfgMissing = (typeof FIREBASE_CONFIG==='undefined') || !FIREBASE_CONFIG.apiKey ||
+                     !FIREBASE_CONFIG.databaseURL || String(FIREBASE_CONFIG.databaseURL).indexOf('PASTE')===0;
+  if(typeof firebase==='undefined'){ return goOffline('Firebase SDK not loaded'); }
+  if(cfgMissing){ return goOffline('FIREBASE_CONFIG not filled in'); }
 
   const timer = setTimeout(()=>goOffline('no connection within 8s'), 8000);
   try{
-    sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const { data: sessData } = await sb.auth.getSession();
-    let user = sessData && sessData.session ? sessData.session.user : null;
-    if(!user){
-      const { data, error } = await sb.auth.signInAnonymously();
-      if(error) throw error;
-      user = data.user;
-    }
-    SB.uid = user.id;
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.database();
+    const cred = await firebase.auth().signInAnonymously();
+    FB.uid = cred.user.uid;
     clearTimeout(timer);
-    SB.mode = 'online';
+    FB.mode = 'online';
 
-    // a player's identity is their Supabase uid, so a refresh never loses their aircraft
-    if(location.hash.replace('#','')==='player') myPlayerId = SB.uid;
+    // a player's identity is their Firebase uid, so a refresh never loses their aircraft
+    if(location.hash.replace('#','')==='player') myPlayerId = FB.uid;
 
-    await sbFetchQuestions();
-    await sbFetchInitial();
-    sbSubscribeRoom();
-
+    fbSubscribeRoom();
+    db.ref('.info/connected').on('value', s=>{
+      if(FB.mode==='online') setSyncBadge();
+      if(s.val()===false) console.warn('[sync] disconnected — RTDB will retry automatically');
+    });
     setSyncBadge();
-    renderAll();
   }catch(e){
     clearTimeout(timer);
     goOffline(e && e.message ? e.message : e);
   }
 }
 /* switches the client to a different room the player typed at the join screen —
-   only players do this; presenter/admin stay on the ?room= (or default) room. */
-async function sbValidateRoom(code){
-  const { data, error } = await sb.from('rooms').select('code,is_open,max_players').eq('code', code).maybeSingle();
-  if(error || !data) return { ok:false, reason:'Room not found' };
-  if(!data.is_open) return { ok:false, reason:'Room is closed' };
-  const { count } = await sb.from('players').select('id', { count:'exact', head:true }).eq('room', code);
-  if(count!==null && count>=data.max_players) return { ok:false, reason:'Room is full' };
-  return { ok:true };
+   only players do this; presenter/admin stay on the ?room= (or default) room.
+   There's no "is this room open" catalog in Firebase (there was never an admin UI
+   control for it even under Supabase) — any code is joinable, capped at
+   MAX_PLAYERS_PER_ROOM so one room can't be overloaded by mistake. */
+async function fbValidateRoom(code){
+  try{
+    const snap = await db.ref('rooms/'+code+'/profiles').once('value');
+    if(snap.numChildren() >= MAX_PLAYERS_PER_ROOM) return { ok:false, reason:'Room is full' };
+    return { ok:true };
+  }catch(e){
+    return { ok:false, reason:'Could not reach room' };
+  }
 }
-async function sbSwitchRoom(code){
+function fbSwitchRoom(code){
   ROOM = code;
   state = defaultState();
-  await sbFetchInitial();
-  sbSubscribeRoom();
+  fbSubscribeRoom();
   setSyncBadge();
 }
 
 window.addEventListener('storage', (e)=>{
-  if(SB.mode==='online') return;
+  if(FB.mode==='online') return;
   if(e.key===STORAGE_KEY && e.newValue){
     state = JSON.parse(e.newValue);
     renderAll();
@@ -1182,7 +1120,7 @@ window.addEventListener('storage', (e)=>{
 });
 if(bc){
   bc.onmessage = (e)=>{
-    if(SB.mode==='online') return;
+    if(FB.mode==='online') return;
     if(e.data && e.data.type==='state'){ state = e.data.state; renderAll(); }
   };
 }
@@ -1223,13 +1161,13 @@ function go(view){
 window.addEventListener('hashchange', ()=>{
   const v = location.hash.replace('#','');
   // "#admin" must go through the gate rather than opening the dashboard directly
-  if(v==='admin' && SB.role!=='admin'){ go('landing'); openAdminGate(); return; }
+  if(v==='admin' && FB.role!=='admin'){ go('landing'); openAdminGate(); return; }
   if(['landing','player','presenter','admin'].includes(v)) go(v);
 });
 
 /* ---------- admin gate ----------
-   ONLINE : a real Supabase account. The password is never in this file, and
-            Row Level Security refuses every admin write from anyone else — so
+   ONLINE : a real Firebase account. The password is never in this file, and
+            database.rules.json refuses every admin write from anyone else — so
             typing "#admin" in the URL now gets you a dead dashboard, not
             control of the game.
    OFFLINE: falls back to the local code below, which is all a single-laptop
@@ -1257,27 +1195,27 @@ async function submitAdminGate(){
   const err = document.getElementById('adminGateError');
   if(!v) return;
 
-  if(SB.mode!=='online'){
-    if(v.toUpperCase() === ADMIN_PASSWORD){ SB.role='admin'; closeAdminGate(); go('admin'); }
+  if(FB.mode!=='online'){
+    if(v.toUpperCase() === ADMIN_PASSWORD){ FB.role='admin'; closeAdminGate(); go('admin'); }
     else err.textContent = 'Incorrect password — please try again.';
     return;
   }
 
   err.textContent = 'Signing in…';
   try{
-    const { data, error } = await sb.auth.signInWithPassword({ email: ADMIN_EMAIL, password: v });
-    if(error) throw error;
-    SB.uid = data.user.id;
-    SB.role = 'admin';
+    const cred = await firebase.auth().signInWithEmailAndPassword(ADMIN_EMAIL, v);
+    FB.uid = cred.user.uid;
+    FB.role = 'admin';
     myPlayerId = null;               // the admin is not a racer
-    await sbFetchQuestions();        // re-fetch with admin's full-table access (has correct_index)
-    await sbFetchInitial();          // answers are readable in full now (RLS: is_admin())
-    sbSubscribeRoom();               // resubscribe so realtime picks up the new session's RLS
+    fbSubscribeAnswers();            // answer feed is admin-only under the rules
+    reconcileProgress();
     closeAdminGate();
     go('admin');
     toast('Signed in as admin · room '+ROOM);
   }catch(e){
-    err.textContent = 'Incorrect password — please try again.';
+    err.textContent = (e && e.code==='auth/too-many-requests')
+      ? 'Too many attempts — wait a moment.'
+      : 'Incorrect password — please try again.';
   }
 }
 document.addEventListener('keydown', (e)=>{
@@ -1331,20 +1269,15 @@ async function playerJoin(){
   const joinBtn = document.getElementById('pJoinBtn');
   joinBtn.disabled = true;
   try{
-    if(SB.mode==='online' && roomInput!==ROOM){
-      const check = await sbValidateRoom(roomInput);
+    if(FB.mode==='online' && roomInput!==ROOM){
+      const check = await fbValidateRoom(roomInput);
       if(!check.ok){ toast('⚠️ '+check.reason); return; }
-      await sbSwitchRoom(roomInput);
+      fbSwitchRoom(roomInput);
     }
 
-    // Online, the player's identity IS their Supabase uid — it survives a refresh,
+    // Online, the player's identity IS their Firebase uid — it survives a refresh,
     // a dead battery, or the phone locking, so nobody loses their aircraft mid-race.
-    myPlayerId = (SB.mode==='online' && SB.uid) ? SB.uid : uid();
-
-    if(SB.mode==='online'){
-      const { error } = await sb.from('players').insert({ room: ROOM, id: myPlayerId, name, avatar: selectedAvatar });
-      if(error){ toast('⚠️ Could not join — '+error.message); return; }
-    }
+    myPlayerId = (FB.mode==='online' && FB.uid) ? FB.uid : uid();
 
     localStorage.setItem('vna_my_player_id', myPlayerId);
     localStorage.setItem('vna_my_room', ROOM);
@@ -2396,6 +2329,17 @@ function resetGame(){
   } else if(!confirm('Reset the entire game?')) return;
   state = defaultState();
   resetPresenterCinematics();
+  // saveState() only ever writes the admin's *current* players (there are none
+  // left in `state.players` right after a reset), so old profiles/progress/answers
+  // would otherwise linger in the database forever — wipe them explicitly.
+  if(FB.mode==='online' && FB.role==='admin'){
+    db.ref().update({
+      ['rooms/'+ROOM+'/profiles']: null,
+      ['rooms/'+ROOM+'/progress']: null,
+      ['rooms/'+ROOM+'/answers']: null,
+    }).catch(e=>console.warn('[sync] room wipe failed', e));
+    _profiles = {}; _progress = {}; _answers = {};
+  }
   saveState();
   toast('Game reset');
 }
@@ -2478,10 +2422,13 @@ function removePlayer(id){
   if(!p) return;
   if(!confirm('Remove "'+p.name+'" from the race? This cannot be undone — they would have to join again as a new player.')) return;
   delete state.players[id];
-  delete _players[id];
-  if(SB.mode==='online' && SB.role==='admin'){
-    sb.from('players').delete().eq('room', ROOM).eq('id', id)
-      .then(({error})=>{ if(error) console.warn('[sync] player delete failed', error); });
+  delete _profiles[id];
+  delete _progress[id];
+  if(FB.mode==='online' && FB.role==='admin'){
+    db.ref().update({
+      ['rooms/'+ROOM+'/profiles/'+id]: null,
+      ['rooms/'+ROOM+'/progress/'+id]: null,
+    }).catch(e=>console.warn('[sync] player delete failed', e));
   }
   saveState();
   toast(p.name+' removed');
@@ -2662,7 +2609,18 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
 }
 
+/* Guards every render call site that dereferences QUESTIONS_BY_ID[state.currentQuestionIndex]
+   without a fresh existence check. state can arrive from localStorage (an old app version,
+   old id numbering), a stale BroadcastChannel/storage event, or Firebase — any of those can
+   carry a currentQuestionIndex this build's QUESTION_BANK doesn't have, which would otherwise
+   crash every render function on `.q` of undefined. */
+function sanitizeState(){
+  if(state.currentQuestionIndex!=null && !QUESTIONS_BY_ID[state.currentQuestionIndex]){
+    state.currentQuestionIndex = null;
+  }
+}
 function renderAll(){
+  sanitizeState();
   renderPlayer();
   renderPresenter();
   renderAdmin();
@@ -2681,7 +2639,7 @@ setInterval(()=>{
   if(v==='admin'){ go('landing'); openAdminGate(); }
   else if(['player','presenter'].includes(v)) go(v);
   else go('landing');
-  sbInit();
+  fbInit();
 })();
 </script>
 </body>

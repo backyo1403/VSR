@@ -1,6 +1,8 @@
 /**
  * Pull every external asset into public/vendor/ and repoint index.html at the local
- * copies, so the only network dependency left at the venue is the Supabase WebSocket.
+ * copies, so the only network dependency left at the venue is the Firebase WebSocket
+ * (the Firebase compat SDK scripts themselves stay on Google's CDN — see index.html —
+ * since the app already falls back to offline mode gracefully if they fail to load).
  *
  *   node scripts/vendor-assets.mjs
  *
@@ -20,7 +22,6 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 
 const SCRIPTS = [
   ['https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.2/confetti.browser.min.js', 'confetti.min.js'],
-  ['https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js', 'supabase.min.js'],
 ];
 const FONT_CSS = 'https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap';
 
