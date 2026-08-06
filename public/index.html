@@ -1166,13 +1166,18 @@ window.addEventListener('hashchange', ()=>{
 });
 
 /* ---------- admin gate ----------
-   ONLINE : a real Firebase account. The password is never in this file, and
-            database.rules.json refuses every admin write from anyone else — so
-            typing "#admin" in the URL now gets you a dead dashboard, not
-            control of the game.
-   OFFLINE: falls back to the local code below, which is all a single-laptop
-            fallback game needs. */
+   Single fixed password, "738B", both online and offline — a deliberate
+   tradeoff: whoever reads this file's source (open to anyone, e.g. via
+   browser DevTools) can find it and sign in as admin. Firebase requires
+   real Auth passwords to be >=6 characters, so ADMIN_PASSWORD (what's typed
+   at the gate) and ADMIN_FIREBASE_PASSWORD (the real Firebase Auth password
+   used behind the scenes so admin writes actually pass database.rules.json)
+   are two different constants. The admin@vna-sky-race.local account's
+   Firebase password MUST be set to match ADMIN_FIREBASE_PASSWORD exactly
+   (Firebase console -> Authentication -> Users) for online admin login to
+   work — if they ever drift apart, admin sign-in will fail online. */
 const ADMIN_PASSWORD = '738B';
+const ADMIN_FIREBASE_PASSWORD = 'VNA-SkyRace-738B';
 function openAdminGate(){
   const modal = document.getElementById('adminGateModal');
   modal.classList.remove('hidden');
@@ -1195,15 +1200,19 @@ async function submitAdminGate(){
   const err = document.getElementById('adminGateError');
   if(!v) return;
 
+  if(v.toUpperCase() !== ADMIN_PASSWORD){ err.textContent = 'Incorrect password — please try again.'; return; }
+
   if(FB.mode!=='online'){
-    if(v.toUpperCase() === ADMIN_PASSWORD){ FB.role='admin'; closeAdminGate(); go('admin'); }
-    else err.textContent = 'Incorrect password — please try again.';
+    FB.role='admin'; closeAdminGate(); go('admin');
     return;
   }
 
   err.textContent = 'Signing in…';
   try{
-    const cred = await firebase.auth().signInWithEmailAndPassword(ADMIN_EMAIL, v);
+    // the admin typed ADMIN_PASSWORD above; ADMIN_FIREBASE_PASSWORD (a different,
+    // Firebase-valid constant — see the comment above ADMIN_PASSWORD) is what
+    // actually authenticates against Firebase so database.rules.json admin writes work
+    const cred = await firebase.auth().signInWithEmailAndPassword(ADMIN_EMAIL, ADMIN_FIREBASE_PASSWORD);
     FB.uid = cred.user.uid;
     FB.role = 'admin';
     myPlayerId = null;               // the admin is not a racer
@@ -1215,7 +1224,7 @@ async function submitAdminGate(){
   }catch(e){
     err.textContent = (e && e.code==='auth/too-many-requests')
       ? 'Too many attempts — wait a moment.'
-      : 'Incorrect password — please try again.';
+      : 'Firebase sign-in failed — make sure the admin@vna-sky-race.local account password in Firebase Console matches ADMIN_FIREBASE_PASSWORD in index.html.';
   }
 }
 document.addEventListener('keydown', (e)=>{
