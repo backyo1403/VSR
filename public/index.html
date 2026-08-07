@@ -221,7 +221,9 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .map-panel.glass{backdrop-filter:none; -webkit-backdrop-filter:none;}
 .route-svg{width:100%; height:100%; display:block;}
 .leader-panel{border-radius:26px; padding:22px; display:flex; flex-direction:column;}
-.leader-panel h3{margin:0 0 16px; font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:rgba(255,255,255,.6);}
+.leader-panel h3{margin:0 0 16px; font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:rgba(255,255,255,.6); flex-shrink:0;}
+/* every player is listed, so the panel scrolls rather than stretching the page */
+#presLeaderboard{flex:1; min-height:0; overflow-y:auto; padding-right:4px;}
 .lead-row{display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:14px; margin-bottom:8px; background:rgba(255,255,255,.05); transition:transform .3s ease;}
 .lead-row .rank{font-family:var(--font-mono); font-weight:700; width:26px; color:rgba(255,255,255,.55); font-size:15px;}
 .lead-row .av{font-size:19px;}
@@ -384,6 +386,20 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .podium .c3 .bar{height:66px;}
 .podium-name{font-size:16px; font-weight:800; color:var(--vna-gold); background:rgba(0,15,35,.65); padding:5px 12px; border-radius:9px; margin-top:2px; white-space:nowrap;}
 
+/* ---------- award ceremony: one champion with the cup, then gold / silver / bronze ---------- */
+.champion-block{text-align:center; margin-bottom:26px;}
+.champion-cup{font-size:96px; line-height:1; filter:drop-shadow(0 10px 30px rgba(212,175,55,.75)); animation:cupFloat 3s ease-in-out infinite;}
+@keyframes cupFloat{0%,100%{transform:translateY(0) scale(1);} 50%{transform:translateY(-10px) scale(1.04);}}
+.champion-eyebrow{font-family:var(--font-display); font-weight:800; font-size:14px; letter-spacing:.22em; text-transform:uppercase; color:var(--vna-gold-light); margin-top:6px;}
+.champion-name{font-family:var(--font-display); font-weight:800; font-size:clamp(40px,5.4vw,76px); line-height:1.05; color:var(--vna-gold); text-shadow:0 6px 30px rgba(212,175,55,.5); margin-top:2px;}
+.champion-sub{font-size:14px; color:rgba(255,255,255,.75); margin-top:8px;}
+.medal-row{display:flex; gap:16px; justify-content:center; flex-wrap:wrap;}
+.medal-card{min-width:170px; padding:16px 20px; border-radius:18px; text-align:center; background:rgba(255,255,255,.07); border:1px solid var(--glass-brd);}
+.medal-ico{font-size:38px; line-height:1;}
+.medal-place{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:rgba(255,255,255,.55); margin-top:4px;}
+.medal-name{font-family:var(--font-display); font-weight:800; font-size:20px; margin-top:2px;}
+.medal-sub{font-size:11.5px; color:rgba(255,255,255,.6); margin-top:4px;}
+
 /* ================= ADMIN ================= */
 #view-admin{min-height:100vh; display:flex;}
 .admin-sidebar{width:250px; flex-shrink:0; padding:24px 18px; display:flex; flex-direction:column; gap:6px;}
@@ -456,6 +472,11 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
 }
 .pq-opt.correct{background:rgba(46,204,113,.28); border-color:var(--good);}
 .pq-opt.correct .k{background:var(--good); color:#04301a;}
+/* shown in place of the options while a question is staged but not yet opened */
+.pq-await{margin-top:auto; text-align:center; padding:22px; border-radius:16px; font-size:clamp(14px,1.2vw,19px); font-weight:600;
+  color:rgba(255,255,255,.6); background:rgba(255,255,255,.05); border:2px dashed rgba(255,255,255,.18);}
+.p-await{text-align:center; padding:16px 14px; border-radius:13px; font-size:13px; font-weight:600;
+  color:rgba(255,255,255,.55); background:rgba(255,255,255,.05); border:1.5px dashed rgba(255,255,255,.18);}
 .pq-answer-tag{
   text-align:center; font-family:var(--font-display); font-weight:800; font-size:21px; letter-spacing:.04em;
   padding:11px; border-radius:14px; background:rgba(46,204,113,.24); border:2px solid var(--good); color:#d6ffe8;
@@ -522,6 +543,11 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
 #view-player.biz-gold .status-banner{border-color:rgba(212,175,55,.5); background:rgba(46,33,0,.5);}
 #view-player.biz-gold .opt-btn{background:rgba(255,255,255,.07); border-color:rgba(212,175,55,.34);}
 #view-player.biz-gold .opt-btn.picked{border-color:var(--vna-gold-light); background:rgba(212,175,55,.24);}
+/* the reveal colours have to be restated here: "#view-player.biz-gold .opt-btn" outranks
+   the plain ".opt-btn.correct/.wrong", so without these the top 3 saw no green or red */
+#view-player.biz-gold .opt-btn.correct{border-color:var(--good); background:rgba(46,204,113,.26);}
+#view-player.biz-gold .opt-btn.wrong{border-color:var(--bad); background:rgba(225,82,82,.26);}
+#view-player.biz-gold .opt-btn.eliminated{opacity:.22;}
 .biz-ribbon{
   display:flex; align-items:center; gap:10px; border-radius:16px; padding:12px 16px; margin-bottom:12px;
   background:linear-gradient(120deg,rgba(212,175,55,.9),rgba(240,214,120,.78)); color:#2a1d00;
@@ -543,6 +569,9 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
 .rules-routemap span.cp{background:rgba(212,175,55,.24); color:var(--vna-gold-light); font-weight:700;}
 .rules-help-card{display:flex; gap:12px; align-items:flex-start; padding:11px 0; border-bottom:1px solid rgba(255,255,255,.07);}
 .rules-help-card:last-child{border-bottom:none;}
+.rules-doc-link{display:inline-flex; align-items:center; gap:8px; padding:11px 15px; border-radius:12px; text-decoration:none;
+  background:rgba(212,175,55,.14); border:1px solid rgba(212,175,55,.42); color:var(--vna-gold-light); font-weight:600; font-size:13.5px;}
+.rules-doc-link:hover{background:rgba(212,175,55,.24); border-color:var(--vna-gold);}
 .rules-help-card .circ{width:46px; height:46px; flex-shrink:0; border-radius:50%; border:2px solid var(--glass-brd); background:rgba(255,255,255,.07); display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff;}
 .rules-help-card .circ svg{width:1em; height:1em; display:block;}
 /* the same glyphs, small, in the admin players table */
@@ -661,7 +690,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
         <div class="rules-section">
           <h4>The race</h4>
           <p>12 legs from START to FINISH along an S-shaped route. Each leg, everyone answers one question within <strong>20 seconds</strong>. The answer is revealed <strong>automatically the moment the countdown ends</strong>.</p>
-          <p>The race keeps going until at least <strong>3 aircraft land on FINISH</strong>. Reaching FINISH shows you your own placing right away, even while the race continues for everyone else.</p>
+          <p>The race keeps going until at least <strong>4 aircraft land on FINISH</strong>. Reaching FINISH shows you your own placing right away, even while the race continues for everyone else.</p>
         </div>
         <div class="rules-section">
           <h4>🗺 Route map</h4>
@@ -735,7 +764,8 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
           <p>Conference materials, the Sales Kit and the agenda will be linked here.</p>
         </div>
         <div class="rules-section" id="rulesDocLinks">
-          <p style="color:rgba(255,255,255,.5); font-style:italic;">Links coming soon — they'll be added before the event.</p>
+          <p><a class="rules-doc-link" href="https://drive.google.com/file/d/1bf9BnmqIJFhusaYeGRvdomtSk2y83oEI/view?usp=sharing" target="_blank" rel="noopener noreferrer">📘 Vietnam Airlines Sales Kit</a></p>
+          <p style="color:rgba(255,255,255,.5); font-style:italic; font-size:12.5px;">More documents will be added here before the event.</p>
         </div>
       </div>
 
@@ -804,6 +834,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
       <div class="dest-strip glass">
         <div><div class="lbl">Position</div><div class="val mono" id="pDest">START</div></div>
         <div style="text-align:center;"><div class="lbl">Now at</div><div class="val mono" id="pLocation">—</div></div>
+        <div style="text-align:center;"><div class="lbl">Total time</div><div class="val mono" id="pTotalTime">0.0s</div></div>
         <div style="text-align:right;"><div class="lbl">Aircraft</div><div class="val" id="pAvatarShown">—</div></div>
       </div>
     </div>
@@ -871,7 +902,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
           <p style="margin:0 0 16px; font-size:14px; color:rgba(255,255,255,.75);" id="adminCurrentQ">Leg 1 of 12 — not opened yet.</p>
           <div class="control-row">
             <button class="btn btn-ghost" onclick="adminPrevQuestion()">← Previous question</button>
-            <button class="btn btn-primary" onclick="adminOpenQuestion()">Open question</button>
+            <button class="btn btn-primary" id="openQBtn" onclick="adminOpenQuestion()">Show question</button>
             <button class="btn btn-ghost" onclick="adminCloseQuestion()">Close question</button>
             <button class="btn btn-ghost" title="The answer reveals itself automatically when the countdown hits zero — use this only to reveal early" onclick="adminRevealAnswer()">Reveal now (early)</button>
             <button class="btn btn-danger" id="undoBtn" title="Roll back the last reveal — every aircraft returns to where it was before that question was scored" onclick="adminUndoReveal()">↩️ Undo last reveal</button>
@@ -888,7 +919,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
         </div>
         <div class="panel glass">
           <h3>Race winner</h3>
-          <p style="margin:0 0 16px; font-size:14px; color:rgba(255,255,255,.75);">Once the race has finished (3 aircraft landed), show the full-screen "Congratulations!" overlay with confetti on the presenter screen. It stays hidden until you press this — reaching FINISH does not show it automatically.</p>
+          <p style="margin:0 0 16px; font-size:14px; color:rgba(255,255,255,.75);">Once the race has finished (4 aircraft landed), show the full-screen "Congratulations!" overlay with confetti on the presenter screen. It stays hidden until you press this — reaching FINISH does not show it automatically.</p>
           <div class="control-row">
             <button class="btn btn-primary" onclick="triggerCongrats()">🎉 Show Congratulations</button>
             <button class="btn btn-ghost" onclick="hideCongrats()">Hide congratulations</button>
@@ -1134,11 +1165,15 @@ function isTurbulenceLeg(legIndex){ return TURBULENCE_LEGS.includes(legIndex); }
 function isStormLeg(legIndex){ return legIndex === STORM_LEG; }
 
 /* The big weather/event card, shown on BOTH the presenter wall and every player's phone.
-   It's tied to the lobby state, which means it appears the instant the host presses
-   "Next question →" onto a turbulence/storm leg (or arms the Power Question) and clears
-   itself the instant they press "Open question", leaving only the small weather pill. */
+   It goes up the instant the host stages a leg with weather on it (pressing "Next question →"
+   or arming the Power Question) and runs for WEATHER_ANNOUNCE_MS, after which the question
+   text takes its place. Only the small weather pill remains from then on. */
+function wxAnnounceActive(){
+  return state.gameState==='lobby' && !!state.legAnnouncedAt
+    && (Date.now() - state.legAnnouncedAt) < WEATHER_ANNOUNCE_MS;
+}
 function wxAnnounceFor(){
-  if(state.gameState!=='lobby') return null;
+  if(!wxAnnounceActive()) return null;
   if(isTurbulenceLeg(state.currentQ)) return {
     cls:'wx-turbulence', icon:'🌪', title:'TURBULENCE AHEAD',
     rule:'A correct answer only holds your position. Wrong — or no answer at all — sends you back 1 leg. 50:50 and Turbo Boost are locked; Fasten Seatbelt is your only protection.'
@@ -1154,7 +1189,7 @@ function wxAnnounceFor(){
   return null;
 }
 // The map only has 12 legs, but the race keeps asking questions past leg 12 whenever
-// fewer than 3 aircraft have reached FINISH yet, so latecomers still get a chance to
+// fewer than 4 aircraft have reached FINISH yet, so latecomers still get a chance to
 // land — those extra rounds are labelled "Overtime" instead of a leg number that would
 // read as past the end of the board (e.g. "Leg 13 of 12").
 function legLabel(legIndex){
@@ -1170,8 +1205,10 @@ function avatarHTML(face, size, color){
   return '<span class="avatar-compose" style="font-size:'+size+'; display:inline-flex; align-items:center; gap:.18em;">'+planeSvg(color)+'<span class="face-emoji">'+face+'</span></span>';
 }
 const TIMER_SECONDS = 20;
-const ANSWER_CARD_MS = 3000;   // how long the presenter holds the correct answer on screen
-const URGENT_SECONDS = 5;      // countdown turns red and pulses for the final few seconds
+const ANSWER_CARD_MS = 5000;      // presenter holds the correct answer this long — aircraft stay put until it clears
+const URGENT_SECONDS = 5;         // countdown turns red and pulses for the final few seconds
+const WEATHER_ANNOUNCE_MS = 10000; // the big turbulence/storm/power card runs this long after "Next question"
+const FINISHERS_TO_END = 4;       // the race is decided once this many aircraft have landed (🏆 🥇 🥈 🥉)
 const STORAGE_KEY = "vna_sky_race_state_v1";
 let bc = null;
 try { bc = new BroadcastChannel('vna-sky-race'); } catch(e) { bc = null; }
@@ -1196,7 +1233,8 @@ function defaultState(){
     congratsShown: false, // the presenter's "Congratulations! X wins" overlay only appears once the admin triggers it
     stormClearedIds: null, // ids of the 10 fastest correct answers on the Storm leg, fastest first
     stormRevealAt: null,   // Date.now() of the Storm reveal, so the presenter's 10s clearance list can expire
-    revealAt: null,        // Date.now() the answer was revealed — drives the presenter's 3s answer card
+    revealAt: null,        // Date.now() the answer was revealed — drives the presenter's answer card
+    legAnnouncedAt: null,  // Date.now() the leg was staged — runs the 10s weather card, then the question preview
     finishSeq: 0, // counter handing out p.finishRank in true arrival order as aircraft land on FINISH
   };
 }
@@ -1233,7 +1271,7 @@ const MAX_PLAYERS_PER_ROOM = 200;
 const ADMIN_KEYS = ['gameState','currentQ','currentQuestionIndex','currentCorrectIndex',
   'questionIndexByLeg','powerQuestionActive','powerQuestionUsed','questionOpenedAt','deadline',
   'revealedLegs','undoSnapshot','paused','winnerId','milestones','awardShown','congratsShown',
-  'stormClearedIds','stormRevealAt','revealAt','finishSeq'];
+  'stormClearedIds','stormRevealAt','revealAt','legAnnouncedAt','finishSeq'];
 
 const FB = { mode:'init', role:'player', uid:null };
 let db = null;            // the Realtime Database handle, created once firebase.initializeApp() runs
@@ -1679,6 +1717,37 @@ function secondsRemaining(){
   if(!state.questionOpenedAt) return null;
   return Math.max(0, TIMER_SECONDS - Math.floor((Date.now()-state.questionOpenedAt)/1000));
 }
+
+/* One painter for all three clocks (player phone, presenter wall, admin dashboard).
+   They used to be written inside each view's own render, and each view repaints on its
+   own 1-second interval — so depending where in the second a given screen happened to
+   tick, two screens could sit a full second apart. This is called from a fast 200ms tick
+   as well as from the renders, so every clock lands on the same number within 200ms.
+   It only touches the three text nodes, never a full re-render. */
+function paintCountdowns(){
+  const remain = secondsRemaining();
+  const running = state.gameState==='question' && remain!==null;
+  const urgent = running && remain<=URGENT_SECONDS;
+  const idle = state.gameState==='locked' ? 'LOCKED'
+             : state.gameState==='reveal' ? 'REVEALED' : '--';
+
+  const p = document.getElementById('pTimer');
+  if(p){
+    p.textContent = running ? remain+'s' : idle;
+    p.classList.toggle('urgent', urgent);
+  }
+  const a = document.getElementById('adminTimer');
+  if(a){
+    a.textContent = running ? remain+'s' : idle;
+    a.classList.toggle('urgent', urgent);
+  }
+  // the presenter clock lives inside an overlay that only exists while a question is up
+  const pq = document.querySelector('#presQuestionOverlay .pq-timer');
+  if(pq && state.gameState!=='reveal'){
+    pq.textContent = running ? remain : '--';
+    pq.classList.toggle('urgent', urgent);
+  }
+}
 function playerSubmitAnswer(choiceIdx){
   const me = state.players[myPlayerId];
   if(!me) return;
@@ -1810,7 +1879,9 @@ function playerConfirmSubmit(){
   if(!a || a.choice===null || a.choice===undefined){ toast('Pick an answer first'); return; }
   a.submitted = true;
   a.timeTaken = state.questionOpenedAt ? (Date.now() - state.questionOpenedAt) : 0;
-  me.totalAnswerTime = (me.totalAnswerTime||0) + a.timeTaken;
+  // NB: totalAnswerTime is NOT accumulated here. It lives on the admin-owned progress node,
+  // so a write from the player is discarded online and the leaderboard clock stayed at 0.
+  // adminRevealAnswer sums it from each submitted answer's timeTaken instead.
   // local echo so the help buttons grey out instantly; the durable copy is written by the
   // admin client at reveal (progress is admin-owned — see database.rules.json)
   if(a.turbo) me.turboUsed = true;
@@ -1867,7 +1938,7 @@ function renderBizRibbon(me){
   const isTop3 = idx>=0 && idx<3 && ranked.length>=2;
   view.classList.toggle('biz-gold', isTop3);
   if(!isTop3){ wrap.innerHTML = ''; return; }
-  const medal = ['🥇','🥈','🥉'][idx];
+  const medal = RANK_TROPHY[idx];
   const place = ['1st','2nd','3rd'][idx];
   const chaser = ranked[idx+1];
   let sub;
@@ -1938,6 +2009,8 @@ function renderPlayer(){
   const here = ROUTE[me.position];
   document.getElementById('pDest').innerHTML = `#${myRank} <span style="font-size:11px; opacity:.6;">of ${ranked.length}</span>`;
   document.getElementById('pLocation').innerHTML = `${here.code} <span style="font-size:10.5px; opacity:.6; font-family:var(--font-body);">${escapeHtml(here.city)}</span>`;
+  // total answer time — the tie-break when several aircraft land on the same reveal
+  document.getElementById('pTotalTime').textContent = formatTime(me.totalAnswerTime);
 
   renderBizRibbon(me);
   applyPlayerWeatherSkin();
@@ -1971,9 +2044,9 @@ function renderPlayer(){
   const clearTimer = ()=>{ timerEl.textContent = '--'; timerEl.classList.remove('urgent'); };
 
   // Reaching FINISH is a personal milestone shown the moment it happens — the race
-  // itself keeps going for everyone else until at least 3 aircraft have landed.
+  // itself keeps going for everyone else until at least 4 aircraft have landed.
   if(me.finishRank){
-    const medal = me.finishRank===1 ? '🥇' : me.finishRank===2 ? '🥈' : me.finishRank===3 ? '🥉' : '🏅';
+    const medal = RANK_TROPHY[me.finishRank-1] || '🏅';
     eyebrow.textContent = '🏁 FINISHED';
     qText.innerHTML = `<div style="font-size:21px; font-weight:800; margin-bottom:12px;">${medal} You landed in ${ordinal(me.finishRank)} place!</div><div style="font-size:14px; font-weight:400; color:rgba(255,255,255,.82); line-height:1.55;">You've completed the Sky Race — thank you for flying with us today.<br><br>We wish you an inspiring conference, meaningful connections, and an enjoyable experience throughout today's event.</div>`;
     optsEl.innerHTML=''; bannerEl.classList.add('hidden'); clearTimer();
@@ -1984,9 +2057,23 @@ function renderPlayer(){
   }
 
   if(state.gameState === 'lobby'){
-    eyebrow.textContent = 'WAITING FOR GAME TO START';
-    qText.textContent = 'Question will be open shortly. Get ready for takeoff!';
-    optsEl.innerHTML=''; bannerEl.classList.add('hidden'); clearTimer();
+    // Staged but not opened: everyone reads the question first, with no options and no
+    // clock, until the host opens the answers. During the 10s weather card, the card
+    // above is the whole message and the question stays hidden.
+    const staged = state.currentQuestionIndex!==null && state.currentQuestionIndex!==undefined
+                   && QUESTIONS_BY_ID[state.currentQuestionIndex] && !wxAnnounceActive();
+    if(staged){
+      eyebrow.textContent = legLabel(state.currentQ);
+      qText.textContent = QUESTIONS_BY_ID[state.currentQuestionIndex].q;
+      optsEl.innerHTML = `<div class="p-await">Answers appear when the host opens the question</div>`;
+    } else {
+      eyebrow.textContent = wxAnnounceActive() ? legLabel(state.currentQ) : 'WAITING FOR GAME TO START';
+      qText.textContent = wxAnnounceActive()
+        ? 'Read the warning above — the question is coming.'
+        : 'Question will be open shortly. Get ready for takeoff!';
+      optsEl.innerHTML = '';
+    }
+    bannerEl.classList.add('hidden'); clearTimer();
     if(powerNoteEl) powerNoteEl.classList.add('hidden');
     if(stormNoteEl) stormNoteEl.classList.add('hidden');
     if(helpsWrap) helpsWrap.innerHTML='';
@@ -2047,15 +2134,7 @@ function renderPlayer(){
     optsEl.appendChild(b);
   });
 
-  // countdown — flashes red over the final few seconds so heads come up off the screen
-  if(state.gameState==='question' && state.questionOpenedAt){
-    const remain = secondsRemaining();
-    timerEl.textContent = remain+'s';
-    timerEl.classList.toggle('urgent', remain<=URGENT_SECONDS);
-  } else {
-    timerEl.textContent = state.gameState==='locked' ? 'LOCKED' : (revealed ? 'REVEALED' : '--');
-    timerEl.classList.remove('urgent');
-  }
+  paintCountdowns(); // shared clock painter — see paintCountdowns()
 
   renderHelps(me, myAns);
 
@@ -2175,7 +2254,7 @@ function updateLocationScene(){
 let finishFlourishIds = new Set();
 let finishCinematicPlayed = false;
 function triggerFinishCinematic(){
-  const finishers = Object.values(state.players).filter(p=>p.finishRank && p.finishRank<=3)
+  const finishers = Object.values(state.players).filter(p=>p.finishRank && p.finishRank<=FINISHERS_TO_END)
     .sort((a,b)=>a.finishRank-b.finishRank);
   finishFlourishIds = new Set(finishers.map(p=>p.id));
   const zoomWrap = document.getElementById('mapZoomWrap');
@@ -2224,6 +2303,22 @@ function showNewLeaderBanner(name){
   el._hideTimer = setTimeout(()=>{ el.classList.remove('show'); }, 3000);
 }
 
+/* While the presenter is holding the correct answer on screen, the aircraft must stay
+   where they were — they only start gliding once that card clears. Scoring itself already
+   happened, so the pre-reveal positions are read back out of the undo snapshot (which
+   adminRevealAnswer writes for exactly this leg before it moves anybody). */
+function planesFrozen(){
+  return state.gameState==='reveal'
+    && !!state.revealAt && (Date.now() - state.revealAt) < ANSWER_CARD_MS
+    && !!state.undoSnapshot && state.undoSnapshot.leg === state.currentQ
+    && !!state.undoSnapshot.players;
+}
+function displayPosition(p){
+  if(!planesFrozen()) return p.position;
+  const before = state.undoSnapshot.players[p.id];
+  return before ? before.position : p.position;
+}
+
 function renderPresenterPlanes(){
   const layer = document.getElementById('planeLayer');
   const ranked = rankedPlayers();
@@ -2240,8 +2335,9 @@ function renderPresenterPlanes(){
   const top5Ids = new Set(ranked.slice(0,5).map(p=>p.id));
   const byPos = {};
   Object.values(state.players).forEach(p=>{
-    byPos[p.position] = byPos[p.position] || [];
-    byPos[p.position].push(p);
+    const pos = displayPosition(p);
+    byPos[pos] = byPos[pos] || [];
+    byPos[pos].push(p);
   });
   const seenKeys = new Set();
   function tokenFor(key){
@@ -2318,8 +2414,9 @@ function renderPresenterLeaderboard(){
     return;
   }
   const totalLegs = ROUTE.length - 1;
-  const top5 = ranked.slice(0,5);
-  const rest = ranked.slice(5);
+  // The leaderboard lists EVERY player (the panel scrolls). The route map is unaffected —
+  // it still draws named tokens for the top 5 and a "+N" pile for everyone else.
+  if(titleEl) titleEl.textContent = `Live Leaderboard · ${ranked.length}`;
 
   // Drop anything in the panel that isn't one of our tracked rows — e.g. the "No players
   // yet" placeholder left over from the empty state above, the first time players join.
@@ -2334,7 +2431,7 @@ function renderPresenterLeaderboard(){
   });
 
   const seenKeys = new Set();
-  top5.forEach((p,i)=>{
+  ranked.forEach((p,i)=>{
     const key = 'p-'+p.id;
     seenKeys.add(key);
     let row = presenterLeaderRowEls[key];
@@ -2343,7 +2440,7 @@ function renderPresenterLeaderboard(){
     const accuracy = p.answeredCount ? Math.round((p.correctCount||0)/p.answeredCount*100) : 0;
     row.className = 'lead-row' + (i===0?' top1':'');
     row.innerHTML = `
-      <div class="rank">${i<3?RANK_TROPHY[i]:('#'+(i+1))}</div>
+      <div class="rank">${i<4?RANK_TROPHY[i]:('#'+(i+1))}</div>
       <div class="av">${avatarHTML(p.avatar,'1em','#FFFFFF')}</div>
       <div class="nm">${onFire?'<span class="fire-tag">🔥</span> ':''}${escapeHtml(p.name)}${milestoneDotsFor(p.id)}
         <div class="sub">${ROUTE[p.position].code} · ${ROUTE[p.position].city} · ⏱ ${formatTime(p.totalAnswerTime)}</div>
@@ -2353,21 +2450,7 @@ function renderPresenterLeaderboard(){
     `;
     el.appendChild(row); // "Last": (re)places it in rank order — existing nodes just move
   });
-  if(rest.length>0){
-    const key = 'others';
-    seenKeys.add(key);
-    let row = presenterLeaderRowEls[key];
-    if(!row){ row = document.createElement('div'); presenterLeaderRowEls[key] = row; }
-    row.className = 'lead-row other-row';
-    row.innerHTML = `
-      <div class="rank">—</div>
-      <div class="av">✈️</div>
-      <div class="nm">+${rest.length} other player${rest.length>1?'s':''}<div style="font-size:10.5px; color:rgba(255,255,255,.5); font-weight:400;">outside the top 5</div></div>
-      <div class="st"></div>
-    `;
-    el.appendChild(row);
-  }
-  // players who fell out of the top 5 entirely lose their row
+  // rows for players who left the race (removed by the admin) get dropped
   Object.keys(presenterLeaderRowEls).forEach(key=>{
     if(!seenKeys.has(key)){ presenterLeaderRowEls[key].remove(); delete presenterLeaderRowEls[key]; }
   });
@@ -2398,7 +2481,7 @@ function rankedPlayers(){
     return b.position - a.position || (a.totalAnswerTime||0) - (b.totalAnswerTime||0);
   });
 }
-const RANK_TROPHY = ['🥇','🥈','🥉'];
+const RANK_TROPHY = ['🏆','🥇','🥈','🥉']; // champion's cup, then gold-silver-bronze for 2nd-4th
 function formatTime(ms){
   ms = ms || 0;
   return (ms/1000).toFixed(1)+'s';
@@ -2530,7 +2613,9 @@ function renderPresenter(){
   // itself on the next tick.
   const mapPanelEl = document.getElementById('mapPanel');
   const answerShowing = state.gameState==='reveal' && state.revealAt && (Date.now()-state.revealAt) < ANSWER_CARD_MS;
-  const showPresQuestion = qKnown && (state.gameState==='question' || state.gameState==='locked' || answerShowing);
+  // staged but not opened: the question is on the wall with the answers still hidden
+  const previewing = state.gameState==='lobby' && qKnown && !wxAnnounceActive();
+  const showPresQuestion = qKnown && (previewing || state.gameState==='question' || state.gameState==='locked' || answerShowing);
   let pqEl = document.getElementById('presQuestionOverlay');
   if(showPresQuestion && mapPanelEl){
     if(!pqEl){
@@ -2547,12 +2632,14 @@ function renderPresenter(){
     pqEl.innerHTML = `
       <div class="pq-head">
         <div class="pq-eyebrow">${legLabel(state.currentQ)}${wxTag}</div>
-        <div class="pq-timer${(!revealed && remain!==null && remain<=5)?' urgent':''}">${revealed ? '✓' : (remain===null ? '--' : remain)}</div>
+        <div class="pq-timer${(!revealed && !previewing && remain!==null && remain<=URGENT_SECONDS)?' urgent':''}">${revealed ? '✓' : (previewing || remain===null ? '--' : remain)}</div>
       </div>
       <div class="pq-text">${escapeHtml(qd.q)}</div>
-      <div class="pq-opts">
+      ${previewing
+        ? `<div class="pq-await">Read the question — the answers and the clock come next</div>`
+        : `<div class="pq-opts">
         ${qd.opts.map((o,i)=>`<div class="pq-opt${(revealed && i===correctIdx)?' correct':''}"><span class="k">${String.fromCharCode(65+i)}</span><span>${escapeHtml(o)}</span></div>`).join('')}
-      </div>
+      </div>`}
       ${(revealed && correctIdx!==null && correctIdx!==undefined) ? `<div class="pq-answer-tag">✅ Correct answer: ${String.fromCharCode(65+correctIdx)} — ${escapeHtml(qd.opts[correctIdx])}</div>` : ''}
     `;
   } else if(pqEl){
@@ -2620,7 +2707,11 @@ function renderPresenter(){
       document.getElementById('view-presenter').appendChild(awardOverlay);
       fireConfettiLight();
     }
-    const podium = rankedPlayers().slice(0,3);
+    // 1st takes the champion's cup on its own, at the top and biggest; 2nd/3rd/4th line up
+    // below with gold, silver and bronze
+    const podium = rankedPlayers().slice(0,FINISHERS_TO_END);
+    const champion = podium[0];
+    const medallists = podium.slice(1,4);
     const milestoneRows = ['HAN','SPC','SGN'].map(code=>{
       const pid = state.milestones[code];
       const p = pid ? state.players[pid] : null;
@@ -2631,14 +2722,24 @@ function renderPresenter(){
       </div>`;
     }).join('');
     awardOverlay.innerHTML = `
-      <div class="trophy">🏆</div>
-      <h1>Award Ceremony</h1>
-      <div class="podium">
-        ${podium[1]?`<div class="col c2"><div>${avatarHTML(podium[1].avatar,'1.3em','#FFFFFF')}</div><div class="bar">2</div><div class="podium-name">${escapeHtml(podium[1].name)}</div></div>`:''}
-        ${podium[0]?`<div class="col c1"><div>${avatarHTML(podium[0].avatar,'1.3em','#FFFFFF')}</div><div class="bar">1</div><div class="podium-name">${escapeHtml(podium[0].name)}</div></div>`:''}
-        ${podium[2]?`<div class="col c3"><div>${avatarHTML(podium[2].avatar,'1.3em','#FFFFFF')}</div><div class="bar">3</div><div class="podium-name">${escapeHtml(podium[2].name)}</div></div>`:''}
+      <h1 style="font-size:30px; margin:0 0 18px;">Award Ceremony</h1>
+      ${champion ? `
+        <div class="champion-block">
+          <div class="champion-cup">🏆</div>
+          <div class="champion-eyebrow">Champion</div>
+          <div class="champion-name">${escapeHtml(champion.name)}</div>
+          <div class="champion-sub">${avatarHTML(champion.avatar,'1.1em','#FFFFFF')} &nbsp;${champion.correctCount||0} correct · ⏱ ${formatTime(champion.totalAnswerTime)}</div>
+        </div>` : ''}
+      <div class="medal-row">
+        ${medallists.map((p,i)=>`
+          <div class="medal-card">
+            <div class="medal-ico">${RANK_TROPHY[i+1]}</div>
+            <div class="medal-place">${ordinal(i+2)} place</div>
+            <div class="medal-name">${escapeHtml(p.name)}</div>
+            <div class="medal-sub">${avatarHTML(p.avatar,'1em','#FFFFFF')} &nbsp;⏱ ${formatTime(p.totalAnswerTime)}</div>
+          </div>`).join('')}
       </div>
-      <div style="margin-top:26px; text-align:center;">
+      <div style="margin-top:24px; text-align:center;">
         <div style="font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:rgba(255,255,255,.55); margin-bottom:4px;">First to reach each checkpoint</div>
         ${milestoneRows}
       </div>
@@ -2718,16 +2819,38 @@ function adminTab(tab){
   renderAdmin();
 }
 
+/* Opening a leg is two presses, so the room can read the question before the clock starts:
+
+     press 1 (nothing staged yet) — pick the question and start the 10s weather card; once
+       that clears, the question TEXT goes up on the wall and every phone, with no options
+       and no clock. This is also what "Next question →" does automatically.
+     press 2 — the four options appear and the countdown starts.
+
+   The button relabels itself between the two (see renderAdmin), so it always says which
+   of the two it is about to do. */
+function adminStageQuestion(){
+  if(state.gameState==='finished'){ toast('Race already finished — reset to play again.'); return false; }
+  if(!ensureQuestionPicked()){ toast('No questions left in the bank — all '+QUESTIONS.length+' have been asked.'); return false; }
+  state.legAnnouncedAt = Date.now();
+  return true;
+}
 function adminOpenQuestion(){
   if(state.gameState==='finished'){ toast('Race already finished — reset to play again.'); return; }
+  // nothing staged for this leg yet -> stage it and stop; the next press starts the clock
+  if(state.gameState==='lobby' && (state.currentQuestionIndex===null || state.currentQuestionIndex===undefined)){
+    if(!adminStageQuestion()) return;
+    saveState();
+    toast(wxAnnounceFor() ? 'Weather warning up — question follows in 10s' : legLabel(state.currentQ)+' question shown (answers still hidden)');
+    return;
+  }
   if(!ensureQuestionPicked()){ toast('No questions left in the bank — all '+QUESTIONS.length+' have been asked.'); return; }
   state.gameState = 'question';
   state.questionOpenedAt = Date.now();
-  // Hard deadline enforced by the answers RLS policy against Postgres server time, so a
-  // late answer is refused even if the admin forgets to press Close or the browser hangs.
+  // Hard deadline enforced by the database rules against Firebase server time, so a late
+  // answer is refused even if the admin forgets to press Close or the browser hangs.
   state.deadline = Date.now() + (TIMER_SECONDS + 3) * 1000;
   saveState();
-  toast(legLabel(state.currentQ)+' question opened');
+  toast(legLabel(state.currentQ)+' — answers open, clock running');
 }
 function adminCloseQuestion(){
   if(state.gameState!=='question'){ toast('No question is currently open'); return; }
@@ -2811,7 +2934,11 @@ function adminRevealAnswer(){
       if(a.fifty) p.fiftyUsed = true;
       if(a.seatbelt) p.seatbeltUsed = true;
     }
-    if(a && a.submitted) p.answeredCount = (p.answeredCount||0)+1;
+    if(a && a.submitted){
+      p.answeredCount = (p.answeredCount||0)+1;
+      // the single place totalAnswerTime is accumulated — see the note in playerConfirmSubmit
+      if(typeof a.timeTaken==='number') p.totalAnswerTime = (p.totalAnswerTime||0) + a.timeTaken;
+    }
     if(correct){
       p.correctCount = (p.correctCount||0)+1;
       p.currentStreak = (p.currentStreak||0)+1;
@@ -2849,7 +2976,7 @@ function adminRevealAnswer(){
 
   state.revealedLegs[state.currentQ] = true;
 
-  // The race keeps running until at least 3 aircraft have landed on FINISH — hand out
+  // The race keeps running until FINISHERS_TO_END aircraft have landed on FINISH — hand out
   // finishRank in true arrival order (several can land on the same reveal thanks to
   // Turbo/Power/Storm, so break ties by score then total answer time) rather than
   // ending the whole race the instant the very first player lands.
@@ -2862,7 +2989,7 @@ function adminRevealAnswer(){
     newArrivals.forEach(p=>{ state.finishSeq = (state.finishSeq||0) + 1; p.finishRank = state.finishSeq; });
   }
   const totalFinishers = Object.values(state.players).filter(p=>p.finishRank).length;
-  if(totalFinishers >= 3 && state.gameState !== 'finished'){
+  if(totalFinishers >= FINISHERS_TO_END && state.gameState !== 'finished'){
     state.gameState = 'finished';
     state.winnerId = Object.values(state.players).find(p=>p.finishRank===1).id;
   }
@@ -2895,7 +3022,7 @@ function adminUndoReveal(){
 }
 function adminNextQuestion(){
   if(state.gameState==='finished'){ toast('Race finished — reset to play again.'); return; }
-  // The map only has 12 legs, but with fewer than 3 aircraft landed there's no "last leg" —
+  // The map only has 12 legs, but with fewer than 4 aircraft landed there's no "last leg" —
   // the race keeps going into overtime rounds (see legLabel()) until 3 have reached FINISH.
   // armed but the leg was never scored -> hand the Power Question charge back
   if(state.powerQuestionActive && !(state.revealedLegs && state.revealedLegs[state.currentQ])){
@@ -2909,6 +3036,9 @@ function adminNextQuestion(){
   state.stormClearedIds = null;
   state.stormRevealAt = null;
   state.revealAt = null;
+  // stage the new leg straight away: any weather warning runs for 10s, then the question
+  // text goes up with the answers still hidden until the admin opens them
+  adminStageQuestion();
   saveState();
   toast('Advanced to '+legLabel(state.currentQ).toLowerCase());
 }
@@ -2929,6 +3059,7 @@ function adminPrevQuestion(){
   state.stormRevealAt = null;
   state.revealAt = null;
   if(state.winnerId){ state.winnerId = null; }
+  adminStageQuestion();
   saveState();
   toast('Went back to '+legLabel(state.currentQ).toLowerCase());
 }
@@ -2938,6 +3069,8 @@ function adminTogglePowerQuestion(){
   if(isStormLeg(state.currentQ)){ toast('⛈ Leg '+(state.currentQ+1)+' is a storm leg — Power Question cannot be armed here'); return; }
   if(state.powerQuestionUsed && !state.powerQuestionActive){ toast('Power Question has already been played this game'); return; }
   state.powerQuestionActive = !state.powerQuestionActive;
+  // arming it is itself an announcement — restart the 10s warning window so the room sees it
+  if(state.powerQuestionActive) state.legAnnouncedAt = Date.now();
   // Cancelling before the question opens gives the charge back, so a mis-click does not
   // burn the single Power Question for the whole game.
   state.powerQuestionUsed = state.powerQuestionActive;
@@ -3009,6 +3142,7 @@ function resetProgress(){
   });
   state.currentQ = 0;
   state.currentQuestionIndex = null;
+  state.legAnnouncedAt = null;
   state.questionIndexByLeg = {};
   state.powerQuestionActive = false;
   state.gameState = 'lobby';
@@ -3175,7 +3309,7 @@ function renderLeaderTable(){
   if(ranked.length===0){ tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(255,255,255,.45);">No players yet.</td></tr>`; return; }
   tbody.innerHTML = ranked.map((p,i)=>`
     <tr>
-      <td class="mono">${i<3?RANK_TROPHY[i]:('#'+(i+1))}</td>
+      <td class="mono">${i<4?RANK_TROPHY[i]:('#'+(i+1))}</td>
       <td>${avatarHTML(p.avatar)}</td>
       <td>${escapeHtml(p.name)}${milestoneDotsFor(p.id)}</td>
       <td class="mono">${ROUTE[p.position].code}</td>
@@ -3201,18 +3335,7 @@ function renderAdmin(){
   const turbulentNote = isTurbulenceLeg(state.currentQ) ? ' · 🌪 TURBULENCE LEG' : (isStormLeg(state.currentQ) ? ' · ⛈ STORM LEG' : '');
   document.getElementById('adminCurrentQ').textContent = `${legLabel(state.currentQ)} — status: ${state.gameState}. ${qLabel}${turbulentNote} · ${questionsRemaining()} questions left`;
 
-  // countdown, mirroring what the players see, so the host can talk to the clock
-  const adminTimerEl = document.getElementById('adminTimer');
-  if(adminTimerEl){
-    const remain = secondsRemaining();
-    if(state.gameState==='question' && remain!==null){
-      adminTimerEl.textContent = remain+'s';
-      adminTimerEl.classList.toggle('urgent', remain<=5);
-    } else {
-      adminTimerEl.textContent = state.gameState==='reveal' ? 'REVEALED' : (state.gameState==='locked' ? 'LOCKED' : '--');
-      adminTimerEl.classList.remove('urgent');
-    }
-  }
+  paintCountdowns(); // same clock as the players and the wall — see paintCountdowns()
 
   // Answer key — appears the moment a question is opened/picked, so the host always
   // knows the correct answer (and explanation, if one has been written) before revealing.
@@ -3237,6 +3360,24 @@ function renderAdmin(){
   } else {
     keyPanel.classList.add('hidden');
     keyBody.innerHTML = '';
+  }
+
+  // opening a leg is two presses (stage the question, then release the answers) — the
+  // button says which one it is about to do, so the host is never guessing
+  const openBtn = document.getElementById('openQBtn');
+  if(openBtn){
+    const staged = state.currentQuestionIndex!==null && state.currentQuestionIndex!==undefined;
+    if(state.gameState==='lobby' && !staged){
+      openBtn.textContent = 'Show question';
+      openBtn.title = 'Puts any weather warning up for 10s, then the question text — answers stay hidden';
+    } else if(state.gameState==='lobby'){
+      openBtn.textContent = wxAnnounceActive() ? 'Open answers (warning showing…)' : 'Open answers & start clock';
+      openBtn.title = 'Reveals the four options and starts the 20s countdown';
+    } else {
+      openBtn.textContent = 'Open answers & start clock';
+      openBtn.title = 'Reveals the four options and starts the 20s countdown';
+    }
+    openBtn.disabled = state.gameState==='question' || state.gameState==='finished';
   }
 
   const powerBtn = document.getElementById('powerQBtn');
@@ -3312,6 +3453,11 @@ setInterval(()=>{
   // leaderboard tables once a second would be pure waste
   if(!document.getElementById('view-admin').classList.contains('hidden') && currentTab==='control') renderAdmin();
 }, 1000);
+
+/* Fast clock-only tick. The 1s render loop above is too coarse to keep three separately
+   scheduled screens showing the same number; this repaints just the countdown text so the
+   phone, the wall and the dashboard never differ by more than a fifth of a second. */
+setInterval(paintCountdowns, 200);
 
 /* init route from hash, then bring up the sync layer */
 (function init(){

@@ -23,7 +23,12 @@ VNA_Race/
 
 > Vị trí A/B/C/D của mỗi câu được **xáo tự động** khi vào game. File gốc có 29/31 câu đáp án đúng nằm ở B — nếu giữ nguyên, người chơi chỉ cần luôn bấm B là thắng. Nội dung câu hỏi và đáp án đúng giữ nguyên 100%, chỉ đổi vị trí chữ cái. Thuật toán xáo là tất định (seed theo id câu hỏi) nên mọi điện thoại, màn LED và dashboard admin đều thấy **cùng một thứ tự** mà không cần đồng bộ gì thêm.
 
-**Đếm ngược & reveal:** mỗi câu **20 giây**, hiển thị đồng bộ trên cả 3 màn hình (player, presenter, admin). Đồng hồ **chuyển đỏ và nháy to ở 5 giây cuối**. Hết giờ đáp án **tự động được reveal**, admin không cần bấm gì — màn presenter hiện đáp án đúng trong **3 giây** rồi trở lại bản đồ. Nút *Reveal now (early)* chỉ để reveal sớm khi cần.
+**Nhịp một chặng — admin bấm 2 lần:**
+
+1. **Next question →** (hoặc *Show question* ở chặng đầu): nếu chặng có thời tiết thì cảnh báo to hiện trên presenter + màn mọi người chơi trong **10 giây**; hết 10 giây thì **câu hỏi hiện ra nhưng chưa có đáp án**, đồng hồ chưa chạy — cả phòng đọc câu hỏi trước.
+2. **Open answers & start clock**: 4 đáp án hiện lên và đồng hồ **20 giây** bắt đầu chạy.
+
+**Đếm ngược & reveal:** đồng hồ đồng bộ trên cả 3 màn hình (player, presenter, admin) — cùng một bộ đếm, sai lệch tối đa 0,2 giây. Đồng hồ **chuyển đỏ và nháy to ở 5 giây cuối**. Hết giờ đáp án **tự động được reveal**, admin không cần bấm gì — màn presenter hiện đáp án đúng (tô xanh) trong **5 giây**, **máy bay chỉ bắt đầu di chuyển sau khi hết 5 giây đó**. Nút *Reveal now (early)* chỉ để reveal sớm khi cần.
 
 ### Ba sự trợ giúp
 
@@ -45,9 +50,20 @@ Bật Turbo/Seatbelt mà không bấm Nộp thì không bị phạt và không m
 
 **⛈ Storm** — tự động ở **chặng 8**. Màn LED đổi badge sang ⛈ Storm, theme tối/mưa nặng hơn turbulence. Chỉ **10 người trả lời đúng nhanh nhất** (tính theo thời gian riêng của câu này) được ATC cấp phép bay tiếp **+1 chặng**; tất cả người chơi còn lại đứng nguyên (kể cả đúng nhưng không lọt top 10). Turbo và Power Question đều bị khoá ở chặng này. Sau khi admin bấm Reveal, màn presenter hiện danh sách 10 người được bay tiếp trong 10 giây.
 
-**Kết thúc ván & Overtime** — ván đấu chỉ thực sự kết thúc (`FINISHED`) khi có **ít nhất 3 người chơi về tới FINISH**. Bản đồ chỉ có 12 chặng, nhưng nếu hết chặng 12 mà chưa đủ 3 người về đích, admin vẫn bấm **Next question →** để mở thêm câu hỏi — màn hình hiện **"Overtime round N"** thay vì số chặng, câu hỏi tiếp tục rút ngẫu nhiên từ kho 30 câu (có thể lặp lại). Ai về tới FINISH trước sẽ thấy ngay màn hình cá nhân báo thứ hạng + lời chúc, kể cả khi ván vẫn đang tiếp diễn cho người khác.
+**Kết thúc ván & Overtime** — ván đấu chỉ thực sự kết thúc (`FINISHED`) khi có **đủ 4 người chơi về tới FINISH**. Bản đồ chỉ có 12 chặng, nhưng nếu hết chặng 12 mà chưa đủ 4 người về đích, admin vẫn bấm **Next question →** để mở thêm câu hỏi — màn hình hiện **"Overtime round N"** thay vì số chặng. Ai về tới FINISH trước sẽ thấy ngay màn hình cá nhân báo thứ hạng + lời chúc, kể cả khi ván vẫn đang tiếp diễn cho người khác.
 
-**Thắng:** ai tới FINISH trước. Nhiều người cùng tới trong một lượt thì xếp theo *số câu đúng → tổng thời gian trả lời*.
+**Thắng & giải thưởng:** ai tới FINISH trước. Nhiều người cùng tới trong một lượt thì xếp theo *số câu đúng → tổng thời gian trả lời*.
+
+| Hạng | Giải |
+|---|---|
+| 1 | 🏆 Cúp vô địch |
+| 2 | 🥇 Huy chương vàng |
+| 3 | 🥈 Huy chương bạc |
+| 4 | 🥉 Huy chương đồng |
+
+Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng xếp hạng admin, màn hình cá nhân khi về đích và **lễ trao giải** (tên nhà vô địch hiện to nhất kèm cúp, ba người còn lại xếp thành hàng vàng–bạc–đồng).
+
+**Live Leaderboard** hiện **tất cả người chơi** (panel tự cuộn). Riêng bản đồ vẫn giữ nguyên cách hiển thị cũ: 5 máy bay dẫn đầu có tên, còn lại gộp thành cụm `+N`.
 
 **Top 3** — ai đang đứng hạng 1/2/3 sẽ thấy màn hình chuyển sang **vàng business class của Vietnam Airlines**, kèm dòng báo ai đang bám sát phía sau và cách bao nhiêu chặng.
 
