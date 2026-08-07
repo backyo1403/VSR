@@ -19,25 +19,39 @@ VNA_Race/
 
 **Bản đồ:** 12 chặng, `START → CDG → AMS → HAN★ → MUC → MOW → SPC★ → LHR → MXP → CPH → SGN★ → FRA → FINISH★`
 
-**Ngân hàng câu hỏi:** 30 câu, rút ngẫu nhiên theo chặng
+**Ngân hàng câu hỏi:** 31 câu (từ `Question.docx`), hỏi **lần lượt theo đúng thứ tự** trong file, mỗi chặng một câu, **câu đã dùng không bao giờ lặp lại**. Hết 31 câu thì admin không mở thêm được câu mới.
 
-| Chặng | Rút từ |
-|---|---|
-| 1 – 4 | câu 1 – 10 |
-| 5 – 8 | câu 11 – 20 |
-| 9 – 12 | câu 21 – 30 |
+> Vị trí A/B/C/D của mỗi câu được **xáo tự động** khi vào game. File gốc có 29/31 câu đáp án đúng nằm ở B — nếu giữ nguyên, người chơi chỉ cần luôn bấm B là thắng. Nội dung câu hỏi và đáp án đúng giữ nguyên 100%, chỉ đổi vị trí chữ cái. Thuật toán xáo là tất định (seed theo id câu hỏi) nên mọi điện thoại, màn LED và dashboard admin đều thấy **cùng một thứ tự** mà không cần đồng bộ gì thêm.
 
-**Turbo Boost** — nút của người chơi, mở khoá riêng cho từng người **khi máy bay của họ tới MUC**. Mỗi người một lần cả ván. Đúng → **+2 chặng**, sai → **−1 chặng**. Không dùng được khi turbulence hoặc khi đang là Power Question. Bật Turbo mà không bấm Nộp thì không bị phạt và không mất lượt.
+**Đếm ngược & reveal:** mỗi câu **20 giây**, hiển thị đồng bộ trên cả 3 màn hình (player, presenter, admin). Đồng hồ **chuyển đỏ và nháy to ở 5 giây cuối**. Hết giờ đáp án **tự động được reveal**, admin không cần bấm gì — màn presenter hiện đáp án đúng trong **3 giây** rồi trở lại bản đồ. Nút *Reveal now (early)* chỉ để reveal sớm khi cần.
 
-**Power Question** — nút của admin, **một lần duy nhất cả ván**, bấm trước khi mở câu hỏi. Câu hỏi rút từ 21–30, màn LED hiện ⚡ POWER QUESTION. Người **trả lời đúng nhanh nhất** được **+2 chặng**, người đúng khác +1, người sai đứng nguyên. Không bật được trên chặng turbulence. Huỷ trước khi mở câu thì được trả lại lượt.
+### Ba sự trợ giúp
 
-**Turbulence** — tự động ở **chặng 6 và chặng 10**. Màn LED chuyển theme mưa sấm chớp, badge đổi từ 🌈 Clear Skies sang 🌪 Turbulence. Trả lời đúng **đứng nguyên**, **không đúng thì lùi 1 chặng** (kể cả người không trả lời). Turbo bị khoá.
+Cả ba **mở khoá riêng cho từng người khi máy bay của họ tới MUC**, mỗi thứ dùng **một lần cả ván**, hiển thị là 3 nút tròn dưới ô "Select an answer above".
+
+| Trợ giúp | Tác dụng | Bị khoá khi |
+|---|---|---|
+| ✂️ **50:50** | Loại bỏ 2 đáp án sai | turbulence · storm · power question |
+| ⚡ **Turbo Boost** | Đúng → **+2 chặng**, sai → **−1 chặng** | turbulence · storm · power question |
+| 🔒 **Fasten Seatbelt** | **Chỉ dùng được trong turbulence** — trả lời sai vẫn **không bị lùi 1 chặng** | mọi chặng không phải turbulence |
+
+Bật Turbo/Seatbelt mà không bấm Nộp thì không bị phạt và không mất lượt.
+
+**Power Question** — nút của admin, **một lần duy nhất cả ván**, bấm trước khi mở câu hỏi. Màn LED hiện ⚡ POWER QUESTION. Người **trả lời đúng nhanh nhất** được **+2 chặng**, người đúng khác +1, người sai đứng nguyên. Không bật được trên chặng turbulence/storm. Huỷ trước khi mở câu thì được trả lại lượt. Cả ba trợ giúp bị khoá.
+
+**Turbulence** — tự động ở **chặng 6 và chặng 10**. Màn LED chuyển theme mưa sấm chớp, badge đổi từ 🌈 Clear Skies sang 🌪 Turbulence. Trả lời đúng **đứng nguyên**, **không đúng thì lùi 1 chặng** (kể cả người không trả lời) — trừ khi bật 🔒 Fasten Seatbelt. 50:50 và Turbo bị khoá.
+
+**Thông báo thời tiết** — ngay khi admin bấm *Next question →* vào chặng turbulence/storm (hoặc arm Power Question), màn presenter **và** màn của mọi người chơi hiện **thông báo to** kèm luật chơi. Bấm *Open question* thì thông báo to biến mất, chỉ còn badge thời tiết nhỏ ở góc.
 
 **⛈ Storm** — tự động ở **chặng 8**. Màn LED đổi badge sang ⛈ Storm, theme tối/mưa nặng hơn turbulence. Chỉ **10 người trả lời đúng nhanh nhất** (tính theo thời gian riêng của câu này) được ATC cấp phép bay tiếp **+1 chặng**; tất cả người chơi còn lại đứng nguyên (kể cả đúng nhưng không lọt top 10). Turbo và Power Question đều bị khoá ở chặng này. Sau khi admin bấm Reveal, màn presenter hiện danh sách 10 người được bay tiếp trong 10 giây.
 
 **Kết thúc ván & Overtime** — ván đấu chỉ thực sự kết thúc (`FINISHED`) khi có **ít nhất 3 người chơi về tới FINISH**. Bản đồ chỉ có 12 chặng, nhưng nếu hết chặng 12 mà chưa đủ 3 người về đích, admin vẫn bấm **Next question →** để mở thêm câu hỏi — màn hình hiện **"Overtime round N"** thay vì số chặng, câu hỏi tiếp tục rút ngẫu nhiên từ kho 30 câu (có thể lặp lại). Ai về tới FINISH trước sẽ thấy ngay màn hình cá nhân báo thứ hạng + lời chúc, kể cả khi ván vẫn đang tiếp diễn cho người khác.
 
 **Thắng:** ai tới FINISH trước. Nhiều người cùng tới trong một lượt thì xếp theo *số câu đúng → tổng thời gian trả lời*.
+
+**Top 3** — ai đang đứng hạng 1/2/3 sẽ thấy màn hình chuyển sang **vàng business class của Vietnam Airlines**, kèm dòng báo ai đang bám sát phía sau và cách bao nhiêu chặng.
+
+**Màn presenter** — khi admin mở câu hỏi, màn LED hiện **câu hỏi + 4 đáp án + đồng hồ đếm ngược cỡ lớn** trên nền đặc (không blur, để đọc được từ cuối phòng), bảng xếp hạng vẫn hiện bên phải. Có nút **⛶ Fullscreen** ở góc trên.
 
 Chạy test luật chơi:
 

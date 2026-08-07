@@ -148,7 +148,9 @@ input[type=text]:focus{border-color:var(--vna-gold);}
   max-width:460px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column;
   padding:calc(20px + env(safe-area-inset-top)) calc(18px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left));
 }
-.p-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;}
+/* left padding keeps the brand clear of the fixed "← Exit" button, which floats over
+   the top-left corner of every non-landing view */
+.p-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; padding-left:76px;}
 .p-header .brand-mark{margin:0;}
 .p-badge{font-family:var(--font-mono); font-size:11px; background:var(--glass); border:1px solid var(--glass-brd); padding:6px 10px; border-radius:20px;}
 
@@ -414,6 +416,192 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
 .toast{position:fixed; bottom:calc(24px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); background:rgba(0,30,60,.92); border:1px solid var(--vna-gold); padding:12px 20px; border-radius:12px; font-size:13.5px; z-index:200; opacity:0; transition:opacity .25s ease, transform .25s ease; max-width:calc(100vw - 32px);}
 .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
 ::-webkit-scrollbar{width:8px;} ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2); border-radius:4px;}
+
+/* ---------- admin: live countdown + presenter notes ---------- */
+.admin-ctrl-head{display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:12px;}
+.admin-timer{
+  font-family:var(--font-mono); font-weight:700; font-size:26px; line-height:1; padding:8px 18px;
+  border-radius:14px; background:rgba(255,255,255,.08); border:1px solid var(--glass-brd); min-width:96px; text-align:center;
+}
+.admin-timer.urgent{background:var(--bad); border-color:var(--bad); color:#fff; animation:clockPulse .5s ease-in-out infinite alternate;}
+.presenter-notes{margin-top:14px; padding:14px 16px; border-radius:14px; background:rgba(212,175,55,.10); border:1px solid rgba(212,175,55,.34);}
+.presenter-notes .pn-title{font-family:var(--font-display); font-weight:800; font-size:12.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--vna-gold-light); margin-bottom:7px;}
+.presenter-notes .pn-body{font-size:13.5px; line-height:1.6; color:rgba(255,255,255,.88);}
+@keyframes clockPulse{from{transform:scale(1);} to{transform:scale(1.09);}}
+
+/* ---------- presenter: question panel, answer card, fullscreen ----------
+   Deliberately opaque (no backdrop-filter) — on an LED wall a blurred translucent
+   panel loses all contrast and the back of the room can't read the options. */
+.pres-question-overlay{
+  position:absolute; inset:0; z-index:60; display:flex; flex-direction:column;
+  background:linear-gradient(158deg,#00284C 0%,#003A6B 55%,#0A5391 100%);
+  padding:30px 36px; gap:16px;
+}
+.pq-head{display:flex; align-items:center; justify-content:space-between; gap:20px;}
+.pq-eyebrow{font-family:var(--font-display); font-weight:800; font-size:17px; letter-spacing:.07em; text-transform:uppercase; color:var(--vna-gold-light);}
+.pq-timer{
+  font-family:var(--font-mono); font-weight:700; font-size:52px; line-height:1; min-width:150px; text-align:center;
+  padding:8px 20px; border-radius:18px; background:rgba(255,255,255,.10); border:2px solid var(--glass-brd);
+}
+.pq-timer.urgent{background:var(--bad); border-color:#ff8f8f; color:#fff; animation:clockPulse .5s ease-in-out infinite alternate;}
+.pq-text{font-family:var(--font-display); font-weight:800; font-size:clamp(22px,2.5vw,36px); line-height:1.28;}
+.pq-opts{display:grid; grid-template-columns:1fr 1fr; gap:13px; margin-top:auto;}
+.pq-opt{
+  display:flex; align-items:center; gap:14px; padding:16px 18px; border-radius:16px;
+  background:rgba(255,255,255,.08); border:2px solid rgba(255,255,255,.20); font-size:clamp(15px,1.35vw,21px); font-weight:600;
+}
+.pq-opt .k{
+  width:40px; height:40px; flex-shrink:0; border-radius:11px; background:rgba(255,255,255,.16);
+  display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-weight:700; font-size:18px;
+}
+.pq-opt.correct{background:rgba(46,204,113,.28); border-color:var(--good);}
+.pq-opt.correct .k{background:var(--good); color:#04301a;}
+.pq-answer-tag{
+  text-align:center; font-family:var(--font-display); font-weight:800; font-size:21px; letter-spacing:.04em;
+  padding:11px; border-radius:14px; background:rgba(46,204,113,.24); border:2px solid var(--good); color:#d6ffe8;
+}
+.pres-fullscreen-btn{padding:8px 14px; font-size:13px; border-radius:20px;}
+
+/* ---------- big weather announcement (lobby only, presenter + player) ---------- */
+.wx-announce{
+  border-radius:20px; padding:26px 30px; text-align:center; font-family:var(--font-display);
+  animation:wxAnnouncePop .45s cubic-bezier(.2,1.3,.4,1);
+}
+.wx-announce .ic{font-size:52px; line-height:1; margin-bottom:8px;}
+.wx-announce .tt{font-weight:800; font-size:30px; letter-spacing:.06em; margin-bottom:8px;}
+.wx-announce .rl{font-family:var(--font-body); font-weight:600; font-size:15px; line-height:1.5; opacity:.94;}
+.wx-announce.wx-turbulence{background:linear-gradient(135deg,#8f56dc,#5a32a0); color:#fff; box-shadow:0 18px 50px rgba(120,60,180,.55);}
+.wx-announce.wx-storm{background:linear-gradient(135deg,#3c6edc,#14286e); color:#fff; box-shadow:0 18px 50px rgba(30,60,160,.55);}
+.wx-announce.wx-power{background:linear-gradient(135deg,#ffc400,#ff7800); color:#2a1500; box-shadow:0 18px 50px rgba(255,150,0,.55);}
+@keyframes wxAnnouncePop{from{opacity:0; transform:scale(.86);} to{opacity:1; transform:scale(1);}}
+/* presenter: fills the map panel so it reads from the back of the room */
+.pres-wx-announce{position:absolute; inset:0; z-index:58; display:flex; align-items:center; justify-content:center; background:rgba(0,20,45,.92); padding:40px;}
+.pres-wx-announce .wx-announce{max-width:760px;}
+.pres-wx-announce .wx-announce .ic{font-size:92px;}
+.pres-wx-announce .wx-announce .tt{font-size:52px;}
+.pres-wx-announce .wx-announce .rl{font-size:19px;}
+/* player: sits at the top of the game column */
+#pWxAnnounce{margin-bottom:12px;}
+#pWxAnnounce .wx-announce{padding:18px 20px;}
+#pWxAnnounce .wx-announce .ic{font-size:38px;}
+#pWxAnnounce .wx-announce .tt{font-size:21px;}
+#pWxAnnounce .wx-announce .rl{font-size:12.5px;}
+
+/* ---------- player: countdown, helps, weather skins, business-class top 3 ---------- */
+#pTimer{font-size:23px; font-weight:700; padding:7px 22px; min-width:96px; text-align:center; transition:background .2s ease;}
+#pTimer.urgent{background:var(--bad); border-color:var(--bad); color:#fff; animation:clockPulse .5s ease-in-out infinite alternate;}
+.help-row{display:flex; gap:14px; justify-content:center; margin-top:12px;}
+.help-btn{
+  width:70px; height:70px; flex-shrink:0; border-radius:50%; padding:0; line-height:1; cursor:pointer;
+  border:2px solid var(--glass-brd); background:rgba(255,255,255,.07); color:#fff;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  font-family:var(--font-body); transition:all .15s ease; touch-action:manipulation;
+}
+.help-btn .ic{font-size:21px;}
+.help-btn .lb{font-size:8px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; opacity:.8;}
+.help-btn:active{transform:scale(.94);}
+.help-btn.armed{border-color:var(--vna-gold); background:rgba(212,175,55,.24); box-shadow:0 0 0 4px rgba(212,175,55,.18);}
+.help-btn:disabled{opacity:.3; cursor:not-allowed;}
+.help-btn.spent{opacity:.26;}
+.help-hint{text-align:center; font-size:11px; color:rgba(255,255,255,.5); margin-top:7px;}
+.opt-btn.eliminated{opacity:.22; text-decoration:line-through;}
+
+#view-player.wx-turbulence .q-card{background:linear-gradient(160deg,rgba(150,90,220,.26),rgba(90,50,160,.15)); border-color:rgba(185,145,255,.55);}
+#view-player.wx-storm .q-card{background:linear-gradient(160deg,rgba(60,110,220,.28),rgba(20,40,110,.18)); border-color:rgba(140,180,255,.6);}
+#view-player.wx-power .q-card{background:linear-gradient(160deg,rgba(255,196,0,.22),rgba(255,120,0,.13)); border-color:rgba(255,196,0,.6);}
+.player-fx{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;}
+
+/* Vietnam Airlines business-class gold treatment for whoever is currently 1st/2nd/3rd */
+#view-player.biz-gold{background:linear-gradient(180deg,#231903 0%,#4b3705 42%,#8a6816 100%);}
+#view-player.biz-gold .q-card,
+#view-player.biz-gold .dest-strip,
+#view-player.biz-gold .status-banner{border-color:rgba(212,175,55,.5); background:rgba(46,33,0,.5);}
+#view-player.biz-gold .opt-btn{background:rgba(255,255,255,.07); border-color:rgba(212,175,55,.34);}
+#view-player.biz-gold .opt-btn.picked{border-color:var(--vna-gold-light); background:rgba(212,175,55,.24);}
+.biz-ribbon{
+  display:flex; align-items:center; gap:10px; border-radius:16px; padding:12px 16px; margin-bottom:12px;
+  background:linear-gradient(120deg,rgba(212,175,55,.9),rgba(240,214,120,.78)); color:#2a1d00;
+  box-shadow:0 10px 28px rgba(212,175,55,.35);
+}
+.biz-ribbon .medal{font-size:26px; line-height:1;}
+.biz-ribbon .tt{font-family:var(--font-display); font-weight:800; font-size:15px; letter-spacing:.03em;}
+.biz-ribbon .sb{font-size:11.5px; font-weight:600; opacity:.82; margin-top:1px;}
+
+/* ---------- how to play: 4 paged slides ---------- */
+.rules-page{display:none;}
+.rules-page.active{display:block;}
+.rules-nav{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:18px; padding-top:14px; border-top:1px solid rgba(255,255,255,.1);}
+.rules-dots{display:flex; gap:7px;}
+.rules-dot{width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.25); cursor:pointer; border:none; padding:0;}
+.rules-dot.on{background:var(--vna-gold);}
+.rules-routemap{display:flex; flex-wrap:wrap; gap:5px; margin-top:8px;}
+.rules-routemap span{font-family:var(--font-mono); font-size:11px; padding:4px 8px; border-radius:7px; background:rgba(255,255,255,.08);}
+.rules-routemap span.cp{background:rgba(212,175,55,.24); color:var(--vna-gold-light); font-weight:700;}
+.rules-help-card{display:flex; gap:12px; align-items:flex-start; padding:11px 0; border-bottom:1px solid rgba(255,255,255,.07);}
+.rules-help-card:last-child{border-bottom:none;}
+.rules-help-card .circ{width:46px; height:46px; flex-shrink:0; border-radius:50%; border:2px solid var(--glass-brd); background:rgba(255,255,255,.07); display:flex; align-items:center; justify-content:center; font-size:20px;}
+
+/* ---------- iPad landscape: admin dashboard must fit without horizontal scroll ---------- */
+@media (max-width:1250px){
+  .admin-sidebar{width:184px; padding:16px 11px;}
+  .admin-nav-btn{font-size:12.5px; padding:9px 10px; gap:6px;}
+  .admin-main{padding:16px 20px;}
+  .admin-header{margin-bottom:13px;}
+  .admin-header h2{font-size:19px;}
+  .stat-grid{gap:9px; margin-bottom:14px;}
+  .stat-card{padding:10px 12px; border-radius:13px;}
+  .stat-card .n{font-size:19px;}
+  .stat-card .l{font-size:10.5px;}
+  .panel{padding:15px; margin-bottom:13px; border-radius:16px;}
+  .panel h3{font-size:13px; margin-bottom:11px;}
+  #view-admin .btn{padding:9px 13px; font-size:13px; border-radius:11px;}
+  #view-admin .btn-sm{padding:7px 10px; font-size:12px;}
+  .control-row{gap:8px;}
+  .admin-timer{font-size:22px; padding:6px 14px; min-width:84px;}
+  table{font-size:12.5px;}
+  th{padding:6px 8px;} td{padding:7px 8px;}
+  .answer-grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:8px;}
+}
+/* ---------- iPhone portrait: fit the whole game screen without scrolling ----------
+   Keyed off viewport height rather than width: an iPhone 15 is 844px tall, an SE 667px,
+   and the thing that has to fit is the vertical stack (header → progress → clock →
+   question → helps → position strip), not the width. */
+@media (max-height:900px){
+  /* bottom padding clears the fixed 🟢 LIVE sync badge; because .q-card is flex:1 it
+     absorbs the extra padding rather than pushing the page taller */
+  #view-player{padding-top:calc(11px + env(safe-area-inset-top)); padding-bottom:calc(44px + env(safe-area-inset-bottom));}
+  .p-header{margin-bottom:9px;}
+  .progress-strip{margin:9px 0 2px;}
+  .progress-text{margin-bottom:6px; font-size:11px;}
+  .timer-ring-wrap{margin:4px 0 9px;}
+  #pTimer{font-size:21px; padding:5px 20px;}
+  .q-card{padding:14px; border-radius:18px;}
+  .q-eyebrow{margin-bottom:7px; font-size:11px;}
+  .q-text{font-size:16.5px; margin-bottom:13px;}
+  .opt-btn{padding:11px 13px; font-size:13.5px; margin-bottom:6px; border-radius:12px;}
+  .opt-btn .k{width:23px; height:23px;}
+  .help-row{gap:12px; margin-top:9px;}
+  .help-btn{width:58px; height:58px;}
+  .help-btn .ic{font-size:18px;}
+  .help-btn .lb{font-size:7.5px;}
+  .help-hint{margin-top:5px; font-size:10.5px;}
+  .dest-strip{padding:9px 14px; margin-top:9px; border-radius:13px;}
+  .status-banner{padding:11px 14px; margin-top:9px; border-radius:13px;}
+  .biz-ribbon{padding:9px 13px; margin-bottom:9px;}
+  .biz-ribbon .medal{font-size:22px;}
+  #pWxAnnounce{margin-bottom:9px;}
+  #pWxAnnounce .wx-announce{padding:13px 15px;}
+  #pWxAnnounce .wx-announce .ic{font-size:30px; margin-bottom:5px;}
+  #pWxAnnounce .wx-announce .tt{font-size:18px; margin-bottom:5px;}
+  #pWxAnnounce .wx-announce .rl{font-size:11.5px;}
+}
+@media (max-width:430px){
+  .pq-opts{grid-template-columns:1fr;}
+}
+/* the sync badge is injected with an inline style, so overriding it needs !important */
+@media (max-width:520px){
+  #syncBadge{font-size:10px !important; padding:3px 8px !important; opacity:.85;}
+}
 </style>
 </head>
 <body>
@@ -460,31 +648,93 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
         <button class="btn btn-ghost btn-sm" onclick="closeRulesModal()">Close</button>
       </div>
 
-      <div class="rules-section">
-        <h4>The race</h4>
-        <p>12 legs from START to FINISH along an S-shaped route. Each leg, everyone answers one trivia question within <strong>20 seconds</strong>. The race keeps going — with extra "Overtime" rounds past leg 12 if needed — until at least <strong>3 aircraft land on FINISH</strong>. Reaching FINISH shows you your own placing right away, even while the race continues for everyone else.</p>
+      <!-- page 1 — the race + route map -->
+      <div class="rules-page active" data-page="1">
+        <div class="rules-section">
+          <h4>The race</h4>
+          <p>12 legs from START to FINISH along an S-shaped route. Each leg, everyone answers one question within <strong>20 seconds</strong>. The answer is revealed <strong>automatically the moment the countdown ends</strong>. Questions are asked in order and never repeat.</p>
+          <p>The race keeps going — with extra "Overtime" rounds past leg 12 if needed — until at least <strong>3 aircraft land on FINISH</strong>. Reaching FINISH shows you your own placing right away, even while the race continues for everyone else.</p>
+        </div>
+        <div class="rules-section">
+          <h4>🗺 Route map</h4>
+          <div class="rules-routemap">
+            <span class="cp">START</span><span>CDG</span><span>AMS</span><span class="cp">HAN</span><span>MUC</span><span>MOW</span><span class="cp">SPC</span><span>LHR</span><span>MXP</span><span>CPH</span><span class="cp">SGN</span><span>FRA</span><span class="cp">FINISH</span>
+          </div>
+        </div>
+        <div class="rules-section">
+          <h4>📍 Checkpoints</h4>
+          <p>The five gold stops above are checkpoints. Whoever is <strong>first</strong> to reach HAN, SPC or SGN earns a milestone marker next to their name for the rest of the race.</p>
+        </div>
+        <div class="rules-section">
+          <h4>🏆 Winning</h4>
+          <p>First to FINISH wins. If several aircraft land on the same reveal, they're ranked by <strong>correct answers</strong>, then by <strong>total answer time</strong> — so answering fast matters.</p>
+        </div>
       </div>
 
-      <div class="rules-section">
-        <h4>📍 Checkpoints</h4>
-        <p>Five stops are marked as big gold checkpoints on the map: <strong>START</strong>, <strong>HAN</strong> (Hanoi), <strong>SPC</strong> (Special Checkpoint), <strong>SGN</strong> (Ho Chi Minh City) and <strong>FINISH</strong>. Whoever is first to reach HAN, SPC or SGN earns a milestone marker next to their name.</p>
+      <!-- page 2 — weather -->
+      <div class="rules-page" data-page="2">
+        <div class="rules-section">
+          <h4>🌈 Clear Skies</h4>
+          <p>The default. Correct answer advances you <strong>1 leg</strong>; a wrong answer holds your position — no penalty.</p>
+        </div>
+        <div class="rules-section">
+          <h4>🌪 Turbulence — legs 6 &amp; 10</h4>
+          <p>Correct answer <strong>holds</strong> your position. Anything else — wrong, or no answer at all — sends you <strong>back 1 leg</strong>. 50:50 and Turbo Boost are disabled; this is the only time Fasten Seatbelt works.</p>
+        </div>
+        <div class="rules-section">
+          <h4>⛈ Storm — leg 8</h4>
+          <p>Only the <strong>10 fastest correct answers</strong> get ATC clearance to advance 1 leg. Everyone else holds position, including correct answers outside the top 10 — but nobody goes backwards. All three helps and the Power Question are disabled.</p>
+        </div>
+        <div class="rules-section">
+          <h4>☀️ Power Question</h4>
+          <p>The host's one-time bonus round for the whole game, armed before the question opens. The <strong>fastest correct</strong> answer gets <strong>+2 legs</strong>, every other correct answer <strong>+1</strong>, wrong answers hold. Can't be armed on a Turbulence or Storm leg, and all three helps are disabled.</p>
+        </div>
       </div>
 
-      <div class="rules-section">
-        <h4>🌦 Weather</h4>
-        <p><strong>🌈 Clear Skies</strong> (default) — correct answer advances 1 leg, wrong answer holds position.</p>
-        <p><strong>🌪 Turbulence</strong> — automatic on legs 6 and 10. Correct holds your position; anything else (wrong, or no answer) sends you back 1 leg. Turbo Boost is disabled.</p>
-        <p><strong>⛈ Storm</strong> — automatic on leg 8. Only the <strong>10 fastest correct answers</strong> get ATC clearance to advance 1 leg; everyone else holds, no penalty. Turbo Boost and Power Question are both disabled.</p>
+      <!-- page 3 — the three helps -->
+      <div class="rules-page" data-page="3">
+        <div class="rules-section">
+          <h4>Your three helps</h4>
+          <p>All three unlock the moment <strong>your own aircraft reaches MUC</strong> — not when the race reaches MUC. Each one can be used <strong>once per game</strong>.</p>
+        </div>
+        <div class="rules-help-card">
+          <div class="circ">✂️</div>
+          <div>
+            <div style="font-weight:700; font-size:14px; margin-bottom:3px;">50:50</div>
+            <p style="margin:0; font-size:13px; line-height:1.5; color:rgba(255,255,255,.82);">Removes two wrong answers, leaving the correct one and a single decoy. Disabled during Turbulence, Storm and the Power Question.</p>
+          </div>
+        </div>
+        <div class="rules-help-card">
+          <div class="circ">⚡</div>
+          <div>
+            <div style="font-weight:700; font-size:14px; margin-bottom:3px;">Turbo Boost</div>
+            <p style="margin:0; font-size:13px; line-height:1.5; color:rgba(255,255,255,.82);">Double or nothing. Correct → <strong>+2 legs</strong>. Wrong → <strong>−1 leg</strong>. Arming it costs nothing until you press Submit, so you can change your mind. Disabled during Turbulence, Storm and the Power Question.</p>
+          </div>
+        </div>
+        <div class="rules-help-card">
+          <div class="circ">🔒</div>
+          <div>
+            <div style="font-weight:700; font-size:14px; margin-bottom:3px;">Fasten Seatbelt</div>
+            <p style="margin:0; font-size:13px; line-height:1.5; color:rgba(255,255,255,.82);">Your turbulence shield — and it <strong>only works during Turbulence</strong>. Ride out a wrong answer without being pushed back a leg. Useless on any other leg, so save it for legs 6 and 10.</p>
+          </div>
+        </div>
       </div>
 
-      <div class="rules-section">
-        <h4>⚡ Turbo Boost</h4>
-        <p>Your own one-time boost, arming it is free until you submit. Unlocks once your aircraft reaches <strong>MUC</strong> (leg 5). Correct → <strong>+2 legs</strong>. Wrong → <strong>−1 leg</strong>. Can't be used during Turbulence, Storm, or a Power Question.</p>
+      <!-- page 4 — programme documents (links to be added) -->
+      <div class="rules-page" data-page="4">
+        <div class="rules-section">
+          <h4>📎 Programme documents</h4>
+          <p>Conference materials, the Sales Kit and the agenda will be linked here.</p>
+        </div>
+        <div class="rules-section" id="rulesDocLinks">
+          <p style="color:rgba(255,255,255,.5); font-style:italic;">Links coming soon — they'll be added before the event.</p>
+        </div>
       </div>
 
-      <div class="rules-section">
-        <h4>☀️ Power Question</h4>
-        <p>The admin's one-time bonus round for the whole game, armed before the question opens. The <strong>fastest correct</strong> answer gets <strong>+2 legs</strong>, every other correct answer gets <strong>+1</strong>, wrong answers hold position. Can't be armed on a Turbulence or Storm leg.</p>
+      <div class="rules-nav">
+        <button class="btn btn-ghost btn-sm" id="rulesPrevBtn" onclick="rulesGoPage(rulesPage-1)">← Back</button>
+        <div class="rules-dots" id="rulesDots"></div>
+        <button class="btn btn-primary btn-sm" id="rulesNextBtn" onclick="rulesGoPage(rulesPage+1)">Next →</button>
       </div>
     </div>
   </div>
@@ -524,10 +774,13 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
     </div>
 
     <div id="pGame" class="hidden" style="display:flex; flex-direction:column; flex:1;">
+      <div id="pBizRibbon"></div>
       <div class="progress-strip" id="pProgressStrip"></div>
       <div class="progress-text" id="pProgressText"></div>
 
       <div class="timer-ring-wrap"><div class="p-badge timer-num mono" id="pTimer">--</div></div>
+
+      <div id="pWxAnnounce"></div>
 
       <div class="q-card glass" id="pQCard">
         <div class="q-eyebrow" id="pQEyebrow">WAITING FOR NEXT QUESTION</div>
@@ -537,11 +790,12 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
         <div id="pOptions"></div>
       </div>
 
-      <div id="pTurboWrap" style="margin-top:12px;"></div>
       <div class="status-banner wait glass hidden" id="pStatusBanner"></div>
+      <div id="pHelpsWrap"></div>
 
       <div class="dest-strip glass">
-        <div><div class="lbl">Current position</div><div class="val mono" id="pDest">START</div></div>
+        <div><div class="lbl">Position</div><div class="val mono" id="pDest">START</div></div>
+        <div style="text-align:center;"><div class="lbl">Now at</div><div class="val mono" id="pLocation">—</div></div>
         <div style="text-align:right;"><div class="lbl">Aircraft</div><div class="val" id="pAvatarShown">—</div></div>
       </div>
     </div>
@@ -554,6 +808,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
       <div style="display:flex; align-items:center; gap:10px;">
         <div class="pres-status-pill glass" id="weatherBadge">🌈 Clear Skies</div>
         <div class="pres-status-pill glass" id="presStatePill">LOBBY</div>
+        <button class="btn btn-ghost pres-fullscreen-btn" id="presFullscreenBtn" onclick="togglePresenterFullscreen()">⛶ Fullscreen</button>
       </div>
     </div>
     <div class="pres-body">
@@ -601,20 +856,23 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
 
       <div id="tab-control">
         <div class="panel glass">
-          <h3>Question control</h3>
+          <div class="admin-ctrl-head">
+            <h3 style="margin:0;">Question control</h3>
+            <div class="admin-timer" id="adminTimer">--</div>
+          </div>
           <p style="margin:0 0 16px; font-size:14px; color:rgba(255,255,255,.75);" id="adminCurrentQ">Leg 1 of 12 — not opened yet.</p>
           <div class="control-row">
             <button class="btn btn-ghost" onclick="adminPrevQuestion()">← Previous question</button>
             <button class="btn btn-primary" onclick="adminOpenQuestion()">Open question</button>
             <button class="btn btn-ghost" onclick="adminCloseQuestion()">Close question</button>
-            <button class="btn btn-ghost" onclick="adminRevealAnswer()">Reveal answer &amp; move</button>
+            <button class="btn btn-ghost" title="The answer reveals itself automatically when the countdown hits zero — use this only to reveal early" onclick="adminRevealAnswer()">Reveal now (early)</button>
             <button class="btn btn-danger" id="undoBtn" title="Roll back the last reveal — every aircraft returns to where it was before that question was scored" onclick="adminUndoReveal()">↩️ Undo last reveal</button>
             <button class="btn btn-ghost" onclick="adminNextQuestion()">Next question →</button>
             <button class="btn btn-ghost" onclick="adminPauseToggle()" id="pauseBtn">Pause game</button>
             <button class="btn btn-ghost" title="Reset progress — back to Leg 1, all aircraft to start" onclick="resetProgress()">🔄 Reset progress</button>
             <button class="btn btn-ghost" id="powerQBtn" title="Force this leg's question to be drawn from Q21-30 and award a x2 bonus to the fastest correct player" onclick="adminTogglePowerQuestion()">⚡ Power Question</button>
           </div>
-          <p style="margin:14px 0 0; font-size:12px; color:rgba(255,255,255,.5);">Turbo Boost unlocks per player once their own aircraft reaches MUC · Turbulence auto-applies on legs 6 &amp; 10 · Power Question cannot be armed on a turbulence leg.</p>
+          <p style="margin:14px 0 0; font-size:12px; color:rgba(255,255,255,.5);">The answer reveals itself automatically when the countdown ends · All three helps (50:50, Turbo, Fasten Seatbelt) unlock per player once their own aircraft reaches MUC · Turbulence auto-applies on legs 6 &amp; 10, Storm on leg 8 · Power Question cannot be armed on a turbulence or storm leg.</p>
         </div>
         <div class="panel glass hidden" id="adminAnswerKeyPanel">
           <h3>📖 Answer key <span style="font-weight:400; font-size:12px; text-transform:none; letter-spacing:0; color:rgba(255,255,255,.5);">— for you, not shown to players</span></h3>
@@ -660,7 +918,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
         <div class="panel glass">
           <h3>Registered players</h3>
           <p style="margin:-6px 0 14px; font-size:12.5px; color:rgba(255,255,255,.55);">Use <b>−1 / +1</b> to correct a player's position by hand — for a phone that died mid-question, a lost connection, or a dispute settled on stage.</p>
-          <table id="playersTable"><thead><tr><th>Aircraft</th><th>Name</th><th>Position</th><th>Correct</th><th>Turbo</th><th>Adjust</th><th>Actions</th></tr></thead><tbody></tbody></table>
+          <table id="playersTable"><thead><tr><th>Aircraft</th><th>Name</th><th>Position</th><th>Correct</th><th>Helps left</th><th>Adjust</th><th>Actions</th></tr></thead><tbody></tbody></table>
         </div>
       </div>
 
@@ -729,54 +987,85 @@ const ROUTE = [
     node.y = Math.round(curveY(t)*10)/10;
   });
 })();
-// Question bank: 30 questions, drawn at random from a pool that depends on the leg
-// (tier 1 = legs 1-4, tier 2 = legs 5-8, tier 3 = legs 9-12 and also the Power
-// Question pool). The map has 12 legs, so a leg never runs out of questions; the
-// same question can repeat across a long game, which is fine because each leg
-// only asks one.
+// Question bank — the 31 questions from the event's Sales Kit deck, asked in this exact
+// order, one per leg, never repeating (see pickQuestionIndex). `explain` is the 🎤 Presenter
+// Notes line the host reads aloud after the answer is revealed.
 //
-// Realtime Database has no server-side view to hide the answer key from players
-// the way a Postgres RLS view could, so the bank is just a plain client-side
-// array — the same tradeoff the original pre-Supabase Firebase version made.
-// QUESTIONS_BY_ID is the id-keyed lookup every render/reveal call site uses;
-// QUESTIONS itself is only iterated (e.g. to sample a tier).
+// Realtime Database has no server-side view to hide the answer key from players the way a
+// Postgres RLS view could, so the bank is just a plain client-side array — the same tradeoff
+// the original pre-Supabase Firebase version made. QUESTIONS_BY_ID is the id-keyed lookup
+// every render/reveal call site uses; QUESTIONS itself is only iterated.
 let QUESTIONS = [];
 let QUESTIONS_BY_ID = {};
 
+// [id, question, options, correct option index, presenter notes]
 const QUESTION_BANK = [
-  [1,"What is Vietnam Airlines' Skytrax rating target by 2030?",["3-Star Airline","4-Star Airline","5-Star Airline","6-Star Airline"],2,1],
-  [2,"Vietnam Airlines is a member of which global airline alliance?",["Star Alliance","Oneworld","SkyTeam","Value Alliance"],2,1],
-  [3,"In which year did Vietnam Airlines officially join SkyTeam?",["2006","2008","2010","2012"],2,1],
-  [4,"What milestone does Vietnam Airlines celebrate in 2025?",["20th Anniversary","25th Anniversary","30th Anniversary","35th Anniversary"],2,1],
-  [5,"How many domestic destinations does Vietnam Airlines currently serve?",["19","22","30","39"],1,1],
-  [6,"Vietnam Airlines operates more than how many domestic flights per day?",["100","150","200","300"],3,1],
-  [7,"How many Boeing 787 aircraft are currently in Vietnam Airlines' fleet?",["14","15","17","20"],2,1],
-  [8,"How many Airbus A350 aircraft are currently in Vietnam Airlines' fleet?",["10","12","14","16"],2,1],
-  [9,"Vietnam Airlines became the first Vietnamese airline to use Sustainable Aviation Fuel (SAF) on flights to which region?",["United States","Japan","Europe","Australia"],2,1],
-  [10,"Approximately how many tonnes of fuel did Vietnam Airlines save in 2024?",["30,000","50,000","70,000","100,000"],2,1],
-  [11,"How many international routes does Vietnam Airlines currently operate?",["60","65","70","75"],2,2],
-  [12,"Vietnam Airlines' international network covers how many geographical regions?",["5","6","7","8"],2,2],
-  [13,"Vietnam Airlines currently serves how many countries and territories?",["20","22","24","28"],1,2],
-  [14,"How many direct international destinations does Vietnam Airlines offer?",["98","100","107","115"],2,2],
-  [15,"How many additional destinations are available through partnership networks?",["80","95","100","130"],3,2],
-  [16,"How many routes does Vietnam Airlines currently operate within Asia?",["45","50","53","60"],2,2],
-  [17,"Vietnam Airlines currently operates direct flights to which U.S. city?",["Los Angeles","Seattle","San Francisco","Chicago"],2,2],
-  [18,"What is the maximum seat pitch in Premium Economy Class?",["96 cm","100 cm","107 cm","112 cm"],2,2],
-  [19,"Business Class seats on wide-body aircraft can recline to:",["150°","170°","180° (Fully Flat)","200°"],2,2],
-  [20,"LotusMiles currently has more than how many members?",["2 million","3 million","5 million","8 million"],2,2],
-  [21,"According to the Sales Kit, Corporate Accounts can receive discounts of up to how much off the Published Fare?",["15%","20%","25%","30%"],3,3],
-  [22,"Which benefit is available to Tour Series partners?",["Complimentary cabin upgrade","Lower fares than FIT Fare","Free checked baggage","Complimentary tickets"],1,3],
-  [23,"The Top 3 revenue-generating agents are awarded which status?",["Gold","Diamond","Platinum","Elite"],2,3],
-  [24,"Agents ranked from 4th to 10th in revenue are awarded which status?",["Platinum","Gold","Silver","Elite"],1,3],
-  [25,"According to the Sales Kit, what is NDC?",["BSP payment system","A communication standard between airlines and travel agents","A CRM platform","An airline ticketing website"],1,3],
-  [26,"What is TAP at Vietnam Airlines?",["A CRM system","A loyalty platform","A direct ticketing platform connected to the Passenger Service System (PSS)","A mobile application"],2,3],
-  [27,"How many Branch Offices does Vietnam Airlines currently have?",["18","19","20","22"],1,3],
-  [28,"Vietnam Airlines has General Sales Agents (GSAs) in how many countries and territories?",["18","19","20","22"],2,3],
-  [29,"What is Vietnam Airlines' brand ambition by 2030?",["Become one of the Top 5 low-cost airlines in Asia","Become one of the Top 3 full-service airlines in Southeast Asia","Become one of the Top 10 largest airlines in the world","Become the No.1 low-cost airline in Southeast Asia"],1,3],
-  [30,"According to Vision 2030, which of the following is NOT one of Vietnam Airlines' seven strategic directions?",["Digital Airline Transformation","Green Airline","Absolute Safety & Security","Become the Largest Low-cost Carrier in Asia"],3,3],
-].map(([id,q,opts,correct,tier])=>({id,q,opts,correct,tier}));
+  [1,"What is Vietnam Airlines' target for customer experience by 2030?",["Become Asia's largest airline","Achieve official Skytrax 5-Star certification","Operate 500 aircraft","Launch flights to every continent"],1,"Vietnam Airlines is continuously investing in service quality with the ambition of officially achieving Skytrax 5-Star certification by 2030. Every interaction with our customers—including those through our travel agent partners—contributes to this journey."],
+  [2,"In 2025, Vietnam Airlines celebrated which important milestone?",["20th Anniversary","25th Anniversary","30th Anniversary","35th Anniversary"],2,"For 30 years, Vietnam Airlines has connected Vietnam with the world. Today, we continue expanding our network, upgrading our fleet, and strengthening partnerships with travel agents worldwide."],
+  [3,"How many domestic destinations are currently served by Vietnam Airlines?",["18","20","22","25"],1,"With 20 domestic destinations, Vietnam Airlines offers one of the most comprehensive networks in Vietnam, making it easier for agents to build complete travel itineraries."],
+  [4,"How many nations and territories are included in Vietnam Airlines' international network?",["18","20","22","25"],2,"Vietnam Airlines currently flies across six geographic regions, serving 22 nations and territories while continuously expanding its global footprint."],
+  [5,"Which of the following European cities is currently served by Vietnam Airlines?",["Madrid","Vienna","Amsterdam","Zurich"],2,"Amsterdam is one of Vietnam Airlines' important European gateways, together with Paris, Frankfurt, Munich, London, Milan, Copenhagen, and Moscow."],
+  [6,"How many new routes of VNA are opened for 2026?",["2","3","4","5"],1,"Vietnam Airlines launched three new routes in 2026, further strengthening connectivity between Vietnam and international markets: AMS, HKT, CMB."],
+  [7,"Which cabin class is described as the best option for long-haul flights?",["Economy Class","Premium Economy Class","Business Class","Lotus Class"],1,"Premium Economy offers passengers greater comfort, extra legroom, priority services, affordable price and enhanced onboard amenities—making it an excellent value for long-haul travel."],
+  [8,"Which benefit is available to Business Class passengers?",["Free hotel stay","Unlimited Wi-Fi","Access to the Lotus Lounge","Free city tour"],2,"Business Class customers enjoy premium services including priority check-in, fast-track security where available, Lotus Lounge access, and fully flat seats on wide-body aircraft."],
+  [9,"Which of the following is NOT listed as an ancillary service offered by Vietnam Airlines?",["Advance Seat Selection","Excess Prepaid Baggage","Airport Hotel Booking","Special Meals"],2,"Ancillary services allow passengers to personalize their journey while generating additional revenue opportunities for travel agents. Whether it's selecting a preferred seat, purchasing extra baggage, upgrading a cabin, or requesting a special meal, these services improve the customer experience before the journey even begins."],
+  [10,"A leisure traveler is planning a multi-city trip across Vietnam after arriving from Europe. Which Vietnam Airlines strength provides the GREATEST value to this customer?",["Low-cost pricing","Extensive domestic network with seamless connections","Airport shopping discounts","Free hotel accommodation"],1,"Vietnam Airlines' extensive domestic network allows international travellers to continue their journey seamlessly throughout Vietnam. Whether visiting famous cities or emerging destinations, customers benefit from convenient connections under one trusted airline. This creates more itinerary options and greater selling opportunities for travel agents."],
+  [11,"Which statement BEST summarizes Vietnam Airlines' message to our travel agent partners?",["Focus on selling the lowest fares.","Build long-term success through premium products, excellent customer service, commercial collaboration, and mutual business growth.","Sell international routes only.","Prioritize online sales over agency partnerships."],1,"Throughout today's Sales Kit, one message has remained consistent: Vietnam Airlines is committed to building lasting partnerships with our travel agents. Together, we combine premium products, outstanding service, commercial collaboration, and customer loyalty to create sustainable business growth. Your success is our success, and we look forward to growing together for many years to come."],
+  [12,"Why does Vietnam Airlines continue expanding its international network instead of focusing only on existing routes?",["To reduce domestic operations","To strengthen global connectivity and create new travel opportunities","To compete only on ticket prices","To operate fewer connecting flights"],1,"Every new destination increases connectivity, supports tourism and business travel, and provides travel agents with more itinerary options to serve their customers. A stronger network means more opportunities to grow together."],
+  [13,"A customer wants extra comfort without paying for Business Class. Which Vietnam Airlines product should you recommend?",["Economy Class","Premium Economy Class","Sky Sofa","Transit Tour"],1,"Premium Economy bridges the gap between Economy and Business by offering greater comfort at a more affordable price, making it an attractive option for many travelers. Understanding customer needs helps agents recommend the right product."],
+  [14,"VNA marketing support for agents may include which of the following?",["Aircraft leasing support","Shared marketing campaigns and promotional materials","Airport construction funding","Free office rental"],1,"Marketing is a shared responsibility. Vietnam Airlines supports travel agents by co-funding marketing campaigns, destination promotions, roadshows, and providing promotional materials. Together, we can reach more customers while maximizing marketing efficiency."],
+  [15,"Which action demonstrates the role of an excellent Vietnam Airlines travel agent?",["Selling the cheapest ticket as quickly as possible.","Understanding customer needs and recommending the most suitable Vietnam Airlines products and services.","Selling only Economy Class.","Avoiding ancillary products."],1,"An excellent travel agent does much more than process reservations. By understanding each customer's needs and recommending the right products, services, and benefits, agents become trusted travel advisors. This consultative approach creates happier customers and stronger long-term business relationships."],
+  [16,"A customer wants a more comfortable journey than Economy Class but is not ready to pay for Business Class. Which cabin would you recommend?",["Economy Class","Premium Economy Class","Business Class","Transit Tour"],1,"Premium Economy is one of Vietnam Airlines' strongest value propositions for long-haul travel. It offers significantly more comfort than Economy—including wider seats, greater legroom, priority services, and enhanced meals—without the premium price of Business Class. When customers are looking for extra comfort at a reasonable cost, this is often the ideal recommendation."],
+  [17,"Which commercial program is specifically designed to support travel agents developing premium tour packages?",["Transit Tour","Tour Series Policy","Business FOC Ticket","Agent Care Policy"],1,"The Tour Series Policy is designed to support travel agents developing premium tour packages. It offers preferential pricing, booking allotments, guaranteed fares, and flexible seat release conditions, making it easier to build attractive travel products for customers."],
+  [18,"Vietnam Airlines evaluates sales incentives primarily based on...",["Number of employees.","Revenue performance and KPI achievement.","Office location.","Years of partnership only."],1,"Vietnam Airlines rewards agencies that consistently achieve their sales targets. Incentive programs are based on revenue performance, KPI achievement, and market commitments, ensuring that outstanding partners receive meaningful recognition and support."],
+  [19,"Why does Vietnam Airlines invest in co-branding events, roadshows and workshops with travel agents?",["To reduce ticket prices.","To strengthen brand exposure while sharing marketing costs.","To replace online marketing.","To promote only domestic destinations."],1,"Successful partnerships go beyond ticket sales. By organizing roadshows, workshops, and co-branding campaigns, Vietnam Airlines and travel agents can increase brand visibility, strengthen customer relationships, and share marketing resources more efficiently."],
+  [20,"Which combination best reflects Vietnam Airlines' partnership strategy?",["Lowest fares + limited services","Premium products + loyalty ecosystem + commercial collaboration","Fleet expansion only","Airport infrastructure investment only"],1,"Vietnam Airlines' partnership strategy is built on four pillars: premium products, a strong loyalty ecosystem, commercial collaboration, and joint marketing initiatives. Together, these create sustainable value for customers, travel agents, and the airline."],
+  [21,"A corporate client frequently travels between Europe and Vietnam and wants long-term travel benefits. Besides flight tickets, what additional value should an agent promote?",["Car rental","LotusMiles Membership","Airport parking","Charter flights"],1,"Corporate travelers value convenience, recognition, and long-term rewards. Recommending LotusMiles allows them to earn miles, enjoy exclusive benefits, and strengthen their relationship with Vietnam Airlines over time."],
+  [22,"Why does Vietnam Airlines provide marketing budgets and promotional materials to travel agents?",["To reduce airline operating costs.","To help agents promote Vietnam Airlines and stimulate local market demand.","To replace travel agency advertising.","To increase airport retail sales."],1,"Vietnam Airlines believes successful partnerships require continuous support. By sharing marketing budgets, promotional materials, and destination campaigns, we help our partners increase visibility, attract more customers, and drive sustainable sales growth."],
+  [23,"A customer has a long connection in Hanoi or Ho Chi Minh City. Which Vietnam Airlines service could enhance the passenger's experience?",["Business FOC Ticket","Transit Tour","Gold Agent Program","Tour Series"],1,"Long layovers can become memorable travel experiences. Vietnam Airlines offers Transit Tours in Hanoi and Ho Chi Minh City to provide transit passengers with an enjoyable way to explore Vietnam while waiting for their connecting flight, enhancing the overall travel experience."],
+  [24,"Which customer profile would benefit the MOST from recommending LotusMiles?",["A traveler taking only one domestic flight in their lifetime","A frequent business traveler between Europe and Vietnam","A passenger only interested in the lowest fare","A passenger travelling without checked baggage"],1,"Frequent business travellers are looking for more than just a flight—they value recognition, convenience, and long-term rewards. LotusMiles allows them to earn and redeem miles across flights and a wide range of lifestyle partners, creating value on every journey. As travel agents, introducing LotusMiles is an excellent way to build customer loyalty beyond a single booking."],
+  [25,"Vietnam Airlines invests in joint marketing campaigns with travel agents primarily to...",["Reduce aircraft operating costs","Increase brand awareness and stimulate customer demand together","Replace travel agencies with direct sales","Reduce ticket prices"],1,"Successful marketing is never a one-way effort. Vietnam Airlines actively works with travel agents through co-branding campaigns, roadshows, destination promotions, and joint events to inspire more people to travel. By combining resources and market expertise, both Vietnam Airlines and our partners can grow together more effectively."],
+  [26,"A customer is comparing airlines based only on price. As a Vietnam Airlines agent, which selling approach best reflects the Sales Kit?",["Immediately offer the lowest possible fare.","Highlight Vietnam Airlines' premium service, network, loyalty program, and overall travel value.","Recommend another airline.","Focus only on baggage allowance."],1,"Customers often compare prices first, but experienced travel consultants know that value goes far beyond the fare. Vietnam Airlines offers a premium travel experience, an extensive route network, loyalty rewards, and reliable service. By focusing on overall value rather than price alone, agents can build greater customer trust and satisfaction."],
+  [27,"Why does Vietnam Airlines continuously expand partnerships with banks, hotels and retailers through LotusMiles?",["To replace flight revenue.","To create a complete travel and lifestyle ecosystem that increases customer loyalty.","To reduce airport taxes.","To simplify ticket refunds."],1,"LotusMiles is designed as a lifestyle ecosystem, not simply a frequent flyer program. Through partnerships with banks, hotels, retailers, and many other brands, members can continue earning and redeeming miles in their everyday lives. This keeps customers engaged with Vietnam Airlines even when they are not travelling."],
+  [28,"A passenger has an eight-hour connection in Vietnam. Besides the flight itself, which service can create additional value?",["Business FOC Ticket","Transit Tour","Tour Series","Gold Agent Award"],1,"A long layover doesn't have to be wasted time. Vietnam Airlines' Transit Tour allows eligible passengers to discover Vietnam during their connection, transforming waiting time into a memorable travel experience. It's another example of how we continue adding value beyond the flight itself."],
+  [29,"According to Vietnam Airlines' commercial strategy, why are incentive programs offered to travel agents?",["To reward performance and encourage sustainable business growth.","To replace commission.","To reduce ticket prices.","To encourage one-time sales only."],0,"Incentive programs exist to recognise and reward genuine performance. By tying rewards to revenue and KPI achievement, Vietnam Airlines encourages partners to build sustainable, long-term business rather than chasing one-off sales."],
+  [30,"Which combination creates the STRONGEST long-term customer loyalty?",["Lowest airfare only","Comfortable flight + LotusMiles + quality service","Promotional baggage only","Airport shopping discounts only"],1,"Customer loyalty is created through consistent positive experiences—not just competitive pricing. Comfortable flights, excellent service, and meaningful rewards through LotusMiles encourage passengers to choose Vietnam Airlines again and again. Loyal customers are also more likely to recommend the airline to others."],
+  [31,"A corporate client asks why they should choose Vietnam Airlines instead of another full-service airline. Which answer best reflects the Sales Kit?",["Because Vietnam Airlines always has the cheapest tickets.","Because Vietnam Airlines combines a premium onboard experience, an expanding global network, and a comprehensive loyalty ecosystem.","Because Vietnam Airlines only operates direct flights.","Because Vietnam Airlines guarantees free upgrades."],1,"When customers ask why they should choose Vietnam Airlines, the answer goes far beyond the destination. Our expanding international network, modern fleet, premium onboard experience, and comprehensive loyalty ecosystem together deliver a reliable and rewarding travel experience. These strengths help differentiate Vietnam Airlines in a competitive market."],
+].map(([id,q,opts,correct,explain])=>({id,q,opts,correct,explain}));
+
+/* The source deck has the correct answer at position B for 29 of the 31 questions, which
+   players would spot within a few legs and then simply always pick B. So each question's
+   four options get shuffled — but by a PRNG seeded purely from the question id, so every
+   phone, the presenter screen and the admin dashboard independently derive the identical
+   order with nothing to sync. Question wording and the answer itself are untouched; only
+   which letter it sits behind changes. */
+function seededRandom(seed){
+  let t = seed >>> 0;
+  return function(){
+    t += 0x6D2B79F5;
+    let x = t;
+    x = Math.imul(x ^ (x >>> 15), x | 1);
+    x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffleOptions(q){
+  const rand = seededRandom(q.id * 2654435761);
+  const order = q.opts.map((_,i)=>i);
+  for(let i=order.length-1; i>0; i--){
+    const j = Math.floor(rand()*(i+1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return {
+    id: q.id,
+    q: q.q,
+    explain: q.explain,
+    opts: order.map(i=>q.opts[i]),
+    correct: order.indexOf(q.correct),
+  };
+}
 function loadQuestions(){
-  QUESTIONS = QUESTION_BANK;
+  QUESTIONS = QUESTION_BANK.map(shuffleOptions);
   QUESTIONS_BY_ID = {};
   QUESTIONS.forEach(q=>{ QUESTIONS_BY_ID[q.id] = q; });
 }
@@ -804,25 +1093,58 @@ const TURBO_MIN_LEG = ROUTE.findIndex(r=>r.code==='MUC'); // a player unlocks Tu
 const TURBULENCE_LEGS = [5, 9]; // 0-based leg index = "lượt chơi thứ 6 và thứ 10"
 const STORM_LEG = 7; // 0-based leg index = "lượt chơi thứ 8" — ⛈ Storm, ATC clears only the 10 fastest correct answers
 function randInt(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
-// tier 1 = legs 1-4, tier 2 = legs 5-8, tier 3 = legs 9-12 and Power Question (any leg).
-// Returns a QUESTION_BANK id sampled from that tier — see the note above `let QUESTIONS`.
-function pickQuestionIndex(legIndex, powerActive){
-  const tier = powerActive ? 3 : (legIndex<=3 ? 1 : (legIndex<=7 ? 2 : 3));
-  const pool = QUESTIONS.filter(q=>q.tier===tier);
-  const bank = pool.length ? pool : QUESTIONS; // fall back to the whole bank if a tier is ever empty
-  if(!bank.length) return null; // QUESTIONS hasn't loaded yet — caller should not open a question
-  return bank[randInt(0, bank.length-1)].id;
+// Questions are served straight down the bank in order, and a question that has already
+// been asked is never asked again — `questionIndexByLeg` is the record of what's been
+// used, so this stays correct across Previous question, Undo, and overtime rounds alike.
+// Returns null once the bank is exhausted; every caller treats that as "cannot open".
+function usedQuestionIds(){
+  return new Set(Object.values(state.questionIndexByLeg || {}).filter(v=>v!==null && v!==undefined));
+}
+function pickQuestionIndex(){
+  const used = usedQuestionIds();
+  const next = QUESTIONS.find(q=>!used.has(q.id));
+  return next ? next.id : null;
+}
+function questionsRemaining(){
+  const used = usedQuestionIds();
+  return QUESTIONS.filter(q=>!used.has(q.id)).length;
 }
 function ensureQuestionPicked(){
   if(state.currentQuestionIndex===null || state.currentQuestionIndex===undefined){
-    const idx = pickQuestionIndex(state.currentQ, state.powerQuestionActive);
+    // Stepping back to a leg that already had a question reuses that same question
+    // rather than burning a fresh one out of the bank.
+    const already = state.questionIndexByLeg ? state.questionIndexByLeg[state.currentQ] : null;
+    const idx = (already!==null && already!==undefined && QUESTIONS_BY_ID[already]) ? already : pickQuestionIndex();
+    if(idx===null) return false;
     state.currentQuestionIndex = idx;
     state.questionIndexByLeg[state.currentQ] = idx;
-    state.currentCorrectIndex = null; // only admin knows this until adminRevealAnswer sets it
+    state.currentCorrectIndex = null; // only revealed to players once the timer ends
   }
+  return true;
 }
 function isTurbulenceLeg(legIndex){ return TURBULENCE_LEGS.includes(legIndex); }
 function isStormLeg(legIndex){ return legIndex === STORM_LEG; }
+
+/* The big weather/event card, shown on BOTH the presenter wall and every player's phone.
+   It's tied to the lobby state, which means it appears the instant the host presses
+   "Next question →" onto a turbulence/storm leg (or arms the Power Question) and clears
+   itself the instant they press "Open question", leaving only the small weather pill. */
+function wxAnnounceFor(){
+  if(state.gameState!=='lobby') return null;
+  if(isTurbulenceLeg(state.currentQ)) return {
+    cls:'wx-turbulence', icon:'🌪', title:'TURBULENCE AHEAD',
+    rule:'A correct answer only holds your position. Wrong — or no answer at all — sends you back 1 leg. 50:50 and Turbo Boost are locked; Fasten Seatbelt is your only protection.'
+  };
+  if(isStormLeg(state.currentQ)) return {
+    cls:'wx-storm', icon:'⛈', title:'STORM AHEAD',
+    rule:'Only the 10 fastest correct answers get ATC clearance to advance 1 leg. Everyone else holds position — nobody goes backwards. All three helps are locked.'
+  };
+  if(state.powerQuestionActive) return {
+    cls:'wx-power', icon:'⚡', title:'POWER QUESTION',
+    rule:'The fastest correct answer takes +2 legs. Every other correct answer takes +1. Wrong answers hold position. All three helps are locked.'
+  };
+  return null;
+}
 // The map only has 12 legs, but the race keeps asking questions past leg 12 whenever
 // fewer than 3 aircraft have reached FINISH yet, so latecomers still get a chance to
 // land — those extra rounds are labelled "Overtime" instead of a leg number that would
@@ -840,6 +1162,8 @@ function avatarHTML(face, size, color){
   return '<span class="avatar-compose" style="font-size:'+size+'; display:inline-flex; align-items:center; gap:.18em;">'+planeSvg(color)+'<span class="face-emoji">'+face+'</span></span>';
 }
 const TIMER_SECONDS = 20;
+const ANSWER_CARD_MS = 3000;   // how long the presenter holds the correct answer on screen
+const URGENT_SECONDS = 5;      // countdown turns red and pulses for the final few seconds
 const STORAGE_KEY = "vna_sky_race_state_v1";
 let bc = null;
 try { bc = new BroadcastChannel('vna-sky-race'); } catch(e) { bc = null; }
@@ -864,6 +1188,7 @@ function defaultState(){
     congratsShown: false, // the presenter's "Congratulations! X wins" overlay only appears once the admin triggers it
     stormClearedIds: null, // ids of the 10 fastest correct answers on the Storm leg, fastest first
     stormRevealAt: null,   // Date.now() of the Storm reveal, so the presenter's 10s clearance list can expire
+    revealAt: null,        // Date.now() the answer was revealed — drives the presenter's 3s answer card
     finishSeq: 0, // counter handing out p.finishRank in true arrival order as aircraft land on FINISH
   };
 }
@@ -900,7 +1225,7 @@ const MAX_PLAYERS_PER_ROOM = 200;
 const ADMIN_KEYS = ['gameState','currentQ','currentQuestionIndex','currentCorrectIndex',
   'questionIndexByLeg','powerQuestionActive','powerQuestionUsed','questionOpenedAt','deadline',
   'revealedLegs','undoSnapshot','paused','winnerId','milestones','awardShown','congratsShown',
-  'stormClearedIds','stormRevealAt','finishSeq'];
+  'stormClearedIds','stormRevealAt','revealAt','finishSeq'];
 
 const FB = { mode:'init', role:'player', uid:null };
 let db = null;            // the Realtime Database handle, created once firebase.initializeApp() runs
@@ -937,6 +1262,8 @@ function rebuildPlayers(){
       correctCount: pr.correctCount || 0,
       totalAnswerTime: pr.totalAnswerTime || 0,
       turboUsed: !!pr.turboUsed,
+      fiftyUsed: !!pr.fiftyUsed,
+      seatbeltUsed: !!pr.seatbeltUsed,
       finishRank: pr.finishRank || null,
       currentStreak: pr.currentStreak || 0,
       longestStreak: pr.longestStreak || 0,
@@ -968,6 +1295,7 @@ function fbWriteAdmin(){
     u['rooms/'+ROOM+'/progress/'+p.id] = {
       position: p.position||0, correctCount: p.correctCount||0,
       totalAnswerTime: p.totalAnswerTime||0, turboUsed: !!p.turboUsed,
+      fiftyUsed: !!p.fiftyUsed, seatbeltUsed: !!p.seatbeltUsed,
       finishRank: p.finishRank||null, currentStreak: p.currentStreak||0,
       longestStreak: p.longestStreak||0, answeredCount: p.answeredCount||0,
     };
@@ -982,7 +1310,7 @@ function fbWriteMine(){
   u['rooms/'+ROOM+'/profiles/'+myPlayerId] = { name: me.name, avatar: me.avatar, joinedAt: me.joinedAt || Date.now() };
   const a = me.answers[state.currentQ];
   if(a && a.choice!==null && a.choice!==undefined){
-    const row = { choice:a.choice, turbo:!!a.turbo, submitted:!!a.submitted, timeTaken: (typeof a.timeTaken==='number') ? a.timeTaken : null };
+    const row = { choice:a.choice, turbo:!!a.turbo, fifty:!!a.fifty, seatbelt:!!a.seatbelt, submitted:!!a.submitted, timeTaken: (typeof a.timeTaken==='number') ? a.timeTaken : null };
     u['rooms/'+ROOM+'/answers/'+state.currentQ+'/'+myPlayerId] = row;
     // keep a local echo so the option immediately re-renders as picked/locked
     // (a player is never subscribed to the answers tree — see database.rules.json)
@@ -996,7 +1324,7 @@ function reconcileProgress(){
   if(FB.mode!=='online' || FB.role!=='admin') return;
   const u = {};
   Object.keys(_profiles).forEach(id=>{
-    if(!_progress[id]) u['rooms/'+ROOM+'/progress/'+id] = {position:0,correctCount:0,totalAnswerTime:0,turboUsed:false,finishRank:null,currentStreak:0,longestStreak:0,answeredCount:0};
+    if(!_progress[id]) u['rooms/'+ROOM+'/progress/'+id] = {position:0,correctCount:0,totalAnswerTime:0,turboUsed:false,fiftyUsed:false,seatbeltUsed:false,finishRank:null,currentStreak:0,longestStreak:0,answeredCount:0};
   });
   if(Object.keys(u).length) db.ref().update(u).catch(()=>{});
 }
@@ -1189,8 +1517,32 @@ function openAdminGate(){
 function closeAdminGate(){
   document.getElementById('adminGateModal').classList.add('hidden');
 }
+/* ---------- how to play: 4 paged slides ---------- */
+const RULES_PAGES = 4;
+let rulesPage = 1;
+function rulesGoPage(n){
+  rulesPage = Math.max(1, Math.min(RULES_PAGES, n));
+  document.querySelectorAll('.rules-page').forEach(p=>{
+    p.classList.toggle('active', +p.dataset.page === rulesPage);
+  });
+  const dots = document.getElementById('rulesDots');
+  dots.innerHTML = '';
+  for(let i=1;i<=RULES_PAGES;i++){
+    const b = document.createElement('button');
+    b.className = 'rules-dot' + (i===rulesPage?' on':'');
+    b.title = 'Page '+i;
+    b.onclick = ()=>rulesGoPage(i);
+    dots.appendChild(b);
+  }
+  document.getElementById('rulesPrevBtn').style.visibility = rulesPage===1 ? 'hidden' : 'visible';
+  const nextBtn = document.getElementById('rulesNextBtn');
+  if(rulesPage===RULES_PAGES){ nextBtn.textContent = 'Close'; nextBtn.onclick = closeRulesModal; }
+  else { nextBtn.textContent = 'Next →'; nextBtn.onclick = ()=>rulesGoPage(rulesPage+1); }
+  document.querySelector('.rules-modal-card').scrollTop = 0;
+}
 function openRulesModal(){
   document.getElementById('rulesModal').classList.remove('hidden');
+  rulesGoPage(1);
 }
 function closeRulesModal(){
   document.getElementById('rulesModal').classList.add('hidden');
@@ -1291,7 +1643,7 @@ async function playerJoin(){
     localStorage.setItem('vna_my_player_id', myPlayerId);
     localStorage.setItem('vna_my_room', ROOM);
     state.players[myPlayerId] = {
-      id: myPlayerId, name, avatar: selectedAvatar, position: 0, correctCount:0, answers:{}, totalAnswerTime:0, turboUsed:false, finishRank:null, currentStreak:0, longestStreak:0, answeredCount:0, joinedAt: Date.now()
+      id: myPlayerId, name, avatar: selectedAvatar, position: 0, correctCount:0, answers:{}, totalAnswerTime:0, turboUsed:false, fiftyUsed:false, seatbeltUsed:false, finishRank:null, currentStreak:0, longestStreak:0, answeredCount:0, joinedAt: Date.now()
     };
     saveState();
     document.getElementById('pRegistration').classList.add('hidden');
@@ -1309,6 +1661,12 @@ async function playerJoin(){
 function myTimeUp(){
   return state.gameState==='question' && !!state.questionOpenedAt && (Date.now()-state.questionOpenedAt) >= TIMER_SECONDS*1000;
 }
+// seconds left on the current question, or null if no question is running — shared by the
+// player countdown, the presenter countdown and the admin dashboard clock so all three agree
+function secondsRemaining(){
+  if(!state.questionOpenedAt) return null;
+  return Math.max(0, TIMER_SECONDS - Math.floor((Date.now()-state.questionOpenedAt)/1000));
+}
 function playerSubmitAnswer(choiceIdx){
   const me = state.players[myPlayerId];
   if(!me) return;
@@ -1320,33 +1678,102 @@ function playerSubmitAnswer(choiceIdx){
   saveState();
   renderPlayer();
 }
-function isTurboEligibleNow(){
-  const me = state.players[myPlayerId];
-  if(!me) return false;
-  // Unlocks PER PLAYER: only once this player's own aircraft has reached MUC or beyond.
-  // A player who is still behind MUC cannot arm Turbo, no matter which leg the race is on.
-  return !me_turbulenceActive() && !me_stormActive() && !state.powerQuestionActive && me.position >= TURBO_MIN_LEG;
-}
+/* ---------- the three helps ----------
+   All three unlock per player the moment THEIR OWN aircraft reaches MUC — not when the
+   race reaches MUC — and each is usable once per game. 50:50 and Turbo are "boosts" and
+   are locked during turbulence/storm/power question; Fasten Seatbelt is the mirror image,
+   usable only during turbulence.
+   The used-flags live on the progress node (admin-owned), so they survive a refresh and a
+   player cannot hand themselves a fresh set of helps by reloading. */
 function me_turbulenceActive(){ return isTurbulenceLeg(state.currentQ); }
 function me_stormActive(){ return isStormLeg(state.currentQ); }
+function helpsUnlocked(){
+  const me = state.players[myPlayerId];
+  return !!me && me.position >= TURBO_MIN_LEG;
+}
+function boostsBlocked(){
+  return me_turbulenceActive() || me_stormActive() || !!state.powerQuestionActive;
+}
+function boostBlockedReason(what){
+  if(me_turbulenceActive()) return '🌪 '+what+' is locked during turbulence';
+  if(me_stormActive()) return '⛈ '+what+' is locked during the storm — ATC clearance only';
+  if(state.powerQuestionActive) return '⚡ '+what+' is locked on a Power Question';
+  return what+' unlocks when your aircraft reaches MUC';
+}
+// true while the player can still change their mind about this leg
+function canActNow(){
+  const me = state.players[myPlayerId];
+  if(!me) return false;
+  const a = me.answers[state.currentQ];
+  return state.gameState==='question' && !myTimeUp() && !(a && a.submitted);
+}
+function myAnswerDraft(){
+  const me = state.players[myPlayerId];
+  return me.answers[state.currentQ] || { choice:null, submitted:false };
+}
+function isTurboEligibleNow(){
+  return helpsUnlocked() && !boostsBlocked();
+}
 function playerToggleTurbo(){
   const me = state.players[myPlayerId];
   if(!me) return;
-  if(me.turboUsed){ toast('Turbo Boost already used'); return; }
+  if(me.turboUsed){ toast('⚡ Turbo Boost already used'); return; }
   if(myTimeUp()){ toast("Time's up — no more answers for this leg"); return; }
-  if(!isTurboEligibleNow()){
-    if(me_turbulenceActive()) toast('🌪 Turbo Boost is disabled during turbulence');
-    else if(me_stormActive()) toast('⛈ Turbo Boost is disabled during the storm — ATC clearance only');
-    else if(state.powerQuestionActive) toast('⚡ Turbo Boost is disabled on a Power Question');
-    else toast('Turbo Boost unlocks when your aircraft reaches MUC');
-    return;
-  }
-  const existing = me.answers[state.currentQ] || { choice:null, submitted:false, turbo:false };
+  if(!isTurboEligibleNow()){ toast(boostBlockedReason('Turbo Boost')); return; }
+  const existing = myAnswerDraft();
   if(existing.submitted) return;
   existing.turbo = !existing.turbo;
   me.answers[state.currentQ] = existing;
   saveState();
   renderPlayer();
+}
+function playerUseFifty(){
+  const me = state.players[myPlayerId];
+  if(!me) return;
+  if(me.fiftyUsed){ toast('✂️ 50:50 already used'); return; }
+  if(myTimeUp()){ toast("Time's up — no more answers for this leg"); return; }
+  if(!helpsUnlocked() || boostsBlocked()){ toast(boostBlockedReason('50:50')); return; }
+  const existing = myAnswerDraft();
+  if(existing.submitted || existing.fifty) return;
+  existing.fifty = true;
+  me.answers[state.currentQ] = existing;
+  saveState();
+  renderPlayer();
+  toast('✂️ Two wrong answers removed');
+}
+function playerToggleSeatbelt(){
+  const me = state.players[myPlayerId];
+  if(!me) return;
+  if(me.seatbeltUsed){ toast('🔒 Fasten Seatbelt already used'); return; }
+  if(myTimeUp()){ toast("Time's up — no more answers for this leg"); return; }
+  if(!helpsUnlocked()){ toast('🔒 Fasten Seatbelt unlocks when your aircraft reaches MUC'); return; }
+  if(!me_turbulenceActive()){ toast('🔒 Fasten Seatbelt only works during turbulence — save it for legs 6 and 10'); return; }
+  const existing = myAnswerDraft();
+  if(existing.submitted) return;
+  existing.seatbelt = !existing.seatbelt;
+  me.answers[state.currentQ] = existing;
+  saveState();
+  renderPlayer();
+}
+/* Which two options 50:50 struck out. Derived, not stored: seeded by this player's id and
+   the question id so the same two stay struck out across every re-render and a refresh,
+   without needing another synced field. */
+function hashString(s){
+  let h = 2166136261;
+  for(let i=0;i<String(s).length;i++){ h ^= String(s).charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function eliminatedOptions(){
+  const me = state.players[myPlayerId];
+  if(!me) return null;
+  const a = me.answers[state.currentQ];
+  if(!a || !a.fifty) return null;
+  const qd = QUESTIONS_BY_ID[state.currentQuestionIndex];
+  if(!qd) return null;
+  const wrong = qd.opts.map((_,i)=>i).filter(i=>i!==qd.correct);
+  const rand = seededRandom((hashString(myPlayerId) ^ (qd.id*2654435761)) >>> 0);
+  const survivor = wrong[Math.floor(rand()*wrong.length)];
+  return wrong.filter(i=>i!==survivor);
 }
 function playerConfirmSubmit(){
   const me = state.players[myPlayerId];
@@ -1357,9 +1784,110 @@ function playerConfirmSubmit(){
   a.submitted = true;
   a.timeTaken = state.questionOpenedAt ? (Date.now() - state.questionOpenedAt) : 0;
   me.totalAnswerTime = (me.totalAnswerTime||0) + a.timeTaken;
+  // local echo so the help buttons grey out instantly; the durable copy is written by the
+  // admin client at reveal (progress is admin-owned — see database.rules.json)
   if(a.turbo) me.turboUsed = true;
+  if(a.fifty) me.fiftyUsed = true;
+  if(a.seatbelt) me.seatbeltUsed = true;
   saveState();
   renderPlayer();
+}
+
+/* The player's phone mirrors the weather on the presenter wall — same tint, same rain or
+   sun rays — so the room and the handset tell one story. The FX layer is only mounted while
+   the player view is actually on screen (renderPlayer runs on every client, presenter included). */
+function applyPlayerWeatherSkin(){
+  const view = document.getElementById('view-player');
+  const visible = !view.classList.contains('hidden');
+  const turbulent = isTurbulenceLeg(state.currentQ);
+  const stormy = isStormLeg(state.currentQ) && !turbulent;
+  const powerOn = !!state.powerQuestionActive && !turbulent && !stormy;
+  // "live" covers both the lobby announcement and the question itself
+  const live = state.gameState==='question' || state.gameState==='locked' || state.gameState==='reveal' || !!wxAnnounceFor();
+  view.classList.toggle('wx-turbulence', turbulent && live);
+  view.classList.toggle('wx-storm', stormy && live);
+  view.classList.toggle('wx-power', powerOn && live);
+
+  const want = !visible ? null
+    : (turbulent && live) ? 'rain'
+    : (stormy && live) ? 'heavyrain'
+    : (powerOn && live) ? 'sun' : null;
+  let fx = document.getElementById('playerFx');
+  if(!want){ if(fx) fx.remove(); return; }
+  if(fx && fx.dataset.kind===want) return; // already showing — don't respawn the drops each tick
+  if(fx) fx.remove();
+  fx = document.createElement('div');
+  fx.id = 'playerFx';
+  fx.className = 'player-fx';
+  fx.dataset.kind = want;
+  if(want==='sun'){
+    fx.innerHTML = '<div class="sunny-fx"><div class="sun-ray"></div></div>';
+  } else {
+    const heavy = want==='heavyrain';
+    fx.innerHTML = '<div class="lightning-flash'+(heavy?' thunder-flash':'')+'"></div>' +
+      Array.from({length: heavy?24:15}).map(()=>`<div class="rain-drop${heavy?' thunder-drop':''}" style="left:${Math.random()*100}%; animation-delay:${(Math.random()*1.2).toFixed(2)}s; animation-duration:${(0.45+Math.random()*0.4).toFixed(2)}s;"></div>`).join('');
+  }
+  document.body.appendChild(fx);
+}
+
+/* Top 3 fly business class: the whole phone turns Vietnam Airlines gold, and they're told
+   who is breathing down their neck — the point being that a lead is something to defend. */
+function renderBizRibbon(me){
+  const wrap = document.getElementById('pBizRibbon');
+  const view = document.getElementById('view-player');
+  const ranked = rankedPlayers();
+  const idx = ranked.findIndex(p=>p.id===myPlayerId);
+  const isTop3 = idx>=0 && idx<3 && ranked.length>=2;
+  view.classList.toggle('biz-gold', isTop3);
+  if(!isTop3){ wrap.innerHTML = ''; return; }
+  const medal = ['🥇','🥈','🥉'][idx];
+  const place = ['1st','2nd','3rd'][idx];
+  const chaser = ranked[idx+1];
+  let sub;
+  if(chaser){
+    const gap = (me.position||0) - (chaser.position||0);
+    const gapTxt = gap<=0 ? 'level with you' : (gap===1 ? '1 leg behind' : gap+' legs behind');
+    sub = `${escapeHtml(chaser.name)} is chasing you — ${gapTxt}`;
+  } else {
+    sub = 'You are out in front on your own.';
+  }
+  wrap.innerHTML = `<div class="biz-ribbon">
+    <div class="medal">${medal}</div>
+    <div><div class="tt">Business Class · ${place} place</div><div class="sb">${sub}</div></div>
+  </div>`;
+}
+
+/* The three round help buttons, sitting right under "Select an answer above". */
+function renderHelps(me, myAns){
+  const wrap = document.getElementById('pHelpsWrap');
+  if(!wrap) return;
+  if(!helpsUnlocked()){
+    wrap.innerHTML = `<div class="help-hint">🔒 50:50 · Turbo Boost · Fasten Seatbelt all unlock once your aircraft reaches ${ROUTE[TURBO_MIN_LEG].code}</div>`;
+    return;
+  }
+  const live = canActNow();
+  const armedTurbo = !!(myAns && myAns.turbo);
+  const armedBelt = !!(myAns && myAns.seatbelt);
+  const fiftyGone = !!me.fiftyUsed || !!(myAns && myAns.fifty);
+  const boostOk = live && !boostsBlocked();
+  const beltOk = live && me_turbulenceActive();
+  const btn = (ic, lb, spent, armed, disabled, title, fn)=>
+    `<button class="help-btn${spent?' spent':(armed?' armed':'')}" ${disabled?'disabled':''} title="${title}" onclick="${fn}"><span class="ic">${ic}</span><span class="lb">${lb}</span></button>`;
+  wrap.innerHTML = `<div class="help-row">
+    ${btn('✂️','50:50', fiftyGone, false, fiftyGone || !boostOk,
+        fiftyGone?'50:50 already used':'Remove two wrong answers', 'playerUseFifty()')}
+    ${btn('⚡','Turbo', !!me.turboUsed, armedTurbo, !!me.turboUsed || !boostOk,
+        me.turboUsed?'Turbo Boost already used':'Correct +2 legs · wrong −1 leg', 'playerToggleTurbo()')}
+    ${btn('🔒','Seatbelt', !!me.seatbeltUsed, armedBelt, !!me.seatbeltUsed || !beltOk,
+        me.seatbeltUsed?'Fasten Seatbelt already used':'Turbulence only — cancels the −1 leg penalty', 'playerToggleSeatbelt()')}
+  </div>`;
+  let hint = '';
+  if(armedTurbo) hint = '⚡ Turbo armed — correct +2 legs, wrong −1 leg';
+  else if(armedBelt) hint = '🔒 Seatbelt fastened — a wrong answer will not push you back';
+  else if(me_turbulenceActive()) hint = '🌪 Turbulence — only Fasten Seatbelt works right now';
+  else if(me_stormActive()) hint = '⛈ Storm — all three helps are locked';
+  else if(state.powerQuestionActive) hint = '⚡ Power Question — all three helps are locked';
+  if(hint) wrap.innerHTML += `<div class="help-hint">${hint}</div>`;
 }
 
 function renderPlayer(){
@@ -1375,9 +1903,24 @@ function renderPlayer(){
   document.getElementById('pGame').classList.remove('hidden');
   const me = state.players[myPlayerId];
   document.getElementById('pAvatarShown').innerHTML = avatarHTML(me.avatar, '1.2em');
-  const myRankIdx = rankedPlayers().findIndex(p=>p.id===myPlayerId);
+
+  // where you are in the field, and where you physically are on the map
+  const ranked = rankedPlayers();
+  const myRankIdx = ranked.findIndex(p=>p.id===myPlayerId);
   const myRank = myRankIdx>=0 ? (myRankIdx+1) : '—';
-  document.getElementById('pDest').innerHTML = `#${myRank} <span style="font-size:11px; opacity:.65;">(${ROUTE[me.position].code})</span>`;
+  const here = ROUTE[me.position];
+  document.getElementById('pDest').innerHTML = `#${myRank} <span style="font-size:11px; opacity:.6;">of ${ranked.length}</span>`;
+  document.getElementById('pLocation').innerHTML = `${here.code} <span style="font-size:10.5px; opacity:.6; font-family:var(--font-body);">${escapeHtml(here.city)}</span>`;
+
+  renderBizRibbon(me);
+  applyPlayerWeatherSkin();
+
+  // the big turbulence/storm/power card between questions — same copy as the presenter wall
+  const wxa = wxAnnounceFor();
+  const wxWrap = document.getElementById('pWxAnnounce');
+  wxWrap.innerHTML = wxa
+    ? `<div class="wx-announce ${wxa.cls}"><div class="ic">${wxa.icon}</div><div class="tt">${wxa.title}</div><div class="rl">${wxa.rule}</div></div>`
+    : '';
 
   // progress strip — reflects the 12 legs on the map, independent of question count
   const strip = document.getElementById('pProgressStrip');
@@ -1390,8 +1933,6 @@ function renderPlayer(){
   }
   document.getElementById('pProgressText').textContent = `${me.position} of ${totalLegs} legs complete`;
 
-  // timer
-  const qCard = document.getElementById('pQCard');
   const timerEl = document.getElementById('pTimer');
   const bannerEl = document.getElementById('pStatusBanner');
   const optsEl = document.getElementById('pOptions');
@@ -1399,6 +1940,8 @@ function renderPlayer(){
   const qText = document.getElementById('pQText');
   const powerNoteEl = document.getElementById('pPowerNote');
   const stormNoteEl = document.getElementById('pStormNote');
+  const helpsWrap = document.getElementById('pHelpsWrap');
+  const clearTimer = ()=>{ timerEl.textContent = '--'; timerEl.classList.remove('urgent'); };
 
   // Reaching FINISH is a personal milestone shown the moment it happens — the race
   // itself keeps going for everyone else until at least 3 aircraft have landed.
@@ -1406,38 +1949,41 @@ function renderPlayer(){
     const medal = me.finishRank===1 ? '🥇' : me.finishRank===2 ? '🥈' : me.finishRank===3 ? '🥉' : '🏅';
     eyebrow.textContent = '🏁 FINISHED';
     qText.innerHTML = `<div style="font-size:21px; font-weight:800; margin-bottom:12px;">${medal} You landed in ${ordinal(me.finishRank)} place!</div><div style="font-size:14px; font-weight:400; color:rgba(255,255,255,.82); line-height:1.55;">You've completed the Sky Race — thank you for flying with us today.<br><br>We wish you an inspiring conference, meaningful connections, and an enjoyable experience throughout today's event.</div>`;
-    optsEl.innerHTML=''; bannerEl.classList.add('hidden'); timerEl.textContent='--';
+    optsEl.innerHTML=''; bannerEl.classList.add('hidden'); clearTimer();
     if(powerNoteEl) powerNoteEl.classList.add('hidden');
     if(stormNoteEl) stormNoteEl.classList.add('hidden');
-    const twF = document.getElementById('pTurboWrap'); if(twF) twF.innerHTML='';
+    if(helpsWrap) helpsWrap.innerHTML='';
     return;
   }
 
   if(state.gameState === 'lobby'){
     eyebrow.textContent = 'WAITING FOR GAME TO START';
     qText.textContent = 'Question will be open shortly. Get ready for takeoff!';
-    optsEl.innerHTML=''; bannerEl.classList.add('hidden'); timerEl.textContent='--';
+    optsEl.innerHTML=''; bannerEl.classList.add('hidden'); clearTimer();
     if(powerNoteEl) powerNoteEl.classList.add('hidden');
     if(stormNoteEl) stormNoteEl.classList.add('hidden');
-    const tw = document.getElementById('pTurboWrap'); if(tw) tw.innerHTML='';
+    if(helpsWrap) helpsWrap.innerHTML='';
     return;
   }
   if(state.gameState==='finished'){
     eyebrow.textContent='RACE COMPLETE';
-    qText.textContent = state.winnerId ? (state.players[state.winnerId].name + ' was first to land — the race is complete! ✈️🏆') : 'The race has finished.';
-    optsEl.innerHTML=''; bannerEl.classList.add('hidden'); timerEl.textContent='--';
+    qText.textContent = (state.winnerId && state.players[state.winnerId])
+      ? (state.players[state.winnerId].name + ' was first to land — the race is complete! ✈️🏆')
+      : 'The race has finished.';
+    optsEl.innerHTML=''; bannerEl.classList.add('hidden'); clearTimer();
     if(powerNoteEl) powerNoteEl.classList.add('hidden');
     if(stormNoteEl) stormNoteEl.classList.add('hidden');
-    const tw2 = document.getElementById('pTurboWrap'); if(tw2) tw2.innerHTML='';
+    if(helpsWrap) helpsWrap.innerHTML='';
     return;
   }
 
   if(state.currentQuestionIndex===null || state.currentQuestionIndex===undefined){
     eyebrow.textContent = legLabel(state.currentQ);
     qText.textContent = 'Waiting for the admin to open this question…';
-    optsEl.innerHTML=''; bannerEl.classList.add('hidden'); timerEl.textContent='--';
+    optsEl.innerHTML=''; bannerEl.classList.add('hidden'); clearTimer();
     if(powerNoteEl) powerNoteEl.classList.add('hidden');
     if(stormNoteEl) stormNoteEl.classList.add('hidden');
+    if(helpsWrap) helpsWrap.innerHTML='';
     return;
   }
   const qData = QUESTIONS_BY_ID[state.currentQuestionIndex];
@@ -1453,8 +1999,10 @@ function renderPlayer(){
   // Once the player's own countdown hits 0, no more picks or submits — an unsubmitted
   // answer already scores the same as a wrong one in every leg type (see adminRevealAnswer).
   const timeUp = myTimeUp();
+  const struckOut = eliminatedOptions();
   optsEl.innerHTML = '';
   qData.opts.forEach((opt,i)=>{
+    const gone = !!(struckOut && struckOut.includes(i));
     const b = document.createElement('button');
     let cls = 'opt-btn';
     if(revealed){
@@ -1463,51 +2011,37 @@ function renderPlayer(){
     } else if(myAns && myAns.choice===i){
       cls+=' picked';
     }
+    if(gone && !revealed) cls+=' eliminated';
     b.className = cls;
-    const locked = state.gameState!=='question' || (myAns && myAns.submitted) || timeUp;
+    const locked = state.gameState!=='question' || (myAns && myAns.submitted) || timeUp || (gone && !revealed);
     b.disabled = locked;
     b.innerHTML = `<span class="k">${String.fromCharCode(65+i)}</span><span>${opt}</span>`;
     b.onclick = ()=> playerSubmitAnswer(i);
     optsEl.appendChild(b);
   });
 
-  // timer countdown display (visual only, admin controls actual state)
+  // countdown — flashes red over the final few seconds so heads come up off the screen
   if(state.gameState==='question' && state.questionOpenedAt){
-    const elapsed = Math.floor((Date.now()-state.questionOpenedAt)/1000);
-    const remain = Math.max(0, TIMER_SECONDS-elapsed);
+    const remain = secondsRemaining();
     timerEl.textContent = remain+'s';
+    timerEl.classList.toggle('urgent', remain<=URGENT_SECONDS);
   } else {
-    timerEl.textContent = state.gameState==='locked' ? 'LOCKED' : (state.gameState==='reveal' ? 'REVEALED' : '--');
+    timerEl.textContent = state.gameState==='locked' ? 'LOCKED' : (revealed ? 'REVEALED' : '--');
+    timerEl.classList.remove('urgent');
   }
 
-  // turbo boost toggle
-  const turboWrap = document.getElementById('pTurboWrap');
-  if(turboWrap){
-    const eligible = isTurboEligibleNow() && !me.turboUsed && state.gameState==='question' && !(myAns && myAns.submitted) && !timeUp;
-    if(me.turboUsed){
-      turboWrap.innerHTML = `<div class="turbo-note">⚡ Turbo Boost already used</div>`;
-    } else if(state.currentQ < TURBO_MIN_LEG){
-      turboWrap.innerHTML = `<div class="turbo-note">⚡ Turbo Boost unlocks from MUC onward</div>`;
-    } else if(me_turbulenceActive()){
-      turboWrap.innerHTML = `<div class="turbo-note">⚡ Turbo Boost disabled during turbulence</div>`;
-    } else if(me_stormActive()){
-      turboWrap.innerHTML = `<div class="turbo-note">⛈ Turbo Boost disabled during the storm — ATC clearance only</div>`;
-    } else {
-      const active = myAns && myAns.turbo;
-      turboWrap.innerHTML = `<button class="btn ${active?'btn-primary':'btn-ghost'} btn-block turbo-btn" ${eligible?'':'disabled'} onclick="playerToggleTurbo()">⚡ ${active?'Turbo Boost ACTIVE — tap to cancel':'Activate Turbo Boost (one-time, x2 legs / -1 if wrong)'}</button>`;
-    }
-  }
+  renderHelps(me, myAns);
 
   // banner + submit button
   bannerEl.classList.remove('hidden','wait','locked','correct','wrong');
   if(state.gameState==='question'){
     if(myAns && myAns.submitted){
       bannerEl.classList.add('locked');
-      bannerEl.innerHTML = '🔒 Answer locked in' + (myAns.turbo?' with ⚡ Turbo Boost':'') + '. Waiting for other players…';
+      bannerEl.innerHTML = '🔒 Answer locked in' + (myAns.turbo?' with ⚡ Turbo Boost':'') + (myAns.seatbelt?' and 🔒 Seatbelt':'') + '. Waiting for other players…';
     } else if(timeUp){
       bannerEl.classList.add('locked');
       bannerEl.innerHTML = "⏱️ Time's up — no more answers for this leg.";
-    } else if(myAns){
+    } else if(myAns && myAns.choice!==null && myAns.choice!==undefined){
       bannerEl.classList.add('wait');
       bannerEl.innerHTML = `<button class="btn btn-primary btn-block" onclick="playerConfirmSubmit()">Submit answer →</button>`;
     } else {
@@ -1517,12 +2051,14 @@ function renderPlayer(){
   } else if(state.gameState==='locked'){
     bannerEl.classList.add('locked');
     bannerEl.innerHTML = '⏳ Answers locked. Revealing shortly…';
-  } else if(state.gameState==='reveal'){
+  } else if(revealed){
     const correct = myAns && myAns.choice===state.currentCorrectIndex;
     const turbulent = isTurbulenceLeg(state.currentQ);
     let msg;
     if(turbulent){
-      msg = correct ? '🌪 Correct — but turbulence holds your aircraft in place.' : '🌪 Turbulence! Wrong answer sends you back one destination.';
+      if(correct) msg = '🌪 Correct — but turbulence holds your aircraft in place.';
+      else if(myAns && myAns.seatbelt) msg = '🔒 Seatbelt saved you — turbulence would have cost a leg, you hold position.';
+      else msg = '🌪 Turbulence! Wrong answer sends you back one destination.';
     } else if(isStormLeg(state.currentQ)){
       const cleared = !!(state.stormClearedIds && state.stormClearedIds.includes(myPlayerId));
       msg = cleared ? '⛈ ATC clearance granted — cleared to continue to the next leg!' : (correct ? '⛈ Correct, but ATC only cleared the 10 fastest — you hold position.' : '⛈ Storm — aircraft grounded, hold position.');
@@ -1854,6 +2390,29 @@ function milestoneDotsFor(playerId){
   return dots;
 }
 
+/* Fullscreen for the LED wall. Safari still only has the webkit-prefixed API, and the
+   request rejects unless it's inside a user gesture — which is why this is wired to the
+   button rather than called automatically when the presenter view opens. */
+function togglePresenterFullscreen(){
+  const el = document.documentElement;
+  const isFull = document.fullscreenElement || document.webkitFullscreenElement;
+  if(isFull){
+    (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document);
+    return;
+  }
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if(!req){ toast('Fullscreen is not supported in this browser'); return; }
+  Promise.resolve(req.call(el)).catch(()=>toast('Fullscreen was blocked by the browser'));
+}
+function syncFullscreenBtn(){
+  const btn = document.getElementById('presFullscreenBtn');
+  if(!btn) return;
+  const isFull = document.fullscreenElement || document.webkitFullscreenElement;
+  btn.textContent = isFull ? '⛶ Exit fullscreen' : '⛶ Fullscreen';
+}
+document.addEventListener('fullscreenchange', syncFullscreenBtn);
+document.addEventListener('webkitfullscreenchange', syncFullscreenBtn);
+
 function renderPresenter(){
   const pill = document.getElementById('presStatePill');
   pill.textContent = state.gameState.toUpperCase();
@@ -1938,31 +2497,55 @@ function renderPresenter(){
     stormClearOverlay.remove();
   }
 
-  // weather/event rule banner — spells out the current rule on the big screen so players
-  // don't need to check their own phone to know what turbulence/storm/power question does
-  let wxBanner = document.getElementById('weatherRuleBanner');
-  const wxLive = state.gameState==='question' || state.gameState==='locked';
-  let wxClass = null, wxTitle = '', wxRule = '';
-  if(turbulent && wxLive){
-    wxClass = 'wx-turbulence'; wxTitle = '🌪 TURBULENCE';
-    wxRule = 'Correct holds your position. Wrong or no answer sends you back 1 leg. Turbo Boost is disabled.';
-  } else if(thunderOn && wxLive){
-    wxClass = 'wx-storm'; wxTitle = '⛈ STORM';
-    wxRule = 'Only the 10 fastest correct answers get ATC clearance +1 leg. Everyone else holds position. Turbo Boost and Power Question are disabled.';
-  } else if(powerOn && wxLive){
-    wxClass = 'wx-power'; wxTitle = '⚡ POWER QUESTION ⚡';
-    wxRule = 'Fastest correct answer gets +2 legs. Every other correct answer gets +1. Wrong answers hold position.';
-  }
-  if(wxClass){
-    if(!wxBanner){
-      wxBanner = document.createElement('div');
-      wxBanner.id = 'weatherRuleBanner';
-      presenterEl.appendChild(wxBanner);
+  // The question itself on the big screen: text, all four options and the countdown, in an
+  // opaque panel over the map (a blurred glass panel is unreadable from the back of a room).
+  // It stays up for 3s after the reveal so everyone sees the correct answer, then clears
+  // itself on the next tick.
+  const mapPanelEl = document.getElementById('mapPanel');
+  const answerShowing = state.gameState==='reveal' && state.revealAt && (Date.now()-state.revealAt) < ANSWER_CARD_MS;
+  const showPresQuestion = qKnown && (state.gameState==='question' || state.gameState==='locked' || answerShowing);
+  let pqEl = document.getElementById('presQuestionOverlay');
+  if(showPresQuestion && mapPanelEl){
+    if(!pqEl){
+      pqEl = document.createElement('div');
+      pqEl.id = 'presQuestionOverlay';
+      pqEl.className = 'pres-question-overlay';
+      mapPanelEl.appendChild(pqEl);
     }
-    wxBanner.className = 'weather-rule-banner ' + wxClass;
-    wxBanner.innerHTML = `<div class="title">${wxTitle}</div><div class="rule">${wxRule}</div>`;
-  } else if(wxBanner){
-    wxBanner.remove();
+    const qd = QUESTIONS_BY_ID[state.currentQuestionIndex];
+    const remain = secondsRemaining();
+    const revealed = state.gameState==='reveal';
+    const correctIdx = state.currentCorrectIndex;
+    const wxTag = turbulent ? ' · 🌪 TURBULENCE' : (thunderOn ? ' · ⛈ STORM' : (powerOn ? ' · ⚡ POWER QUESTION' : ''));
+    pqEl.innerHTML = `
+      <div class="pq-head">
+        <div class="pq-eyebrow">${legLabel(state.currentQ)}${wxTag}</div>
+        <div class="pq-timer${(!revealed && remain!==null && remain<=5)?' urgent':''}">${revealed ? '✓' : (remain===null ? '--' : remain)}</div>
+      </div>
+      <div class="pq-text">${escapeHtml(qd.q)}</div>
+      <div class="pq-opts">
+        ${qd.opts.map((o,i)=>`<div class="pq-opt${(revealed && i===correctIdx)?' correct':''}"><span class="k">${String.fromCharCode(65+i)}</span><span>${escapeHtml(o)}</span></div>`).join('')}
+      </div>
+      ${(revealed && correctIdx!==null && correctIdx!==undefined) ? `<div class="pq-answer-tag">✅ Correct answer: ${String.fromCharCode(65+correctIdx)} — ${escapeHtml(qd.opts[correctIdx])}</div>` : ''}
+    `;
+  } else if(pqEl){
+    pqEl.remove();
+  }
+
+  // Big "here comes turbulence" card between questions — see wxAnnounceFor(). Once the
+  // host opens the question this disappears and the small weather pill up top carries on.
+  const announce = wxAnnounceFor();
+  let pwxEl = document.getElementById('presWxAnnounce');
+  if(announce && mapPanelEl){
+    if(!pwxEl){
+      pwxEl = document.createElement('div');
+      pwxEl.id = 'presWxAnnounce';
+      pwxEl.className = 'pres-wx-announce';
+      mapPanelEl.appendChild(pwxEl);
+    }
+    pwxEl.innerHTML = `<div class="wx-announce ${announce.cls}"><div class="ic">${announce.icon}</div><div class="tt">${announce.title}</div><div class="rl">${announce.rule}</div></div>`;
+  } else if(pwxEl){
+    pwxEl.remove();
   }
 
   const statusEl = document.getElementById('presQStatus');
@@ -2110,7 +2693,7 @@ function adminTab(tab){
 
 function adminOpenQuestion(){
   if(state.gameState==='finished'){ toast('Race already finished — reset to play again.'); return; }
-  ensureQuestionPicked();
+  if(!ensureQuestionPicked()){ toast('No questions left in the bank — all '+QUESTIONS.length+' have been asked.'); return; }
   state.gameState = 'question';
   state.questionOpenedAt = Date.now();
   // Hard deadline enforced by the answers RLS policy against Postgres server time, so a
@@ -2148,6 +2731,7 @@ function adminRevealAnswer(){
   };
 
   state.gameState = 'reveal';
+  state.revealAt = Date.now(); // presenter shows the correct answer for 3s from here
   const correctIdx = QUESTIONS_BY_ID[state.currentQuestionIndex].correct;
   state.currentCorrectIndex = correctIdx; // now safe for players/presenter to learn via game_state
   const turbulent = isTurbulenceLeg(state.currentQ);
@@ -2189,9 +2773,17 @@ function adminRevealAnswer(){
   Object.values(state.players).forEach(p=>{
     const a = p.answers[state.currentQ];
     const correct = !!(a && a.submitted && a.choice===correctIdx);
-    // Turbo only counts if it was actually submitted. Arming it and never pressing
+    // A help only counts if it was actually submitted. Arming Turbo and never pressing
     // Submit must not cost a leg — otherwise the player is penalised AND keeps the boost.
     const turboArmed = !!(a && a.submitted && a.turbo);
+    const seatbeltArmed = !!(a && a.submitted && a.seatbelt);
+    // Burn the one-time helps here rather than on the player's own device: progress is
+    // admin-owned, so this is the only write that survives the player refreshing their phone.
+    if(a && a.submitted){
+      if(a.turbo) p.turboUsed = true;
+      if(a.fifty) p.fiftyUsed = true;
+      if(a.seatbelt) p.seatbeltUsed = true;
+    }
     if(a && a.submitted) p.answeredCount = (p.answeredCount||0)+1;
     if(correct){
       p.correctCount = (p.correctCount||0)+1;
@@ -2203,7 +2795,9 @@ function adminRevealAnswer(){
 
     let delta;
     if(turbulent){
-      delta = correct ? 0 : -1;
+      // 🔒 Fasten Seatbelt is the turbulence shield: ride out a wrong answer without
+      // being pushed back a leg. A correct answer already holds position anyway.
+      delta = correct ? 0 : (seatbeltArmed ? 0 : -1);
     } else if(isPower){
       delta = correct ? (p.id===fastestId ? 2 : 1) : 0;
     } else if(storm){
@@ -2267,6 +2861,7 @@ function adminUndoReveal(){
   state.undoSnapshot = null;
   state.stormClearedIds = null;
   state.stormRevealAt = null;
+  state.revealAt = null;
   state.congratsShown = false;
   saveState();
   toast('Reveal of Leg '+(snap.leg+1)+' undone');
@@ -2286,13 +2881,14 @@ function adminNextQuestion(){
   state.powerQuestionActive = false;
   state.stormClearedIds = null;
   state.stormRevealAt = null;
+  state.revealAt = null;
   saveState();
   toast('Advanced to '+legLabel(state.currentQ).toLowerCase());
 }
 function adminPrevQuestion(){
   if(state.gameState==='finished'){ toast('Race finished — reset to play again.'); return; }
   if(state.currentQ <= 0){ toast('Already at Leg 1'); return; }
-  if(!confirm('Go back to Leg '+state.currentQ+'? A fresh question will be drawn for it (aircraft positions stay as they are).')) return;
+  if(!confirm('Go back to Leg '+state.currentQ+'? It reopens with the same question it had before (aircraft positions stay as they are).')) return;
   // armed but the leg was never scored -> hand the Power Question charge back
   if(state.powerQuestionActive && !(state.revealedLegs && state.revealedLegs[state.currentQ])){
     state.powerQuestionUsed = false;
@@ -2304,6 +2900,7 @@ function adminPrevQuestion(){
   state.powerQuestionActive = false;
   state.stormClearedIds = null;
   state.stormRevealAt = null;
+  state.revealAt = null;
   if(state.winnerId){ state.winnerId = null; }
   saveState();
   toast('Went back to '+legLabel(state.currentQ).toLowerCase());
@@ -2314,7 +2911,6 @@ function adminTogglePowerQuestion(){
   if(isStormLeg(state.currentQ)){ toast('⛈ Leg '+(state.currentQ+1)+' is a storm leg — Power Question cannot be armed here'); return; }
   if(state.powerQuestionUsed && !state.powerQuestionActive){ toast('Power Question has already been played this game'); return; }
   state.powerQuestionActive = !state.powerQuestionActive;
-  state.currentQuestionIndex = null; // force a fresh pick from the right pool
   // Cancelling before the question opens gives the charge back, so a mis-click does not
   // burn the single Power Question for the whole game.
   state.powerQuestionUsed = state.powerQuestionActive;
@@ -2377,6 +2973,8 @@ function resetProgress(){
     p.answers = {};
     p.totalAnswerTime = 0;
     p.turboUsed = false;
+    p.fiftyUsed = false;
+    p.seatbeltUsed = false;
     p.finishRank = null;
     p.currentStreak = 0;
     p.longestStreak = 0;
@@ -2397,6 +2995,7 @@ function resetProgress(){
   state.powerQuestionUsed = false;
   state.stormClearedIds = null;
   state.stormRevealAt = null;
+  state.revealAt = null;
   state.finishSeq = 0;
   resetPresenterCinematics();
   saveState();
@@ -2472,7 +3071,7 @@ function renderQuestionEditor(){
         </div>
       </div>
     </div>
-  `).join('') + `<p style="margin-top:16px; font-size:12.5px; color:rgba(255,255,255,.5);">30 questions total. Legs 1–4 draw randomly from Q1–10, legs 5–8 from Q11–20, legs 9–Finish from Q21–30. Power Question always draws from Q21–30.</p>`;
+  `).join('') + `<p style="margin-top:16px; font-size:12.5px; color:rgba(255,255,255,.5);">${QUESTIONS.length} questions total, asked in this order, one per leg — a question is never repeated. ${questionsRemaining()} still unused. Option order is shuffled from the source deck (the answer key above is the shuffled, live order).</p>`;
 }
 
 function renderAdminAnswerFeed(){
@@ -2512,6 +3111,17 @@ function renderAnswersFull(){
   el.innerHTML = html;
 }
 
+// Which of a player's three one-time helps are still in hand — greyed once spent, dimmer
+// still while their aircraft is short of MUC and none of them have unlocked yet.
+function helpTags(p){
+  const unlocked = (p.position||0) >= TURBO_MIN_LEG;
+  const one = (icon, used, label)=>{
+    const style = !unlocked ? 'opacity:.3;' : used ? 'opacity:.35; text-decoration:line-through;' : 'color:var(--vna-gold-light);';
+    return `<span class="tag" style="${style}" title="${label}${used?' — used':(unlocked?' — ready':' — locked')}">${icon}</span>`;
+  };
+  return one('✂️', p.fiftyUsed, '50:50') + ' ' + one('⚡', p.turboUsed, 'Turbo Boost') + ' ' + one('🔒', p.seatbeltUsed, 'Fasten Seatbelt');
+}
+
 function renderPlayersTable(){
   const tbody = document.querySelector('#playersTable tbody');
   const players = Object.values(state.players);
@@ -2522,7 +3132,7 @@ function renderPlayersTable(){
       <td>${escapeHtml(p.name)}${milestoneDotsFor(p.id)}</td>
       <td class="mono">${ROUTE[p.position].code} <span style="opacity:.5;">(${p.position}/${ROUTE.length-1})</span></td>
       <td>${p.correctCount||0}</td>
-      <td>${p.turboUsed ? '<span class="tag">used</span>' : (p.position>=TURBO_MIN_LEG ? '<span class="tag" style="color:var(--vna-gold-light);">ready</span>' : '<span class="tag" style="opacity:.45;">locked</span>')}</td>
+      <td>${helpTags(p)}</td>
       <td style="white-space:nowrap;">
         <button class="btn btn-ghost btn-sm" onclick="adminNudgePlayer('${p.id}',-1)">−1</button>
         <button class="btn btn-ghost btn-sm" onclick="adminNudgePlayer('${p.id}',1)">+1</button>
@@ -2561,8 +3171,21 @@ function renderAdmin(){
   const qLabel = (state.currentQuestionIndex!==null && state.currentQuestionIndex!==undefined && QUESTIONS_BY_ID[state.currentQuestionIndex])
     ? `"${QUESTIONS_BY_ID[state.currentQuestionIndex].q}" (Q${state.currentQuestionIndex})`
     : 'not opened yet';
-  const turbulentNote = isTurbulenceLeg(state.currentQ) ? ' · 🌪 TURBULENCE LEG' : '';
-  document.getElementById('adminCurrentQ').textContent = `${legLabel(state.currentQ)} — status: ${state.gameState}. ${qLabel}${turbulentNote}`;
+  const turbulentNote = isTurbulenceLeg(state.currentQ) ? ' · 🌪 TURBULENCE LEG' : (isStormLeg(state.currentQ) ? ' · ⛈ STORM LEG' : '');
+  document.getElementById('adminCurrentQ').textContent = `${legLabel(state.currentQ)} — status: ${state.gameState}. ${qLabel}${turbulentNote} · ${questionsRemaining()} questions left`;
+
+  // countdown, mirroring what the players see, so the host can talk to the clock
+  const adminTimerEl = document.getElementById('adminTimer');
+  if(adminTimerEl){
+    const remain = secondsRemaining();
+    if(state.gameState==='question' && remain!==null){
+      adminTimerEl.textContent = remain+'s';
+      adminTimerEl.classList.toggle('urgent', remain<=5);
+    } else {
+      adminTimerEl.textContent = state.gameState==='reveal' ? 'REVEALED' : (state.gameState==='locked' ? 'LOCKED' : '--');
+      adminTimerEl.classList.remove('urgent');
+    }
+  }
 
   // Answer key — appears the moment a question is opened/picked, so the host always
   // knows the correct answer (and explanation, if one has been written) before revealing.
@@ -2579,8 +3202,9 @@ function renderAdmin(){
           <div class="${i===qd.correct?'ans-correct':''}">${escapeHtml(o)}${i===qd.correct?' ✓':''}</div>
         </div>
       `).join('')}
-      <div style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,.08); font-size:13px; line-height:1.55; color:rgba(255,255,255,.75);">
-        ${qd.explain ? escapeHtml(qd.explain) : '<span style="color:rgba(255,255,255,.4); font-style:italic;">No explanation written for this question — add one to the `explain` field on this question in QUESTIONS.</span>'}
+      <div class="presenter-notes">
+        <div class="pn-title">🎤 Presenter Notes</div>
+        <div class="pn-body">${qd.explain ? escapeHtml(qd.explain) : '<span style="color:rgba(255,255,255,.4); font-style:italic;">No presenter notes for this question.</span>'}</div>
       </div>
     `;
   } else {
@@ -2635,11 +3259,31 @@ function renderAll(){
   renderAdmin();
 }
 
-/* live timer tick for player + presenter screens (presenter needs it to expire the
-   10s Storm ATC-clearance overlay even when no new state event arrives) */
+/* The answer is no longer revealed by hand — it reveals itself the moment the countdown
+   reaches zero. Scoring writes are admin-only (see database.rules.json), so the admin
+   client is the one that drives it and there is no race between clients. The key includes
+   questionOpenedAt so reopening a leg re-arms the trigger. */
+let _autoRevealFiredFor = null;
+function tickAutoReveal(){
+  if(FB.role!=='admin') return;
+  if(state.paused) return;
+  if(state.gameState!=='question' || !state.questionOpenedAt) return;
+  if(Date.now() - state.questionOpenedAt < TIMER_SECONDS*1000) return;
+  const key = state.currentQ+':'+state.currentQuestionIndex+':'+state.questionOpenedAt;
+  if(_autoRevealFiredFor === key) return;
+  _autoRevealFiredFor = key;
+  adminRevealAnswer();
+}
+
+/* live tick — repaints whichever screen is on so countdowns run and the timed presenter
+   overlays (3s answer card, 10s Storm clearance list) expire without needing a state change */
 setInterval(()=>{
+  tickAutoReveal();
   if(!document.getElementById('view-player').classList.contains('hidden')) renderPlayer();
   if(!document.getElementById('view-presenter').classList.contains('hidden')) renderPresenter();
+  // only the Game Control tab has live-ticking content; repainting the 200-row player and
+  // leaderboard tables once a second would be pure waste
+  if(!document.getElementById('view-admin').classList.contains('hidden') && currentTab==='control') renderAdmin();
 }, 1000);
 
 /* init route from hash, then bring up the sync layer */
