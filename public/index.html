@@ -441,8 +441,9 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
 }
 .admin-timer.urgent{background:var(--bad); border-color:var(--bad); color:#fff; animation:clockPulse .5s ease-in-out infinite alternate;}
 .presenter-notes{margin-top:14px; padding:14px 16px; border-radius:14px; background:rgba(212,175,55,.10); border:1px solid rgba(212,175,55,.34);}
-.presenter-notes .pn-title{font-family:var(--font-display); font-weight:800; font-size:12.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--vna-gold-light); margin-bottom:7px;}
-.presenter-notes .pn-body{font-size:13.5px; line-height:1.6; color:rgba(255,255,255,.88);}
+.presenter-notes .pn-title{font-family:var(--font-display); font-weight:800; font-size:14px; letter-spacing:.05em; text-transform:uppercase; color:var(--vna-gold-light); margin-bottom:9px;}
+/* the host reads this off the iPad while talking, so it needs to be legible at arm's length */
+.presenter-notes .pn-body{font-size:17.5px; line-height:1.62; color:#fff;}
 @keyframes clockPulse{from{transform:scale(1);} to{transform:scale(1.09);}}
 
 /* ---------- presenter: question panel, answer card, fullscreen ----------
@@ -495,8 +496,9 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
 .wx-announce.wx-storm{background:linear-gradient(135deg,#3c6edc,#14286e); color:#fff; box-shadow:0 18px 50px rgba(30,60,160,.55);}
 .wx-announce.wx-power{background:linear-gradient(135deg,#ffc400,#ff7800); color:#2a1500; box-shadow:0 18px 50px rgba(255,150,0,.55);}
 @keyframes wxAnnouncePop{from{opacity:0; transform:scale(.86);} to{opacity:1; transform:scale(1);}}
-/* presenter: fills the map panel so it reads from the back of the room */
-.pres-wx-announce{position:absolute; inset:0; z-index:58; display:flex; align-items:center; justify-content:center; background:rgba(0,20,45,.92); padding:40px;}
+/* presenter: floats the card over the live map rather than blacking the map out —
+   the room should still see the aircraft behind the warning */
+.pres-wx-announce{position:absolute; inset:0; z-index:58; display:flex; align-items:center; justify-content:center; background:transparent; padding:40px; pointer-events:none;}
 .pres-wx-announce .wx-announce{max-width:760px;}
 .pres-wx-announce .wx-announce .ic{font-size:92px;}
 .pres-wx-announce .wx-announce .tt{font-size:52px;}
@@ -904,10 +906,8 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
             <button class="btn btn-ghost" onclick="adminPrevQuestion()">← Previous question</button>
             <button class="btn btn-primary" id="openQBtn" onclick="adminOpenQuestion()">Show question</button>
             <button class="btn btn-ghost" onclick="adminCloseQuestion()">Close question</button>
-            <button class="btn btn-ghost" title="The answer reveals itself automatically when the countdown hits zero — use this only to reveal early" onclick="adminRevealAnswer()">Reveal now (early)</button>
             <button class="btn btn-danger" id="undoBtn" title="Roll back the last reveal — every aircraft returns to where it was before that question was scored" onclick="adminUndoReveal()">↩️ Undo last reveal</button>
             <button class="btn btn-ghost" onclick="adminNextQuestion()">Next question →</button>
-            <button class="btn btn-ghost" onclick="adminPauseToggle()" id="pauseBtn">Pause game</button>
             <button class="btn btn-ghost" title="Reset progress — back to Leg 1, all aircraft to start" onclick="resetProgress()">🔄 Reset progress</button>
             <button class="btn btn-ghost" id="powerQBtn" title="Force this leg's question to be drawn from Q21-30 and award a x2 bonus to the fastest correct player" onclick="adminTogglePowerQuestion()">⚡ Power Question</button>
           </div>
@@ -1168,12 +1168,8 @@ function isStormLeg(legIndex){ return legIndex === STORM_LEG; }
    It goes up the instant the host stages a leg with weather on it (pressing "Next question →"
    or arming the Power Question) and runs for WEATHER_ANNOUNCE_MS, after which the question
    text takes its place. Only the small weather pill remains from then on. */
-function wxAnnounceActive(){
-  return state.gameState==='lobby' && !!state.legAnnouncedAt
-    && (Date.now() - state.legAnnouncedAt) < WEATHER_ANNOUNCE_MS;
-}
-function wxAnnounceFor(){
-  if(!wxAnnounceActive()) return null;
+// Does THIS leg carry a warning at all — independent of whether the card is still showing.
+function wxKindForLeg(){
   if(isTurbulenceLeg(state.currentQ)) return {
     cls:'wx-turbulence', icon:'🌪', title:'TURBULENCE AHEAD',
     rule:'A correct answer only holds your position. Wrong — or no answer at all — sends you back 1 leg. 50:50 and Turbo Boost are locked; Fasten Seatbelt is your only protection.'
@@ -1187,6 +1183,24 @@ function wxAnnounceFor(){
     rule:'The fastest correct answer takes +2 legs. Every other correct answer takes +1. Wrong answers hold position. All three helps are locked.'
   };
   return null;
+}
+/* How long the room waits between the host staging a leg and the question text appearing:
+   the full warning window when there is a warning to read, otherwise just a short beat so
+   the question doesn't snap up the instant the previous one clears. */
+function legStageWait(){
+  return wxKindForLeg() ? WEATHER_ANNOUNCE_MS : QUESTION_DELAY_MS;
+}
+function wxAnnounceActive(){
+  return state.gameState==='lobby' && !!state.legAnnouncedAt && !!wxKindForLeg()
+    && (Date.now() - state.legAnnouncedAt) < WEATHER_ANNOUNCE_MS;
+}
+function wxAnnounceFor(){
+  return wxAnnounceActive() ? wxKindForLeg() : null;
+}
+// true once the staging wait has elapsed and the question text may go on screen
+function questionPreviewReady(){
+  if(!state.legAnnouncedAt) return true; // never staged (e.g. state from an older build)
+  return (Date.now() - state.legAnnouncedAt) >= legStageWait();
 }
 // The map only has 12 legs, but the race keeps asking questions past leg 12 whenever
 // fewer than 4 aircraft have reached FINISH yet, so latecomers still get a chance to
@@ -1208,6 +1222,8 @@ const TIMER_SECONDS = 20;
 const ANSWER_CARD_MS = 5000;      // presenter holds the correct answer this long — aircraft stay put until it clears
 const URGENT_SECONDS = 5;         // countdown turns red and pulses for the final few seconds
 const WEATHER_ANNOUNCE_MS = 10000; // the big turbulence/storm/power card runs this long after "Next question"
+const QUESTION_DELAY_MS = 2000;    // beat between staging a normal leg and the question appearing
+const FIRST_FINISH_SOLO_MS = 5000; // the first aircraft to land flies in alone, zoomed, before the rest move
 const FINISHERS_TO_END = 4;       // the race is decided once this many aircraft have landed (🏆 🥇 🥈 🥉)
 const STORAGE_KEY = "vna_sky_race_state_v1";
 let bc = null;
@@ -1235,6 +1251,8 @@ function defaultState(){
     stormRevealAt: null,   // Date.now() of the Storm reveal, so the presenter's 10s clearance list can expire
     revealAt: null,        // Date.now() the answer was revealed — drives the presenter's answer card
     legAnnouncedAt: null,  // Date.now() the leg was staged — runs the 10s weather card, then the question preview
+    firstFinishAt: null,   // Date.now() the very first aircraft landed — drives the solo landing cinematic
+    firstFinishId: null,   // who that was, so only their aircraft moves during it
     finishSeq: 0, // counter handing out p.finishRank in true arrival order as aircraft land on FINISH
   };
 }
@@ -1271,7 +1289,7 @@ const MAX_PLAYERS_PER_ROOM = 200;
 const ADMIN_KEYS = ['gameState','currentQ','currentQuestionIndex','currentCorrectIndex',
   'questionIndexByLeg','powerQuestionActive','powerQuestionUsed','questionOpenedAt','deadline',
   'revealedLegs','undoSnapshot','paused','winnerId','milestones','awardShown','congratsShown',
-  'stormClearedIds','stormRevealAt','revealAt','legAnnouncedAt','finishSeq'];
+  'stormClearedIds','stormRevealAt','revealAt','legAnnouncedAt','firstFinishAt','firstFinishId','finishSeq'];
 
 const FB = { mode:'init', role:'player', uid:null };
 let db = null;            // the Realtime Database handle, created once firebase.initializeApp() runs
@@ -2043,6 +2061,36 @@ function renderPlayer(){
   const helpsWrap = document.getElementById('pHelpsWrap');
   const clearTimer = ()=>{ timerEl.textContent = '--'; timerEl.classList.remove('urgent'); };
 
+  // Once the race is decided, EVERY player gets their own final standing and a sign-off —
+  // not just the four who landed. Handled before the finishRank branch so finishers get
+  // this version rather than the mid-race "you landed" one.
+  if(state.gameState==='finished'){
+    const rankedAll = rankedPlayers();
+    const idx = rankedAll.findIndex(p=>p.id===myPlayerId);
+    const place = idx>=0 ? idx+1 : null;
+    const onPodium = place && place<=FINISHERS_TO_END;
+    const medal = onPodium ? RANK_TROPHY[place-1] : '✈️';
+    const prize = ['the Champion\'s Cup 🏆','the Gold Medal 🥇','the Silver Medal 🥈','the Bronze Medal 🥉'][place-1];
+    eyebrow.textContent = 'RACE COMPLETE';
+    qText.innerHTML = `
+      <div style="font-size:40px; line-height:1; margin-bottom:8px;">${medal}</div>
+      <div style="font-size:22px; font-weight:800; margin-bottom:4px;">${place ? ordinal(place)+' place' : 'Race complete'}</div>
+      <div style="font-size:13px; font-weight:600; color:var(--vna-gold-light); margin-bottom:12px;">
+        ${onPodium ? 'You win '+prize+'!' : (place ? 'out of '+rankedAll.length+' pilots' : '')}
+      </div>
+      <div style="font-size:14px; font-weight:400; color:rgba(255,255,255,.85); line-height:1.6;">
+        ${onPodium
+          ? 'Congratulations — a superb flight. Please come up to the stage to collect your award.'
+          : 'Thank you for flying with us today — every leg you flew was part of the race.'}
+        <br><br>We wish you an inspiring conference, meaningful connections, and an enjoyable experience throughout today's event.
+      </div>`;
+    optsEl.innerHTML=''; bannerEl.classList.add('hidden'); clearTimer();
+    if(powerNoteEl) powerNoteEl.classList.add('hidden');
+    if(stormNoteEl) stormNoteEl.classList.add('hidden');
+    if(helpsWrap) helpsWrap.innerHTML='';
+    return;
+  }
+
   // Reaching FINISH is a personal milestone shown the moment it happens — the race
   // itself keeps going for everyone else until at least 4 aircraft have landed.
   if(me.finishRank){
@@ -2061,16 +2109,17 @@ function renderPlayer(){
     // clock, until the host opens the answers. During the 10s weather card, the card
     // above is the whole message and the question stays hidden.
     const staged = state.currentQuestionIndex!==null && state.currentQuestionIndex!==undefined
-                   && QUESTIONS_BY_ID[state.currentQuestionIndex] && !wxAnnounceActive();
+                   && QUESTIONS_BY_ID[state.currentQuestionIndex] && questionPreviewReady();
     if(staged){
       eyebrow.textContent = legLabel(state.currentQ);
       qText.textContent = QUESTIONS_BY_ID[state.currentQuestionIndex].q;
       optsEl.innerHTML = `<div class="p-await">Answers appear when the host opens the question</div>`;
     } else {
-      eyebrow.textContent = wxAnnounceActive() ? legLabel(state.currentQ) : 'WAITING FOR GAME TO START';
+      const waiting = !!state.legAnnouncedAt;
+      eyebrow.textContent = waiting ? legLabel(state.currentQ) : 'WAITING FOR GAME TO START';
       qText.textContent = wxAnnounceActive()
         ? 'Read the warning above — the question is coming.'
-        : 'Question will be open shortly. Get ready for takeoff!';
+        : (waiting ? 'Next question coming up…' : 'Question will be open shortly. Get ready for takeoff!');
       optsEl.innerHTML = '';
     }
     bannerEl.classList.add('hidden'); clearTimer();
@@ -2079,18 +2128,6 @@ function renderPlayer(){
     if(helpsWrap) helpsWrap.innerHTML='';
     return;
   }
-  if(state.gameState==='finished'){
-    eyebrow.textContent='RACE COMPLETE';
-    qText.textContent = (state.winnerId && state.players[state.winnerId])
-      ? (state.players[state.winnerId].name + ' was first to land — the race is complete! ✈️🏆')
-      : 'The race has finished.';
-    optsEl.innerHTML=''; bannerEl.classList.add('hidden'); clearTimer();
-    if(powerNoteEl) powerNoteEl.classList.add('hidden');
-    if(stormNoteEl) stormNoteEl.classList.add('hidden');
-    if(helpsWrap) helpsWrap.innerHTML='';
-    return;
-  }
-
   if(state.currentQuestionIndex===null || state.currentQuestionIndex===undefined){
     eyebrow.textContent = legLabel(state.currentQ);
     qText.textContent = 'Waiting for the admin to open this question…';
@@ -2146,10 +2183,14 @@ function renderPlayer(){
       bannerEl.innerHTML = '🔒 Answer locked in' + (myAns.turbo?' with Turbo Boost':'') + (myAns.seatbelt?' and Fasten Seatbelt':'') + '. Waiting for other players…';
     } else if(timeUp){
       bannerEl.classList.add('locked');
-      bannerEl.innerHTML = "⏱️ Time's up — no more answers for this leg.";
+      // a pick that was never submitted is locked in automatically at reveal, so say so
+      bannerEl.innerHTML = (myAns && myAns.choice!==null && myAns.choice!==undefined)
+        ? "⏱️ Time's up — your answer was locked in automatically."
+        : "⏱️ Time's up — no answer submitted for this leg.";
     } else if(myAns && myAns.choice!==null && myAns.choice!==undefined){
       bannerEl.classList.add('wait');
-      bannerEl.innerHTML = `<button class="btn btn-primary btn-block" onclick="playerConfirmSubmit()">Submit answer →</button>`;
+      bannerEl.innerHTML = `<button class="btn btn-primary btn-block" onclick="playerConfirmSubmit()">Submit answer →</button>
+        <div style="font-size:11px; color:rgba(255,255,255,.55); margin-top:7px;">Submit now to bank a faster time — if you don't, this answer locks in when the clock runs out.</div>`;
     } else {
       bannerEl.classList.add('wait');
       bannerEl.innerHTML = 'Select an answer above';
@@ -2307,22 +2348,58 @@ function showNewLeaderBanner(name){
    where they were — they only start gliding once that card clears. Scoring itself already
    happened, so the pre-reveal positions are read back out of the undo snapshot (which
    adminRevealAnswer writes for exactly this leg before it moves anybody). */
+function haveSnapshotForThisLeg(){
+  return !!state.undoSnapshot && state.undoSnapshot.leg === state.currentQ && !!state.undoSnapshot.players;
+}
 function planesFrozen(){
   return state.gameState==='reveal'
     && !!state.revealAt && (Date.now() - state.revealAt) < ANSWER_CARD_MS
-    && !!state.undoSnapshot && state.undoSnapshot.leg === state.currentQ
-    && !!state.undoSnapshot.players;
+    && haveSnapshotForThisLeg();
 }
-function displayPosition(p){
-  if(!planesFrozen()) return p.position;
+/* The beat straight after the answer card, on the leg where the first aircraft landed:
+   the map is zoomed into FINISH and only the champion is released, so the room watches
+   one aircraft come in to land. Everyone else is held for another FIRST_FINISH_SOLO_MS. */
+function firstFinishSolo(){
+  if(!state.firstFinishAt || !state.firstFinishId) return false;
+  const t = Date.now() - state.firstFinishAt;
+  return t >= ANSWER_CARD_MS && t < (ANSWER_CARD_MS + FIRST_FINISH_SOLO_MS) && haveSnapshotForThisLeg();
+}
+function snapshotPosition(p){
   const before = state.undoSnapshot.players[p.id];
   return before ? before.position : p.position;
+}
+function displayPosition(p){
+  if(planesFrozen()) return snapshotPosition(p);
+  if(firstFinishSolo() && p.id !== state.firstFinishId) return snapshotPosition(p);
+  return p.position;
+}
+
+/* Drives the map zoom for the solo landing. Kept separate from triggerFinishCinematic()
+   (which fires at the END of the race, when the 4th aircraft lands) — this one is the
+   FIRST landing, and it has to zoom in and back out on its own timer. */
+let _soloZoomOn = false;
+function updateFirstFinishZoom(){
+  const zoomWrap = document.getElementById('mapZoomWrap');
+  if(!zoomWrap) return;
+  const want = firstFinishSolo();
+  if(want === _soloZoomOn) return;
+  _soloZoomOn = want;
+  if(want){
+    const finishNode = ROUTE[ROUTE.length-1];
+    zoomWrap.style.transformOrigin = (finishNode.x/1000*100)+'% '+(finishNode.y/560*100)+'%';
+    zoomWrap.style.transform = 'scale(1.9)';
+    playApplause(2200);
+  } else if(state.gameState!=='finished'){
+    // the end-of-race cinematic owns the zoom once the race is decided; don't fight it
+    zoomWrap.style.transform = 'scale(1)';
+  }
 }
 
 function renderPresenterPlanes(){
   const layer = document.getElementById('planeLayer');
   const ranked = rankedPlayers();
   const leaderId = ranked.length ? ranked[0].id : null;
+  updateFirstFinishZoom();
   // A change of #1 (once there was already a leader, and the race isn't already decided)
   // gets the slow overtake animation + "New Leader" banner + applause.
   if(lastLeaderId!==null && leaderId!==null && leaderId!==lastLeaderId && state.gameState!=='finished'){
@@ -2614,7 +2691,7 @@ function renderPresenter(){
   const mapPanelEl = document.getElementById('mapPanel');
   const answerShowing = state.gameState==='reveal' && state.revealAt && (Date.now()-state.revealAt) < ANSWER_CARD_MS;
   // staged but not opened: the question is on the wall with the answers still hidden
-  const previewing = state.gameState==='lobby' && qKnown && !wxAnnounceActive();
+  const previewing = state.gameState==='lobby' && qKnown && questionPreviewReady();
   const showPresQuestion = qKnown && (previewing || state.gameState==='question' || state.gameState==='locked' || answerShowing);
   let pqEl = document.getElementById('presQuestionOverlay');
   if(showPresQuestion && mapPanelEl){
@@ -2840,7 +2917,7 @@ function adminOpenQuestion(){
   if(state.gameState==='lobby' && (state.currentQuestionIndex===null || state.currentQuestionIndex===undefined)){
     if(!adminStageQuestion()) return;
     saveState();
-    toast(wxAnnounceFor() ? 'Weather warning up — question follows in 10s' : legLabel(state.currentQ)+' question shown (answers still hidden)');
+    toast(wxKindForLeg() ? 'Weather warning up — question follows in 10s' : 'Question appears in 2s (answers still hidden)');
     return;
   }
   if(!ensureQuestionPicked()){ toast('No questions left in the bank — all '+QUESTIONS.length+' have been asked.'); return; }
@@ -2869,6 +2946,20 @@ function adminRevealAnswer(){
     toast('Leg '+(state.currentQ+1)+' was already revealed — aircraft not moved again.');
     return;
   }
+
+  /* ---- auto-lock: a pick that was never submitted still counts ----
+     Tapping an option and then freezing (or the phone locking) used to score the same as
+     not answering at all. The choice is already in the database the moment it's tapped, so
+     the clock running out simply locks it in. They forfeit the speed tie-break: an
+     unsubmitted pick is recorded at the full question length. */
+  Object.values(state.players).forEach(p=>{
+    const a = p.answers[state.currentQ];
+    if(a && !a.submitted && a.choice!==null && a.choice!==undefined){
+      a.submitted = true;
+      a.autoLocked = true;
+      if(typeof a.timeTaken!=='number') a.timeTaken = TIMER_SECONDS*1000;
+    }
+  });
 
   // ---- snapshot for one-step undo (see adminUndoReveal) ----
   state.undoSnapshot = {
@@ -2934,10 +3025,14 @@ function adminRevealAnswer(){
       if(a.fifty) p.fiftyUsed = true;
       if(a.seatbelt) p.seatbeltUsed = true;
     }
+    // Every leg costs everyone time — the single place totalAnswerTime is accumulated (see
+    // the note in playerConfirmSubmit). Answering costs what you took; sitting the question
+    // out costs the full clock, so not answering can never win the time tie-break.
     if(a && a.submitted){
       p.answeredCount = (p.answeredCount||0)+1;
-      // the single place totalAnswerTime is accumulated — see the note in playerConfirmSubmit
-      if(typeof a.timeTaken==='number') p.totalAnswerTime = (p.totalAnswerTime||0) + a.timeTaken;
+      p.totalAnswerTime = (p.totalAnswerTime||0) + (typeof a.timeTaken==='number' ? a.timeTaken : TIMER_SECONDS*1000);
+    } else {
+      p.totalAnswerTime = (p.totalAnswerTime||0) + TIMER_SECONDS*1000;
     }
     if(correct){
       p.correctCount = (p.correctCount||0)+1;
@@ -2987,6 +3082,10 @@ function adminRevealAnswer(){
       (a.totalAnswerTime||0) - (b.totalAnswerTime||0)
     );
     newArrivals.forEach(p=>{ state.finishSeq = (state.finishSeq||0) + 1; p.finishRank = state.finishSeq; });
+    // The very first landing gets the room's full attention: the map zooms into FINISH and
+    // that one aircraft flies in on its own before anybody else is allowed to move.
+    const champion = newArrivals.find(p=>p.finishRank===1);
+    if(champion){ state.firstFinishAt = state.revealAt; state.firstFinishId = champion.id; }
   }
   const totalFinishers = Object.values(state.players).filter(p=>p.finishRank).length;
   if(totalFinishers >= FINISHERS_TO_END && state.gameState !== 'finished'){
@@ -3016,6 +3115,11 @@ function adminUndoReveal(){
   state.stormClearedIds = null;
   state.stormRevealAt = null;
   state.revealAt = null;
+  // if that reveal was the one that produced the first landing, the cinematic is undone too
+  if(state.firstFinishId && !(state.players[state.firstFinishId] || {}).finishRank){
+    state.firstFinishAt = null;
+    state.firstFinishId = null;
+  }
   state.congratsShown = false;
   saveState();
   toast('Reveal of Leg '+(snap.leg+1)+' undone');
@@ -3077,12 +3181,6 @@ function adminTogglePowerQuestion(){
   saveState();
   toast(state.powerQuestionActive ? '⚡ Power Question armed for this leg' : 'Power Question cancelled — charge returned');
 }
-function adminPauseToggle(){
-  state.paused = !state.paused;
-  saveState();
-  document.getElementById('pauseBtn').textContent = state.paused ? 'Resume game' : 'Pause game';
-  toast(state.paused ? 'Game paused' : 'Game resumed');
-}
 function resetGame(){
   // Hard gate while a race is live: this button wipes every registered player, and
   // during an event that is unrecoverable. Requires typing the word to confirm.
@@ -3118,6 +3216,7 @@ function resetPresenterCinematics(){
   lastLeaderLocationCode = null;
   finishFlourishIds = new Set();
   finishCinematicPlayed = false;
+  _soloZoomOn = false;
   const zoomWrap = document.getElementById('mapZoomWrap');
   if(zoomWrap) zoomWrap.style.transform = 'scale(1)';
   const mapPanel = document.getElementById('mapPanel');
@@ -3143,6 +3242,8 @@ function resetProgress(){
   state.currentQ = 0;
   state.currentQuestionIndex = null;
   state.legAnnouncedAt = null;
+  state.firstFinishAt = null;
+  state.firstFinishId = null;
   state.questionIndexByLeg = {};
   state.powerQuestionActive = false;
   state.gameState = 'lobby';
@@ -3395,8 +3496,6 @@ function renderAdmin(){
     undoBtn.disabled = !state.undoSnapshot;
     undoBtn.textContent = state.undoSnapshot ? `↩️ Undo reveal of Leg ${state.undoSnapshot.leg+1}` : '↩️ Undo last reveal';
   }
-  const pauseBtn = document.getElementById('pauseBtn');
-  if(pauseBtn) pauseBtn.textContent = state.paused ? 'Resume game' : 'Pause game';
 
   if(currentTab==='control') renderAdminAnswerFeed();
   if(currentTab==='answers') renderAnswersFull();
@@ -3434,7 +3533,8 @@ function renderAll(){
 let _autoRevealFiredFor = null;
 function tickAutoReveal(){
   if(FB.role!=='admin') return;
-  if(state.paused) return;
+  // deliberately no pause check: there is no Pause button any more, and honouring a stale
+  // synced paused:true would wedge the auto-reveal with no way to clear it
   if(state.gameState!=='question' || !state.questionOpenedAt) return;
   if(Date.now() - state.questionOpenedAt < TIMER_SECONDS*1000) return;
   const key = state.currentQ+':'+state.currentQuestionIndex+':'+state.questionOpenedAt;

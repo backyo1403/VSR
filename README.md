@@ -25,10 +25,14 @@ VNA_Race/
 
 **Nhịp một chặng — admin bấm 2 lần:**
 
-1. **Next question →** (hoặc *Show question* ở chặng đầu): nếu chặng có thời tiết thì cảnh báo to hiện trên presenter + màn mọi người chơi trong **10 giây**; hết 10 giây thì **câu hỏi hiện ra nhưng chưa có đáp án**, đồng hồ chưa chạy — cả phòng đọc câu hỏi trước.
+1. **Next question →** (hoặc *Show question* ở chặng đầu): **câu hỏi hiện ra sau 2 giây** nhưng **chưa có đáp án**, đồng hồ chưa chạy — cả phòng đọc câu hỏi trước. Nếu chặng có thời tiết thì cảnh báo to hiện trước trong **10 giây** rồi mới tới câu hỏi. Cảnh báo **nổi trên bản đồ đang chạy**, không che đen màn hình.
 2. **Open answers & start clock**: 4 đáp án hiện lên và đồng hồ **20 giây** bắt đầu chạy.
 
-**Đếm ngược & reveal:** đồng hồ đồng bộ trên cả 3 màn hình (player, presenter, admin) — cùng một bộ đếm, sai lệch tối đa 0,2 giây. Đồng hồ **chuyển đỏ và nháy to ở 5 giây cuối**. Hết giờ đáp án **tự động được reveal**, admin không cần bấm gì — màn presenter hiện đáp án đúng (tô xanh) trong **5 giây**, **máy bay chỉ bắt đầu di chuyển sau khi hết 5 giây đó**. Nút *Reveal now (early)* chỉ để reveal sớm khi cần.
+**Đếm ngược & reveal:** đồng hồ đồng bộ trên cả 3 màn hình (player, presenter, admin) — cùng một bộ đếm, sai lệch tối đa 0,2 giây. Đồng hồ **chuyển đỏ và nháy to ở 5 giây cuối**. Hết giờ đáp án **tự động được reveal**, admin không cần bấm gì — màn presenter hiện đáp án đúng (tô xanh) trong **5 giây**, **máy bay chỉ bắt đầu di chuyển sau khi hết 5 giây đó**.
+
+**Chọn rồi mà không bấm Nộp:** hết giờ hệ thống **tự khoá đáp án đang chọn** — vẫn được tính bình thường. Chỉ mất lợi thế về thời gian: đáp án tự khoá được ghi nhận bằng **trọn 20 giây**.
+
+**Không chọn gì:** vẫn bị cộng **trọn 20 giây** vào tổng thời gian. Ngồi im không bao giờ thắng được tiêu chí phụ về thời gian.
 
 ### Ba sự trợ giúp
 
@@ -62,6 +66,10 @@ Bật Turbo/Seatbelt mà không bấm Nộp thì không bị phạt và không m
 | 4 | 🥉 Huy chương đồng |
 
 Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng xếp hạng admin, màn hình cá nhân khi về đích và **lễ trao giải** (tên nhà vô địch hiện to nhất kèm cúp, ba người còn lại xếp thành hàng vàng–bạc–đồng).
+
+**Người đầu tiên về đích** — màn presenter zoom vào ô FINISH, **chỉ máy bay của người đó** từ từ bay vào đích trong 5 giây, sau đó mới tới lượt tất cả máy bay còn lại di chuyển.
+
+**Khi ván kết thúc, mọi người chơi** — không chỉ 4 người có giải — đều nhận được màn hình báo **thứ hạng cuối cùng của mình** kèm lời chúc của chương trình.
 
 **Live Leaderboard** hiện **tất cả người chơi** (panel tự cuộn). Riêng bản đồ vẫn giữ nguyên cách hiển thị cũ: 5 máy bay dẫn đầu có tên, còn lại gộp thành cụm `+N`.
 
