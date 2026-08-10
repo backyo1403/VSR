@@ -170,21 +170,26 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .avatar-compose .plane-ico{display:inline-block; flex-shrink:0;}
 .avatar-compose .face-emoji{display:inline-block; line-height:1; transform:translateY(0.02em);}
 
-/* horizontal route map across the top of the player's phone */
+/* horizontal route map across the top of the player's phone.
+   overflow-x:auto makes the browser compute overflow-y to auto as well, so anything the
+   lit stop paints outside the strip box gets clipped. Hence: no translateY lift, a soft
+   glow instead of a solid ring, and vertical padding to give that glow somewhere to go. */
 .route-strip{
-  display:flex; align-items:flex-start; gap:2px; margin:14px 0 10px; padding-bottom:2px;
+  display:flex; align-items:flex-start; gap:1px; margin:14px 0 10px; padding:3px 0 2px;
   overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch;
 }
 .route-strip::-webkit-scrollbar{display:none;}
-.rs-stop{flex:1 0 auto; min-width:25px; display:flex; flex-direction:column; align-items:center; gap:3px; position:relative; transition:opacity .3s ease;}
-/* the connecting leg line, drawn from each stop back to the previous one */
-.rs-stop::before{content:''; position:absolute; top:11px; right:50%; width:100%; height:2px; background:rgba(255,255,255,.18);}
-.rs-stop:first-child::before{display:none;}
-.rs-stop.done::before, .rs-stop.here::before{background:var(--vna-gold);}
+.rs-stop{flex:1 0 auto; min-width:25px; display:flex; flex-direction:column; align-items:center; gap:2px; transition:opacity .3s ease;}
+/* fixed-height slot centres every dot on one line, whatever size the dot is — the leg
+   line then sits at 50% and stays aligned with the enlarged "here" dot too */
+.rs-slot{position:relative; width:100%; height:36px; display:flex; align-items:center; justify-content:center;}
+.rs-slot::before{content:''; position:absolute; top:50%; margin-top:-1px; right:50%; width:100%; height:2px; background:rgba(255,255,255,.18);}
+.rs-stop:first-child .rs-slot::before{display:none;}
+.rs-stop.done .rs-slot::before, .rs-stop.here .rs-slot::before{background:var(--vna-gold);}
 .rs-dot{
   width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center;
   font-size:11px; line-height:1; background:rgba(255,255,255,.12); border:1.5px solid rgba(255,255,255,.25);
-  position:relative; z-index:1; transition:all .3s ease;
+  position:relative; z-index:1; flex-shrink:0; transition:width .3s ease, height .3s ease, background .3s ease;
 }
 .rs-dot svg{width:1em; height:1em;}
 .rs-code{font-family:var(--font-mono); font-size:7.5px; letter-spacing:-.02em; color:rgba(255,255,255,.55); white-space:nowrap;}
@@ -192,11 +197,12 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .rs-stop.done{opacity:.55;}
 .rs-stop.done .rs-dot{background:rgba(212,175,55,.3); border-color:rgba(212,175,55,.6);}
 .rs-stop.ahead{opacity:.32;}
-/* where the player's aircraft actually is — lit, enlarged and named */
-.rs-stop.here{opacity:1;}
+/* where the player's aircraft actually is — lit, enlarged and named. The wider min-width
+   reserves room for the bigger dot so it never sits on top of its neighbours. */
+.rs-stop.here{opacity:1; min-width:38px;}
 .rs-stop.here .rs-dot{
-  width:32px; height:32px; font-size:16px; background:var(--vna-gold); border-color:var(--vna-gold-light); color:#261a00;
-  box-shadow:0 0 0 4px rgba(212,175,55,.22), 0 0 16px rgba(212,175,55,.7); transform:translateY(-4px);
+  width:30px; height:30px; font-size:15px; background:var(--vna-gold); border-color:var(--vna-gold-light); color:#261a00;
+  box-shadow:0 0 13px rgba(212,175,55,.85);
 }
 .rs-stop.here .rs-code{font-size:9px; font-weight:800; color:var(--vna-gold-light);}
 
@@ -673,9 +679,10 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
      absorbs the extra padding rather than pushing the page taller */
   #view-player{padding-top:calc(11px + env(safe-area-inset-top)); padding-bottom:calc(44px + env(safe-area-inset-bottom));}
   .p-header{margin-bottom:9px;}
-  .route-strip{margin:9px 0 6px;}
+  .route-strip{margin:8px 0 5px;}
+  .rs-slot{height:32px;}
   .rs-dot{width:20px; height:20px; font-size:10px;}
-  .rs-stop.here .rs-dot{width:29px; height:29px; font-size:15px;}
+  .rs-stop.here .rs-dot{width:28px; height:28px; font-size:14px;}
   .timer-ring-wrap{margin:4px 0 9px;}
   #pTimer{font-size:21px; padding:5px 20px;}
   .q-card{padding:14px; border-radius:18px;}
@@ -2043,7 +2050,7 @@ function renderPlayerRouteStrip(me){
   strip.innerHTML = ROUTE.map((node,i)=>{
     const cls = i===pos ? 'here' : (i<pos ? 'done' : 'ahead');
     return `<div class="rs-stop ${cls}${node.checkpoint?' cp':''}">
-      <div class="rs-dot">${node.icon}</div>
+      <div class="rs-slot"><div class="rs-dot">${node.icon}</div></div>
       <div class="rs-code">${node.code}</div>
     </div>`;
   }).join('');
