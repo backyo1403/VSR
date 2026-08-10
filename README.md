@@ -67,11 +67,17 @@ Bật Turbo/Seatbelt mà không bấm Nộp thì không bị phạt và không m
 
 Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng xếp hạng admin, màn hình cá nhân khi về đích và **lễ trao giải** (tên nhà vô địch hiện to nhất kèm cúp, ba người còn lại xếp thành hàng vàng–bạc–đồng).
 
+**☀️ FINAL ROUND** — ngay khi có người đỗ tại **FRA** (chặng áp chót), câu đúng tiếp theo là về đích. Màn presenter chuyển sang hệ nắng chói chang kèm badge **FINAL ROUND** đặt cạnh chỉ báo thời tiết; màn người chơi cũng đổi theo. Badge thời tiết vẫn giữ nguyên bên cạnh — nếu chặng đó có turbulence/storm thì hiệu ứng thời tiết được ưu tiên, chỉ hiện thêm badge.
+
 **Người đầu tiên về đích** — màn presenter zoom vào ô FINISH, **chỉ máy bay của người đó** từ từ bay vào đích trong 5 giây, sau đó mới tới lượt tất cả máy bay còn lại di chuyển.
 
 **Khi ván kết thúc, mọi người chơi** — không chỉ 4 người có giải — đều nhận được màn hình báo **thứ hạng cuối cùng của mình** kèm lời chúc của chương trình.
 
 **Live Leaderboard** hiện **tất cả người chơi** (panel tự cuộn). Riêng bản đồ vẫn giữ nguyên cách hiển thị cũ: 5 máy bay dẫn đầu có tên, còn lại gộp thành cụm `+N`.
+
+**✈️ Cabin Bulletin** — ô ngay dưới leaderboard (cao bằng 1/2), viết theo giọng thông báo trên máy bay, tổng kết **câu vừa xong**: 3 người trả lời đúng nhanh nhất 🥇🥈🥉, số người đúng ✅, tỉ lệ đúng 📊, người dẫn đầu đang ở chặng nào 👑, chặng đông máy bay nhất 🛬, và nhịp độ phòng 🚀/🧭/🐢 (theo thời gian trả lời trung bình: dưới 7s Fast, dưới 14s Steady, còn lại Slow).
+
+**Màn hình người chơi** hiện **route map nằm ngang** thay cho thanh tiến độ: 13 điểm dừng nối liền nhau, điểm đang đứng sáng vàng và to hơn kèm tên mã, điểm đã qua mờ đi, điểm phía trước mờ hơn nữa.
 
 **Top 3** — ai đang đứng hạng 1/2/3 sẽ thấy màn hình chuyển sang **vàng business class của Vietnam Airlines**, kèm dòng báo ai đang bám sát phía sau và cách bao nhiêu chặng.
 

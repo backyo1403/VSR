@@ -170,11 +170,35 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .avatar-compose .plane-ico{display:inline-block; flex-shrink:0;}
 .avatar-compose .face-emoji{display:inline-block; line-height:1; transform:translateY(0.02em);}
 
-.progress-strip{display:flex; align-items:center; gap:4px; margin:16px 0 4px;}
-.progress-dot{flex:1; height:5px; border-radius:3px; background:rgba(255,255,255,.15);}
-.progress-dot.done{background:var(--vna-gold);}
-.progress-dot.current{background:#fff;}
-.progress-text{font-size:12px; color:rgba(255,255,255,.6); text-align:right; margin-bottom:10px;}
+/* horizontal route map across the top of the player's phone */
+.route-strip{
+  display:flex; align-items:flex-start; gap:2px; margin:14px 0 10px; padding-bottom:2px;
+  overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch;
+}
+.route-strip::-webkit-scrollbar{display:none;}
+.rs-stop{flex:1 0 auto; min-width:25px; display:flex; flex-direction:column; align-items:center; gap:3px; position:relative; transition:opacity .3s ease;}
+/* the connecting leg line, drawn from each stop back to the previous one */
+.rs-stop::before{content:''; position:absolute; top:11px; right:50%; width:100%; height:2px; background:rgba(255,255,255,.18);}
+.rs-stop:first-child::before{display:none;}
+.rs-stop.done::before, .rs-stop.here::before{background:var(--vna-gold);}
+.rs-dot{
+  width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:11px; line-height:1; background:rgba(255,255,255,.12); border:1.5px solid rgba(255,255,255,.25);
+  position:relative; z-index:1; transition:all .3s ease;
+}
+.rs-dot svg{width:1em; height:1em;}
+.rs-code{font-family:var(--font-mono); font-size:7.5px; letter-spacing:-.02em; color:rgba(255,255,255,.55); white-space:nowrap;}
+.rs-stop.cp .rs-dot{border-color:rgba(212,175,55,.55);}
+.rs-stop.done{opacity:.55;}
+.rs-stop.done .rs-dot{background:rgba(212,175,55,.3); border-color:rgba(212,175,55,.6);}
+.rs-stop.ahead{opacity:.32;}
+/* where the player's aircraft actually is — lit, enlarged and named */
+.rs-stop.here{opacity:1;}
+.rs-stop.here .rs-dot{
+  width:32px; height:32px; font-size:16px; background:var(--vna-gold); border-color:var(--vna-gold-light); color:#261a00;
+  box-shadow:0 0 0 4px rgba(212,175,55,.22), 0 0 16px rgba(212,175,55,.7); transform:translateY(-4px);
+}
+.rs-stop.here .rs-code{font-size:9px; font-weight:800; color:var(--vna-gold-light);}
 
 .timer-ring-wrap{display:flex; justify-content:center; margin:10px 0 18px;}
 .timer-num{font-family:var(--font-mono); font-weight:700; font-size:15px;}
@@ -217,7 +241,9 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .pres-top h1 .brand-logo{height:50px;}
 .pres-status-pill{font-family:var(--font-mono); font-size:12.5px; padding:8px 16px; border-radius:20px;}
 .pres-body{display:grid; grid-template-columns:2.4fr 1fr; gap:22px; flex:1; min-height:0;}
-.map-panel{border-radius:26px; padding:26px; position:relative; overflow:hidden; min-height:640px;}
+/* min-height:0 lets the map take exactly the height the flex row gives it — a fixed
+   640px floor pushed the whole presenter past the bottom of a 800px-tall screen */
+.map-panel{border-radius:26px; padding:26px; position:relative; overflow:hidden; min-height:0;}
 .map-panel.glass{backdrop-filter:none; -webkit-backdrop-filter:none;}
 .route-svg{width:100%; height:100%; display:block;}
 .leader-panel{border-radius:26px; padding:22px; display:flex; flex-direction:column;}
@@ -385,6 +411,43 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .podium .c2 .bar{height:88px;}
 .podium .c3 .bar{height:66px;}
 .podium-name{font-size:16px; font-weight:800; color:var(--vna-gold); background:rgba(0,15,35,.65); padding:5px 12px; border-radius:9px; margin-top:2px; white-space:nowrap;}
+
+/* ---------- FINAL ROUND: brilliant sunshine, somebody is one leg from landing ---------- */
+.final-round-pill{
+  background:linear-gradient(135deg,#ffd85e,#ff9500); color:#3a2200; border:1px solid #ffe9a8;
+  font-family:var(--font-display); font-weight:800; letter-spacing:.09em;
+  box-shadow:0 6px 22px rgba(255,170,0,.55); animation:finalRoundPulse 1.1s ease-in-out infinite alternate;
+}
+@keyframes finalRoundPulse{from{transform:scale(1); filter:brightness(1);} to{transform:scale(1.05); filter:brightness(1.18);}}
+#view-presenter.final-round-theme{animation:finalRoundGlow .8s ease forwards;}
+@keyframes finalRoundGlow{to{filter:brightness(1.2) saturate(1.35) contrast(1.04);}}
+.final-round-fx .sun-disc{
+  position:absolute; top:-40px; left:50%; transform:translateX(-50%); font-size:150px; line-height:1;
+  opacity:.5; filter:drop-shadow(0 0 50px rgba(255,200,60,.95)); animation:sunBlaze 3s ease-in-out infinite;
+}
+@keyframes sunBlaze{0%,100%{transform:translateX(-50%) scale(1); opacity:.42;} 50%{transform:translateX(-50%) scale(1.09); opacity:.62;}}
+#view-player.final-round-theme .q-card{background:linear-gradient(160deg,rgba(255,213,90,.2),rgba(255,150,0,.11)); border-color:rgba(255,205,90,.55);}
+
+/* ---------- presenter: the cabin bulletin under the leaderboard ---------- */
+.pres-side{display:flex; flex-direction:column; gap:18px; min-height:0;}
+.leader-panel{flex:2 1 0; min-height:0;}
+.brief-panel{flex:1 1 0; min-height:0; border-radius:26px; padding:14px 16px; display:flex; flex-direction:column; overflow:hidden;}
+.brief-head{
+  display:flex; align-items:center; justify-content:space-between; gap:8px; flex-shrink:0;
+  padding-bottom:9px; margin-bottom:10px; border-bottom:1px dashed rgba(255,255,255,.22);
+}
+.brief-title{font-family:var(--font-display); font-weight:800; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--vna-gold-light);}
+.brief-leg{font-family:var(--font-mono); font-size:10.5px; color:rgba(255,255,255,.55);}
+.brief-body{flex:1; min-height:0; overflow-y:auto; display:grid; grid-template-columns:1fr 1fr; gap:5px 12px; align-content:start;}
+.brief-item{display:flex; align-items:flex-start; gap:7px; min-width:0;}
+.brief-item .bi{font-size:15px; line-height:1.15; flex-shrink:0;}
+.brief-item .bl{font-size:8.5px; text-transform:uppercase; letter-spacing:.06em; color:rgba(255,255,255,.48); line-height:1.2;}
+.brief-item .bv{font-size:12px; font-weight:700; line-height:1.32; overflow-wrap:anywhere;}
+.brief-item.wide{grid-column:1 / -1;}
+.brief-item .bv .sub{font-weight:400; font-size:10.5px; color:rgba(255,255,255,.55);}
+.brief-item .bnm{display:inline-block; margin-right:11px; white-space:nowrap;}
+.brief-empty{font-size:12px; color:rgba(255,255,255,.45); line-height:1.5;}
+.pace-fast{color:#7BE3A0;} .pace-med{color:var(--vna-gold-light);} .pace-slow{color:#FFB0A0;}
 
 /* ---------- award ceremony: one champion with the cup, then gold / silver / bronze ---------- */
 .champion-block{text-align:center; margin-bottom:26px;}
@@ -610,8 +673,9 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
      absorbs the extra padding rather than pushing the page taller */
   #view-player{padding-top:calc(11px + env(safe-area-inset-top)); padding-bottom:calc(44px + env(safe-area-inset-bottom));}
   .p-header{margin-bottom:9px;}
-  .progress-strip{margin:9px 0 2px;}
-  .progress-text{margin-bottom:6px; font-size:11px;}
+  .route-strip{margin:9px 0 6px;}
+  .rs-dot{width:20px; height:20px; font-size:10px;}
+  .rs-stop.here .rs-dot{width:29px; height:29px; font-size:15px;}
   .timer-ring-wrap{margin:4px 0 9px;}
   #pTimer{font-size:21px; padding:5px 20px;}
   .q-card{padding:14px; border-radius:18px;}
@@ -815,8 +879,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
 
     <div id="pGame" class="hidden" style="display:flex; flex-direction:column; flex:1;">
       <div id="pBizRibbon"></div>
-      <div class="progress-strip" id="pProgressStrip"></div>
-      <div class="progress-text" id="pProgressText"></div>
+      <div class="route-strip" id="pRouteStrip"></div>
 
       <div class="timer-ring-wrap"><div class="p-badge timer-num mono" id="pTimer">--</div></div>
 
@@ -847,7 +910,8 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
     <div class="pres-top">
       <h1><img class="brand-logo" src="vendor/vna-logo.png" alt="Vietnam Airlines" /> Sky Race</h1>
       <div style="display:flex; align-items:center; gap:10px;">
-        <div class="pres-status-pill glass" id="weatherBadge">🌈 Clear Skies</div>
+        <div class="pres-status-pill final-round-pill hidden" id="finalRoundBadge">☀️ FINAL ROUND</div>
+      <div class="pres-status-pill glass" id="weatherBadge">🌈 Clear Skies</div>
         <div class="pres-status-pill glass" id="presStatePill">LOBBY</div>
         <button class="btn btn-ghost pres-fullscreen-btn" id="presFullscreenBtn" onclick="togglePresenterFullscreen()">⛶ Fullscreen</button>
       </div>
@@ -861,9 +925,18 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
           <div id="planeLayer"></div>
         </div>
       </div>
-      <div class="leader-panel glass">
-        <h3 id="presLeaderboardTitle">Live Leaderboard</h3>
-        <div id="presLeaderboard"></div>
+      <div class="pres-side">
+        <div class="leader-panel glass">
+          <h3 id="presLeaderboardTitle">Live Leaderboard</h3>
+          <div id="presLeaderboard"></div>
+        </div>
+        <div class="brief-panel glass">
+          <div class="brief-head">
+            <div class="brief-title">✈️ Cabin Bulletin</div>
+            <div class="brief-leg" id="briefLeg">—</div>
+          </div>
+          <div class="brief-body" id="briefBody"></div>
+        </div>
       </div>
     </div>
     <div class="q-status-card glass mono" id="presQStatus">Waiting for admin to open Question 1…</div>
@@ -1163,6 +1236,16 @@ function ensureQuestionPicked(){
 }
 function isTurbulenceLeg(legIndex){ return TURBULENCE_LEGS.includes(legIndex); }
 function isStormLeg(legIndex){ return legIndex === STORM_LEG; }
+
+/* FINAL ROUND: the moment anybody parks on FRA — the last stop before FINISH — the very
+   next correct answer lands an aircraft. The sky clears to brilliant sunshine and a
+   FINAL ROUND flag goes up beside the weather pill so the room knows the race is about
+   to be decided. */
+const FINAL_ROUND_LEG = ROUTE.length - 2; // FRA, one leg short of FINISH
+function finalRoundActive(){
+  if(state.gameState==='finished') return false;
+  return Object.values(state.players).some(p=>!p.finishRank && p.position >= FINAL_ROUND_LEG);
+}
 
 /* The big weather/event card, shown on BOTH the presenter wall and every player's phone.
    It goes up the instant the host stages a leg with weather on it (pressing "Next question →"
@@ -1924,10 +2007,14 @@ function applyPlayerWeatherSkin(){
   view.classList.toggle('wx-storm', stormy && live);
   view.classList.toggle('wx-power', powerOn && live);
 
+  // the phone mirrors the wall's FINAL ROUND sunshine too
+  const finalRound = finalRoundActive() && !turbulent && !stormy;
+  view.classList.toggle('final-round-theme', finalRound);
+
   const want = !visible ? null
     : (turbulent && live) ? 'rain'
     : (stormy && live) ? 'heavyrain'
-    : (powerOn && live) ? 'sun' : null;
+    : ((powerOn && live) || finalRound) ? 'sun' : null;
   let fx = document.getElementById('playerFx');
   if(!want){ if(fx) fx.remove(); return; }
   if(fx && fx.dataset.kind===want) return; // already showing — don't respawn the drops each tick
@@ -1944,6 +2031,27 @@ function applyPlayerWeatherSkin(){
       Array.from({length: heavy?24:15}).map(()=>`<div class="rain-drop${heavy?' thunder-drop':''}" style="left:${Math.random()*100}%; animation-delay:${(Math.random()*1.2).toFixed(2)}s; animation-duration:${(0.45+Math.random()*0.4).toFixed(2)}s;"></div>`).join('');
   }
   document.body.appendChild(fx);
+}
+
+/* The whole route laid out across the top of the phone instead of a bar of anonymous dots:
+   the stop you're parked at is lit up and named, everything else fades back. Stops already
+   behind you stay slightly brighter than the ones still ahead, so progress reads at a glance. */
+function renderPlayerRouteStrip(me){
+  const strip = document.getElementById('pRouteStrip');
+  if(!strip) return;
+  const pos = me.position;
+  strip.innerHTML = ROUTE.map((node,i)=>{
+    const cls = i===pos ? 'here' : (i<pos ? 'done' : 'ahead');
+    return `<div class="rs-stop ${cls}${node.checkpoint?' cp':''}">
+      <div class="rs-dot">${node.icon}</div>
+      <div class="rs-code">${node.code}</div>
+    </div>`;
+  }).join('');
+  // keep the lit stop in view once the route runs wider than the phone
+  const here = strip.querySelector('.rs-stop.here');
+  if(here && strip.scrollWidth > strip.clientWidth){
+    strip.scrollLeft = here.offsetLeft - strip.clientWidth/2 + here.offsetWidth/2;
+  }
 }
 
 /* Top 3 fly business class: the whole phone turns Vietnam Airlines gold, and they're told
@@ -2040,16 +2148,7 @@ function renderPlayer(){
     ? `<div class="wx-announce ${wxa.cls}"><div class="ic">${wxa.icon}</div><div class="tt">${wxa.title}</div><div class="rl">${wxa.rule}</div></div>`
     : '';
 
-  // progress strip — reflects the 12 legs on the map, independent of question count
-  const strip = document.getElementById('pProgressStrip');
-  strip.innerHTML = '';
-  const totalLegs = ROUTE.length - 1;
-  for(let i=0;i<totalLegs;i++){
-    const d = document.createElement('div');
-    d.className = 'progress-dot' + (i < me.position ? ' done' : (i===me.position && state.gameState!=='lobby' ? ' current':''));
-    strip.appendChild(d);
-  }
-  document.getElementById('pProgressText').textContent = `${me.position} of ${totalLegs} legs complete`;
+  renderPlayerRouteStrip(me);
 
   const timerEl = document.getElementById('pTimer');
   const bannerEl = document.getElementById('pStatusBanner');
@@ -2548,6 +2647,71 @@ function renderPresenterLeaderboard(){
   });
 }
 
+/* The cabin bulletin under the leaderboard: a post-question debrief written the way an
+   in-flight announcement reads. Everything here describes the LAST SCORED leg, so it holds
+   its numbers on screen while the host talks over the next question being staged. */
+function lastScoredLeg(){
+  const legs = Object.keys(state.revealedLegs||{}).filter(k=>state.revealedLegs[k]).map(Number);
+  return legs.length ? Math.max.apply(null, legs) : null;
+}
+function renderPresenterBrief(){
+  const legEl = document.getElementById('briefLeg');
+  const body = document.getElementById('briefBody');
+  if(!body) return;
+  const players = Object.values(state.players);
+  const leg = lastScoredLeg();
+  const qid = leg!==null ? (state.questionIndexByLeg||{})[leg] : null;
+  const qd = qid!=null ? QUESTIONS_BY_ID[qid] : null;
+
+  if(leg===null || !qd || players.length===0){
+    if(legEl) legEl.textContent = '—';
+    body.innerHTML = `<div class="brief-empty brief-item wide">🛫 Cabin crew, prepare for departure. Question statistics will appear here after the first answer is revealed.</div>`;
+    return;
+  }
+  if(legEl) legEl.textContent = legLabel(leg).toUpperCase();
+
+  const answers = players.map(p=>({p, a:p.answers[leg]})).filter(x=>x.a && x.a.submitted);
+  const correct = answers.filter(x=>x.a.choice===qd.correct);
+  // everyone who didn't answer counts against the rate — sitting it out is not a pass
+  const rate = players.length ? Math.round(correct.length/players.length*100) : 0;
+  const podium = correct.slice()
+    .sort((a,b)=>(a.a.timeTaken||Infinity)-(b.a.timeTaken||Infinity))
+    .slice(0,3);
+
+  const leader = rankedPlayers()[0];
+  // busiest stop on the board right now
+  const tally = {};
+  players.forEach(p=>{ tally[p.position] = (tally[p.position]||0)+1; });
+  let busyPos = null, busyN = 0;
+  Object.keys(tally).forEach(k=>{ if(tally[k] > busyN){ busyN = tally[k]; busyPos = +k; } });
+
+  // pace, read off how long the room took to answer this one
+  const times = answers.map(x=>x.a.timeTaken).filter(t=>typeof t==='number');
+  const avg = times.length ? times.reduce((s,t)=>s+t,0)/times.length : null;
+  let pace, paceCls, paceIcon;
+  if(avg===null){ pace='No data'; paceCls=''; paceIcon='📉'; }
+  else if(avg < 7000){ pace='Fast'; paceCls='pace-fast'; paceIcon='🚀'; }
+  else if(avg < 14000){ pace='Steady'; paceCls='pace-med'; paceIcon='🧭'; }
+  else { pace='Slow'; paceCls='pace-slow'; paceIcon='🐢'; }
+
+  // flows inline rather than one name per line — three stacked lines pushed the bulletin
+  // past the bottom of a 800px-tall presenter screen
+  const podiumHtml = podium.length
+    ? podium.map((x,i)=>`<span class="bnm">${['🥇','🥈','🥉'][i]} ${escapeHtml(x.p.name)} <span class="sub">${formatTime(x.a.timeTaken)}</span></span>`).join('')
+    : '<span class="sub">Nobody answered correctly</span>';
+
+  const item = (icon, label, value, wide)=>
+    `<div class="brief-item${wide?' wide':''}"><span class="bi">${icon}</span><div><div class="bl">${label}</div><div class="bv">${value}</div></div></div>`;
+
+  body.innerHTML =
+    item('⚡','Fastest correct', podiumHtml, true) +
+    item('✅','Correct answers', `${correct.length} <span class="sub">of ${players.length}</span>`) +
+    item('📊','Success rate', `${rate}%`) +
+    item('👑','Leader at', leader ? `${ROUTE[leader.position].code} <span class="sub">${escapeHtml(ROUTE[leader.position].city)}</span>` : '—') +
+    item('🛬','Busiest stop', busyPos!==null ? `${ROUTE[busyPos].code} <span class="sub">${busyN} aircraft</span>` : '—') +
+    item(paceIcon,'Cabin pace', `<span class="${paceCls}">${pace}</span>${avg!==null?` <span class="sub">avg ${formatTime(avg)}</span>`:''}`, true);
+}
+
 function rankedPlayers(){
   // Anyone who has actually landed (finishRank set) outranks everyone still racing,
   // ordered by true arrival sequence — not just by who happens to share the FINISH tile.
@@ -2605,6 +2769,7 @@ function renderPresenter(){
   pill.textContent = state.gameState.toUpperCase();
   renderPresenterPlanes();
   renderPresenterLeaderboard();
+  renderPresenterBrief();
   updateLocationScene();
   if(state.gameState==='finished' && !finishCinematicPlayed){
     finishCinematicPlayed = true;
@@ -2630,6 +2795,13 @@ function renderPresenter(){
     weatherBadge.classList.toggle('weather-power', powerOn);
     weatherBadge.classList.toggle('weather-thunder', thunderOn);
   }
+  // FINAL ROUND — brilliant sunshine, but only when no weather owns the screen; on a
+  // turbulence/storm leg the weather theme still wins and only the flag goes up.
+  const finalRound = finalRoundActive();
+  const frBadge = document.getElementById('finalRoundBadge');
+  if(frBadge) frBadge.classList.toggle('hidden', !finalRound);
+  presenterEl.classList.toggle('final-round-theme', finalRound && !turbulent && !thunderOn);
+
   presenterEl.classList.toggle('storm-theme', turbulent);
   presenterEl.classList.toggle('sunny-theme', powerOn);
   presenterEl.classList.toggle('thunder-theme', thunderOn);
@@ -2642,6 +2814,18 @@ function renderPresenter(){
     presenterEl.appendChild(stormFx);
   } else if(!turbulent && stormFx){
     stormFx.remove();
+  }
+  // blazing sun for the final round (skipped if a Power Question already put one up)
+  let frFx = document.getElementById('finalRoundFx');
+  const wantFrFx = finalRound && !turbulent && !thunderOn && !powerOn;
+  if(wantFrFx && !frFx){
+    frFx = document.createElement('div');
+    frFx.id = 'finalRoundFx';
+    frFx.className = 'sunny-fx final-round-fx';
+    frFx.innerHTML = '<div class="sun-ray"></div><div class="sun-disc">☀️</div>';
+    presenterEl.appendChild(frFx);
+  } else if(!wantFrFx && frFx){
+    frFx.remove();
   }
   let sunnyFx = document.getElementById('sunnyFx');
   if(powerOn && !sunnyFx){
