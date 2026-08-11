@@ -105,6 +105,27 @@ h1,h2,h3,.display{font-family:var(--font-display);}
 .role-card p{margin:0; font-size:13.5px; color:rgba(255,255,255,.65); line-height:1.5;}
 .role-card .go{margin-top:16px; font-size:12.5px; color:var(--vna-gold-light); font-weight:600; letter-spacing:.03em;}
 
+/* ---------- VI / EN switch ---------- */
+.lang-switch{
+  position:fixed; top:calc(16px + env(safe-area-inset-top)); right:calc(16px + env(safe-area-inset-right)); z-index:120;
+  display:flex; gap:2px; padding:3px; border-radius:20px;
+  background:rgba(0,20,45,.55); border:1px solid var(--glass-brd); backdrop-filter:blur(8px);
+}
+.lang-switch.inline{position:static; display:inline-flex; backdrop-filter:none;}
+.lang-opt{
+  border:none; background:transparent; color:rgba(255,255,255,.6); cursor:pointer; padding:5px 12px;
+  border-radius:16px; font-family:var(--font-mono); font-weight:700; font-size:11.5px; letter-spacing:.06em;
+  transition:all .15s ease; touch-action:manipulation;
+}
+.lang-opt:hover{color:#fff;}
+.lang-opt.on{background:var(--vna-gold); color:#261a00;}
+/* the floating one belongs to the landing screen only — every other view has its own inline
+   copy, placed where it can't collide with the Exit button or the state badge.
+   NB: not a `body > ...` selector — the switch lives inside .app, not directly under body. */
+body:not(.on-landing) .lang-switch:not(.inline){display:none;}
+.reg-head{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+.reg-head h2{margin:0;}
+
 .rules-help-btn{
   position:fixed; left:calc(18px + env(safe-area-inset-left)); bottom:calc(18px + env(safe-area-inset-bottom)); z-index:60;
   border:1px solid var(--glass-brd); color:#fff; font-family:var(--font-body); font-weight:600; font-size:12.5px;
@@ -722,130 +743,137 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
 
 <div class="app" id="app">
 
+  <!-- language switch: fixed on the landing screen, and repeated on the player join card
+       because a guest scanning the QR code lands straight on #player and never sees this one -->
+  <div class="lang-switch" id="langSwitch">
+    <button class="lang-opt" data-lang="vi" onclick="setLang('vi')">VI</button>
+    <button class="lang-opt" data-lang="en" onclick="setLang('en')">EN</button>
+  </div>
+
   <!-- ============ LANDING ============ -->
   <section id="view-landing" class="landing">
     <img src="vendor/vna-logo.png" alt="Vietnam Airlines" style="max-width:260px; width:60%; height:auto; margin-bottom:22px;" />
     <h1>Sky<span class="gold">Race</span></h1>
-    <p class="sub">Vietnam Airlines Conference for Vietnamese Travel Agents Serving the Vietnamese Community<br><br>📍 Milan, Italy<br>📅 23 September 2026<br><br>Thank you for joining us at this special gathering of Vietnam Airlines and our valued travel partners.<br><br>We wish you an inspiring conference, meaningful connections, and an enjoyable experience throughout today's event.</p>
+    <p class="sub" data-i18n-html="landing.sub"></p>
     <div class="role-grid">
       <div class="role-card glass" onclick="go('player')">
         <span class="icon">📱</span>
-        <h3>Player</h3>
-        <p>Join with your name, pick your aircraft, and answer questions from your phone.</p>
-        <div class="go">Join as player →</div>
+        <h3 data-i18n="landing.player"></h3>
+        <p data-i18n="landing.playerDesc"></p>
+        <div class="go" data-i18n="landing.playerGo"></div>
       </div>
       <div class="role-card glass" onclick="go('presenter')">
         <span class="icon">🖥️</span>
-        <h3>Presenter Screen</h3>
-        <p>Full‑screen live map for the LED display — aircraft, leaderboard, checkpoints.</p>
-        <div class="go">Open presenter →</div>
+        <h3 data-i18n="landing.presenter"></h3>
+        <p data-i18n="landing.presenterDesc"></p>
+        <div class="go" data-i18n="landing.presenterGo"></div>
       </div>
       <div class="role-card glass" onclick="openAdminGate()">
         <span class="icon">🛠️</span>
-        <h3>Admin Dashboard</h3>
-        <p>Run the game: open questions, reveal answers, manage players and results.</p>
-        <div class="go">Enter password →</div>
+        <h3 data-i18n="landing.admin"></h3>
+        <p data-i18n="landing.adminDesc"></p>
+        <div class="go" data-i18n="landing.adminGo"></div>
       </div>
     </div>
-    <button class="rules-help-btn glass" onclick="openRulesModal()">📖 How to play</button>
+    <button class="rules-help-btn glass" onclick="openRulesModal()" data-i18n="landing.howto"></button>
   </section>
 
   <!-- ============ RULES / HOW TO PLAY ============ -->
   <div id="rulesModal" class="hidden" style="position:fixed;inset:0;z-index:150;display:flex;align-items:center;justify-content:center;background:rgba(0,20,40,.7); padding:20px;">
     <div class="glass rules-modal-card">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;">
-        <h3 style="margin:0; font-size:20px;">✈️ How to Play — Sky Race</h3>
-        <button class="btn btn-ghost btn-sm" onclick="closeRulesModal()">Close</button>
+        <h3 style="margin:0; font-size:20px;" data-i18n="rules.title"></h3>
+        <button class="btn btn-ghost btn-sm" onclick="closeRulesModal()" data-i18n="rules.close"></button>
       </div>
 
       <!-- page 1 — the race + route map -->
       <div class="rules-page active" data-page="1">
         <div class="rules-section">
-          <h4>The race</h4>
-          <p>12 legs from START to FINISH along an S-shaped route. Each leg, everyone answers one question within <strong>20 seconds</strong>. The answer is revealed <strong>automatically the moment the countdown ends</strong>.</p>
-          <p>The race keeps going until at least <strong>4 aircraft land on FINISH</strong>. Reaching FINISH shows you your own placing right away, even while the race continues for everyone else.</p>
+          <h4 data-i18n="rules.h.race"></h4>
+          <p data-i18n-html="rules.p.race1"></p>
+          <p data-i18n-html="rules.p.race2"></p>
         </div>
         <div class="rules-section">
-          <h4>🗺 Route map</h4>
+          <h4 data-i18n="rules.h.map"></h4>
           <div class="rules-routemap">
             <span class="cp">START</span><span>CDG</span><span>AMS</span><span class="cp">HAN</span><span>MUC</span><span>MOW</span><span class="cp">SPC</span><span>LHR</span><span>MXP</span><span>CPH</span><span class="cp">SGN</span><span>FRA</span><span class="cp">FINISH</span>
           </div>
         </div>
         <div class="rules-section">
-          <h4>📍 Checkpoints</h4>
-          <p>The five gold stops above are checkpoints. Whoever is <strong>first</strong> to reach HAN, SPC or SGN earns a milestone marker next to their name for the rest of the race.</p>
+          <h4 data-i18n="rules.h.cp"></h4>
+          <p data-i18n-html="rules.p.cp"></p>
         </div>
         <div class="rules-section">
-          <h4>🏆 Winning</h4>
-          <p>First to FINISH wins. If several aircraft land on the same reveal, they're ranked by <strong>correct answers</strong>, then by <strong>total answer time</strong> — so answering fast matters.</p>
+          <h4 data-i18n="rules.h.win"></h4>
+          <p data-i18n-html="rules.p.win"></p>
         </div>
       </div>
 
       <!-- page 2 — weather -->
       <div class="rules-page" data-page="2">
         <div class="rules-section">
-          <h4>🌈 Clear Skies</h4>
-          <p>The default. Correct answer advances you <strong>1 leg</strong>; a wrong answer holds your position — no penalty.</p>
+          <h4 data-i18n="rules.h.clear"></h4>
+          <p data-i18n-html="rules.p.clear"></p>
         </div>
         <div class="rules-section">
-          <h4>🌪 Turbulence</h4>
-          <p>Correct answer <strong>holds</strong> your position. Anything else — wrong, or no answer at all — sends you <strong>back 1 leg</strong>. 50:50 and Turbo Boost are disabled; this is the only time Fasten Seatbelt works.</p>
+          <h4 data-i18n="rules.h.turb"></h4>
+          <p data-i18n-html="rules.p.turb"></p>
         </div>
         <div class="rules-section">
-          <h4>⛈ Storm</h4>
-          <p>Only the <strong>10 fastest correct answers</strong> get ATC clearance to advance 1 leg. Everyone else holds position, including correct answers outside the top 10 — but nobody goes backwards. All three helps and the Power Question are disabled.</p>
+          <h4 data-i18n="rules.h.storm"></h4>
+          <p data-i18n-html="rules.p.storm"></p>
         </div>
         <div class="rules-section">
-          <h4>☀️ Power Question</h4>
-          <p>The host's one-time bonus round for the whole game, armed before the question opens. The <strong>fastest correct</strong> answer gets <strong>+2 legs</strong>, every other correct answer <strong>+1</strong>, wrong answers hold. Can't be armed on a Turbulence or Storm leg, and all three helps are disabled.</p>
+          <h4 data-i18n="rules.h.power"></h4>
+          <p data-i18n-html="rules.p.power"></p>
         </div>
       </div>
 
       <!-- page 3 — the three helps -->
       <div class="rules-page" data-page="3">
         <div class="rules-section">
-          <h4>Your three helps</h4>
-          <p>All three unlock the moment <strong>your own aircraft reaches MUC</strong> — not when the race reaches MUC. Each one can be used <strong>once per game</strong>.</p>
+          <h4 data-i18n="rules.h.helps"></h4>
+          <p data-i18n-html="rules.p.helps"></p>
         </div>
         <div class="rules-help-card">
           <div class="circ" id="rulesIconFifty"></div>
           <div>
-            <div style="font-weight:700; font-size:14px; margin-bottom:3px;">50:50</div>
-            <p style="margin:0; font-size:13px; line-height:1.5; color:rgba(255,255,255,.82);">Removes two wrong answers, leaving the correct one and a single decoy. Disabled during Turbulence, Storm and the Power Question.</p>
+            <div style="font-weight:700; font-size:14px; margin-bottom:3px;" data-i18n="rules.help.fifty"></div>
+            <p style="margin:0; font-size:13px; line-height:1.5; color:rgba(255,255,255,.82);" data-i18n-html="rules.help.fiftyDesc"></p>
           </div>
         </div>
         <div class="rules-help-card">
           <div class="circ" id="rulesIconTurbo"></div>
           <div>
-            <div style="font-weight:700; font-size:14px; margin-bottom:3px;">Turbo Boost</div>
-            <p style="margin:0; font-size:13px; line-height:1.5; color:rgba(255,255,255,.82);">Double or nothing. Correct → <strong>+2 legs</strong>. Wrong → <strong>−1 leg</strong>. Arming it costs nothing until you press Submit, so you can change your mind. Disabled during Turbulence, Storm and the Power Question.</p>
+            <div style="font-weight:700; font-size:14px; margin-bottom:3px;" data-i18n="rules.help.turbo"></div>
+            <p style="margin:0; font-size:13px; line-height:1.5; color:rgba(255,255,255,.82);" data-i18n-html="rules.help.turboDesc"></p>
           </div>
         </div>
         <div class="rules-help-card">
           <div class="circ" id="rulesIconSeatbelt"></div>
           <div>
-            <div style="font-weight:700; font-size:14px; margin-bottom:3px;">Fasten Seatbelt</div>
-            <p style="margin:0; font-size:13px; line-height:1.5; color:rgba(255,255,255,.82);">Your turbulence shield — and it <strong>only works during Turbulence</strong>. Ride out a wrong answer without being pushed back a leg. Useless otherwise, so hold on to it until turbulence hits.</p>
+            <div style="font-weight:700; font-size:14px; margin-bottom:3px;" data-i18n="rules.help.belt"></div>
+            <p style="margin:0; font-size:13px; line-height:1.5; color:rgba(255,255,255,.82);" data-i18n-html="rules.help.beltDesc"></p>
           </div>
         </div>
       </div>
 
-      <!-- page 4 — programme documents (links to be added) -->
+      <!-- page 4 — programme documents -->
       <div class="rules-page" data-page="4">
         <div class="rules-section">
-          <h4>📎 Programme documents</h4>
-          <p>Conference materials, the Sales Kit and the agenda will be linked here.</p>
+          <h4 data-i18n="rules.h.docs"></h4>
+          <p data-i18n="rules.p.docs"></p>
         </div>
         <div class="rules-section" id="rulesDocLinks">
-          <p><a class="rules-doc-link" href="https://drive.google.com/file/d/1bf9BnmqIJFhusaYeGRvdomtSk2y83oEI/view?usp=sharing" target="_blank" rel="noopener noreferrer">📘 Vietnam Airlines Sales Kit</a></p>
-          <p style="color:rgba(255,255,255,.5); font-style:italic; font-size:12.5px;">More documents will be added here before the event.</p>
+          <p><a class="rules-doc-link" href="https://drive.google.com/file/d/1bf9BnmqIJFhusaYeGRvdomtSk2y83oEI/view?usp=sharing" target="_blank" rel="noopener noreferrer" data-i18n="rules.docs.salesKit"></a></p>
+          <p style="color:rgba(255,255,255,.5); font-style:italic; font-size:12.5px;" data-i18n="rules.docs.more"></p>
         </div>
       </div>
 
       <div class="rules-nav">
-        <button class="btn btn-ghost btn-sm" id="rulesPrevBtn" onclick="rulesGoPage(rulesPage-1)">← Back</button>
+        <button class="btn btn-ghost btn-sm" id="rulesPrevBtn" onclick="rulesGoPage(rulesPage-1)" data-i18n="rules.back"></button>
         <div class="rules-dots" id="rulesDots"></div>
-        <button class="btn btn-primary btn-sm" id="rulesNextBtn" onclick="rulesGoPage(rulesPage+1)">Next →</button>
+        <button class="btn btn-primary btn-sm" id="rulesNextBtn" onclick="rulesGoPage(rulesPage+1)"></button>
       </div>
     </div>
   </div>
@@ -854,13 +882,13 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
   <div id="adminGateModal" class="hidden" style="position:fixed;inset:0;z-index:150;display:flex;align-items:center;justify-content:center;background:rgba(0,20,40,.6);">
     <div class="glass" style="border-radius:22px;padding:32px 28px;max-width:340px;width:90%;text-align:center;">
       <div style="font-size:30px;margin-bottom:8px;">🔒</div>
-      <h3 style="margin:0 0 6px; font-size:19px;">Admin access</h3>
-      <p style="margin:0 0 18px;font-size:13.5px;color:rgba(255,255,255,.65);">Enter the admin password to continue.</p>
-      <input type="text" id="adminPassInput" placeholder="Password" style="text-align:center;letter-spacing:.2em;" />
+      <h3 style="margin:0 0 6px; font-size:19px;" data-i18n="gate.title"></h3>
+      <p style="margin:0 0 18px;font-size:13.5px;color:rgba(255,255,255,.65);" data-i18n="gate.desc"></p>
+      <input type="text" id="adminPassInput" data-i18n-ph="gate.ph" style="text-align:center;letter-spacing:.2em;" />
       <div id="adminGateError" style="color:#ffb3b3;font-size:12.5px;margin-top:8px;height:14px;"></div>
       <div style="display:flex;gap:10px;margin-top:16px;">
-        <button class="btn btn-ghost btn-block" onclick="closeAdminGate()">Cancel</button>
-        <button class="btn btn-primary btn-block" onclick="submitAdminGate()">Enter</button>
+        <button class="btn btn-ghost btn-block" onclick="closeAdminGate()" data-i18n="gate.cancel"></button>
+        <button class="btn btn-primary btn-block" onclick="submitAdminGate()" data-i18n="gate.enter"></button>
       </div>
     </div>
   </div>
@@ -873,15 +901,21 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
     </div>
 
     <div id="pRegistration" class="reg-card glass">
-      <h2>Join the race</h2>
-      <p class="hint">Scan complete. Enter the room code, your name, and choose your aircraft.</p>
-      <div class="field-label">Room code</div>
-      <input type="text" id="pRoomCode" maxlength="12" style="text-transform:uppercase;" placeholder="e.g. SKY01" />
-      <div class="field-label">Your name</div>
-      <input type="text" id="pName" maxlength="18" placeholder="e.g. Minh Anh" />
-      <div class="field-label">Choose your aircraft</div>
+      <div class="reg-head">
+        <h2 data-i18n="p.join.title"></h2>
+        <div class="lang-switch inline">
+          <button class="lang-opt" data-lang="vi" onclick="setLang('vi')">VI</button>
+          <button class="lang-opt" data-lang="en" onclick="setLang('en')">EN</button>
+        </div>
+      </div>
+      <p class="hint" data-i18n="p.join.hint"></p>
+      <div class="field-label" data-i18n="p.join.room"></div>
+      <input type="text" id="pRoomCode" maxlength="12" style="text-transform:uppercase;" data-i18n-ph="p.join.roomPh" />
+      <div class="field-label" data-i18n="p.join.name"></div>
+      <input type="text" id="pName" maxlength="18" data-i18n-ph="p.join.namePh" />
+      <div class="field-label" data-i18n="p.join.avatar"></div>
       <div class="avatar-grid" id="pAvatarGrid"></div>
-      <button class="btn btn-primary btn-block" style="margin-top:22px;" id="pJoinBtn" onclick="playerJoin()">Board aircraft →</button>
+      <button class="btn btn-primary btn-block" style="margin-top:22px;" id="pJoinBtn" onclick="playerJoin()" data-i18n="p.join.btn"></button>
     </div>
 
     <div id="pGame" class="hidden" style="display:flex; flex-direction:column; flex:1;">
@@ -895,8 +929,8 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
       <div class="q-card glass" id="pQCard">
         <div class="q-eyebrow" id="pQEyebrow">WAITING FOR NEXT QUESTION</div>
         <div class="q-text" id="pQText">Sit tight — the presenter will open the next question shortly.</div>
-        <div class="power-note hidden" id="pPowerNote">☀️ Power Question — answer correctly for <strong>+2 legs</strong>!</div>
-        <div class="storm-note hidden" id="pStormNote">⛈ Storm — only the <strong>10 fastest correct answers</strong> get ATC clearance to continue. Everyone else holds position.</div>
+        <div class="power-note hidden" id="pPowerNote" data-i18n-html="p.powerNote"></div>
+        <div class="storm-note hidden" id="pStormNote" data-i18n-html="p.stormNote"></div>
         <div id="pOptions"></div>
       </div>
 
@@ -904,10 +938,10 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
       <div id="pHelpsWrap"></div>
 
       <div class="dest-strip glass">
-        <div><div class="lbl">Position</div><div class="val mono" id="pDest">START</div></div>
-        <div style="text-align:center;"><div class="lbl">Now at</div><div class="val mono" id="pLocation">—</div></div>
-        <div style="text-align:center;"><div class="lbl">Total time</div><div class="val mono" id="pTotalTime">0.0s</div></div>
-        <div style="text-align:right;"><div class="lbl">Aircraft</div><div class="val" id="pAvatarShown">—</div></div>
+        <div><div class="lbl" data-i18n="p.pos"></div><div class="val mono" id="pDest">START</div></div>
+        <div style="text-align:center;"><div class="lbl" data-i18n="p.now"></div><div class="val mono" id="pLocation">—</div></div>
+        <div style="text-align:center;"><div class="lbl" data-i18n="p.total"></div><div class="val mono" id="pTotalTime">0.0s</div></div>
+        <div style="text-align:right;"><div class="lbl" data-i18n="p.aircraft"></div><div class="val" id="pAvatarShown">—</div></div>
       </div>
     </div>
   </section>
@@ -920,7 +954,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
         <div class="pres-status-pill final-round-pill hidden" id="finalRoundBadge">☀️ FINAL ROUND</div>
       <div class="pres-status-pill glass" id="weatherBadge">🌈 Clear Skies</div>
         <div class="pres-status-pill glass" id="presStatePill">LOBBY</div>
-        <button class="btn btn-ghost pres-fullscreen-btn" id="presFullscreenBtn" onclick="togglePresenterFullscreen()">⛶ Fullscreen</button>
+        <button class="btn btn-ghost pres-fullscreen-btn" id="presFullscreenBtn" onclick="togglePresenterFullscreen()"></button>
       </div>
     </div>
     <div class="pres-body">
@@ -934,12 +968,12 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
       </div>
       <div class="pres-side">
         <div class="leader-panel glass">
-          <h3 id="presLeaderboardTitle">Live Leaderboard</h3>
+          <h3 id="presLeaderboardTitle"></h3>
           <div id="presLeaderboard"></div>
         </div>
         <div class="brief-panel glass">
           <div class="brief-head">
-            <div class="brief-title">✈️ Cabin Bulletin</div>
+            <div class="brief-title" data-i18n="brief.title"></div>
             <div class="brief-leg" id="briefLeg">—</div>
           </div>
           <div class="brief-body" id="briefBody"></div>
@@ -953,98 +987,108 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
   <section id="view-admin" class="hidden">
     <div class="admin-sidebar glass" style="border-radius:0 24px 24px 0;">
       <div class="brand-mark" style="margin-bottom:20px;"><img class="brand-logo" src="vendor/vna-logo.png" alt="Vietnam Airlines" /><span>Admin</span></div>
-      <button class="admin-nav-btn active" data-tab="control" onclick="adminTab('control')">🎮&nbsp; Game Control</button>
-      <button class="admin-nav-btn" data-tab="answers" onclick="adminTab('answers')">📝&nbsp; Submitted Answers</button>
-      <button class="admin-nav-btn" data-tab="questions" onclick="adminTab('questions')">📋&nbsp; Question Editor</button>
-      <button class="admin-nav-btn" data-tab="players" onclick="adminTab('players')">👥&nbsp; Manage Players</button>
-      <button class="admin-nav-btn" data-tab="leaderboard" onclick="adminTab('leaderboard')">🏆&nbsp; Leaderboard</button>
+      <button class="admin-nav-btn active" data-tab="control" onclick="adminTab('control')" data-i18n-html="a.nav.control"></button>
+      <button class="admin-nav-btn" data-tab="answers" onclick="adminTab('answers')" data-i18n-html="a.nav.answers"></button>
+      <button class="admin-nav-btn" data-tab="questions" onclick="adminTab('questions')" data-i18n-html="a.nav.questions"></button>
+      <button class="admin-nav-btn" data-tab="players" onclick="adminTab('players')" data-i18n-html="a.nav.players"></button>
+      <button class="admin-nav-btn" data-tab="leaderboard" onclick="adminTab('leaderboard')" data-i18n-html="a.nav.leaderboard"></button>
       <div style="flex:1;"></div>
-      <button class="btn btn-danger btn-sm btn-block" onclick="resetGame()">🗑️ Reset game (clear players)</button>
+      <div class="lang-switch inline" style="margin-bottom:10px;">
+        <button class="lang-opt" data-lang="vi" onclick="setLang('vi')">VI</button>
+        <button class="lang-opt" data-lang="en" onclick="setLang('en')">EN</button>
+      </div>
+      <button class="btn btn-danger btn-sm btn-block" onclick="resetGame()" data-i18n="a.reset"></button>
     </div>
 
     <div class="admin-main">
       <div class="admin-header">
-        <h2 id="adminTabTitle">Game Control</h2>
+        <h2 id="adminTabTitle"></h2>
         <div class="p-badge mono" id="adminStateBadge">LOBBY</div>
       </div>
 
       <div class="stat-grid">
-        <div class="stat-card glass"><div class="n" id="statPlayers">0</div><div class="l">Players joined</div></div>
-        <div class="stat-card glass"><div class="n" id="statQ">0 / 22</div><div class="l">Current question</div></div>
-        <div class="stat-card glass"><div class="n" id="statSubmitted">0</div><div class="l">Answers submitted</div></div>
-        <div class="stat-card glass"><div class="n" id="statLeader">—</div><div class="l">Current leader</div></div>
+        <div class="stat-card glass"><div class="n" id="statPlayers">0</div><div class="l" data-i18n="a.stat.players"></div></div>
+        <div class="stat-card glass"><div class="n" id="statQ">0 / 12</div><div class="l" data-i18n="a.stat.question"></div></div>
+        <div class="stat-card glass"><div class="n" id="statSubmitted">0</div><div class="l" data-i18n="a.stat.submitted"></div></div>
+        <div class="stat-card glass"><div class="n" id="statLeader">—</div><div class="l" data-i18n="a.stat.leader"></div></div>
       </div>
 
       <div id="tab-control">
         <div class="panel glass">
           <div class="admin-ctrl-head">
-            <h3 style="margin:0;">Question control</h3>
+            <h3 style="margin:0;" data-i18n="a.qcontrol"></h3>
             <div class="admin-timer" id="adminTimer">--</div>
           </div>
-          <p style="margin:0 0 16px; font-size:14px; color:rgba(255,255,255,.75);" id="adminCurrentQ">Leg 1 of 12 — not opened yet.</p>
+          <p style="margin:0 0 16px; font-size:14px; color:rgba(255,255,255,.75);" id="adminCurrentQ"></p>
           <div class="control-row">
-            <button class="btn btn-ghost" onclick="adminPrevQuestion()">← Previous question</button>
-            <button class="btn btn-primary" id="openQBtn" onclick="adminOpenQuestion()">Show question</button>
-            <button class="btn btn-ghost" onclick="adminCloseQuestion()">Close question</button>
-            <button class="btn btn-danger" id="undoBtn" title="Roll back the last reveal — every aircraft returns to where it was before that question was scored" onclick="adminUndoReveal()">↩️ Undo last reveal</button>
-            <button class="btn btn-ghost" onclick="adminNextQuestion()">Next question →</button>
-            <button class="btn btn-ghost" title="Reset progress — back to Leg 1, all aircraft to start" onclick="resetProgress()">🔄 Reset progress</button>
-            <button class="btn btn-ghost" id="powerQBtn" title="Force this leg's question to be drawn from Q21-30 and award a x2 bonus to the fastest correct player" onclick="adminTogglePowerQuestion()">⚡ Power Question</button>
+            <button class="btn btn-ghost" onclick="adminPrevQuestion()" data-i18n="a.prev"></button>
+            <button class="btn btn-primary" id="openQBtn" onclick="adminOpenQuestion()"></button>
+            <button class="btn btn-ghost" onclick="adminCloseQuestion()" data-i18n="a.close"></button>
+            <button class="btn btn-danger" id="undoBtn" data-i18n-title="a.undoTip" onclick="adminUndoReveal()"></button>
+            <button class="btn btn-ghost" onclick="adminNextQuestion()" data-i18n="a.next"></button>
+            <button class="btn btn-ghost" data-i18n-title="a.resetProgressTip" onclick="resetProgress()" data-i18n="a.resetProgress"></button>
+            <button class="btn btn-ghost" id="powerQBtn" data-i18n-title="a.powerQTip" onclick="adminTogglePowerQuestion()"></button>
           </div>
-          <p style="margin:14px 0 0; font-size:12px; color:rgba(255,255,255,.5);">The answer reveals itself automatically when the countdown ends · All three helps (50:50, Turbo, Fasten Seatbelt) unlock per player once their own aircraft reaches MUC · Turbulence auto-applies on legs 6 &amp; 10, Storm on leg 8 · Power Question cannot be armed on a turbulence or storm leg.</p>
+          <p style="margin:14px 0 0; font-size:12px; color:rgba(255,255,255,.5);" data-i18n-html="a.controlNote"></p>
         </div>
         <div class="panel glass hidden" id="adminAnswerKeyPanel">
-          <h3>📖 Answer key <span style="font-weight:400; font-size:12px; text-transform:none; letter-spacing:0; color:rgba(255,255,255,.5);">— for you, not shown to players</span></h3>
+          <h3><span data-i18n="a.answerKey"></span> <span style="font-weight:400; font-size:12px; text-transform:none; letter-spacing:0; color:rgba(255,255,255,.5);" data-i18n="a.answerKeyNote"></span></h3>
           <div id="adminAnswerKeyBody"></div>
         </div>
         <div class="panel glass">
-          <h3>Race winner</h3>
-          <p style="margin:0 0 16px; font-size:14px; color:rgba(255,255,255,.75);">Once the race has finished (4 aircraft landed), show the full-screen "Congratulations!" overlay with confetti on the presenter screen. It stays hidden until you press this — reaching FINISH does not show it automatically.</p>
+          <h3 data-i18n="a.winner"></h3>
+          <p style="margin:0 0 16px; font-size:14px; color:rgba(255,255,255,.75);" data-i18n="a.winnerNote"></p>
           <div class="control-row">
-            <button class="btn btn-primary" onclick="triggerCongrats()">🎉 Show Congratulations</button>
-            <button class="btn btn-ghost" onclick="hideCongrats()">Hide congratulations</button>
+            <button class="btn btn-primary" onclick="triggerCongrats()" data-i18n="a.showCongrats"></button>
+            <button class="btn btn-ghost" onclick="hideCongrats()" data-i18n="a.hideCongrats"></button>
           </div>
         </div>
         <div class="panel glass">
-          <h3>Award ceremony</h3>
-          <p style="margin:0 0 16px; font-size:14px; color:rgba(255,255,255,.75);">Show the top 3 podium and checkpoint milestone winners on the presenter screen, with fireworks.</p>
+          <h3 data-i18n="a.awardTitle"></h3>
+          <p style="margin:0 0 16px; font-size:14px; color:rgba(255,255,255,.75);" data-i18n="a.awardNote"></p>
           <div class="control-row">
-            <button class="btn btn-primary" onclick="triggerAward()">🏆 Trao giải / Show award</button>
-            <button class="btn btn-ghost" onclick="hideAward()">Hide award overlay</button>
+            <button class="btn btn-primary" onclick="triggerAward()" data-i18n="a.showAward"></button>
+            <button class="btn btn-ghost" onclick="hideAward()" data-i18n="a.hideAward"></button>
           </div>
         </div>
         <div class="panel glass">
-          <h3>Live answer feed — question <span id="feedQNum">1</span></h3>
-          <div class="answer-grid" id="adminAnswerFeed"><p style="color:rgba(255,255,255,.5); font-size:13.5px;">No submissions yet.</p></div>
+          <h3><span data-i18n="a.feed"></span> <span id="feedQNum">1</span></h3>
+          <div class="answer-grid" id="adminAnswerFeed"></div>
         </div>
       </div>
 
       <div id="tab-answers" class="hidden">
         <div class="panel glass">
-          <h3>All submitted answers by question</h3>
+          <h3 data-i18n="a.allAnswers"></h3>
           <div id="answersFull"></div>
         </div>
       </div>
 
       <div id="tab-questions" class="hidden">
         <div class="panel glass">
-          <h3>Question editor <span style="float:right; font-weight:400; text-transform:none; letter-spacing:0; color:rgba(255,255,255,.5);">Correct answers hidden from players</span></h3>
+          <h3><span data-i18n="a.qbank"></span> <span style="float:right; font-weight:400; text-transform:none; letter-spacing:0; color:rgba(255,255,255,.5);" data-i18n="a.qbankNote"></span></h3>
           <div id="questionEditor"></div>
         </div>
       </div>
 
       <div id="tab-players" class="hidden">
         <div class="panel glass">
-          <h3>Registered players</h3>
-          <p style="margin:-6px 0 14px; font-size:12.5px; color:rgba(255,255,255,.55);">Use <b>−1 / +1</b> to correct a player's position by hand — for a phone that died mid-question, a lost connection, or a dispute settled on stage.</p>
-          <table id="playersTable"><thead><tr><th>Aircraft</th><th>Name</th><th>Position</th><th>Correct</th><th>Helps left</th><th>Adjust</th><th>Actions</th></tr></thead><tbody></tbody></table>
+          <h3 data-i18n="a.registered"></h3>
+          <p style="margin:-6px 0 14px; font-size:12.5px; color:rgba(255,255,255,.55);" data-i18n-html="a.registeredNote"></p>
+          <table id="playersTable"><thead><tr>
+            <th data-i18n="a.th.aircraft"></th><th data-i18n="a.th.name"></th><th data-i18n="a.th.position"></th>
+            <th data-i18n="a.th.correct"></th><th data-i18n="a.th.helps"></th><th data-i18n="a.th.adjust"></th><th data-i18n="a.th.actions"></th>
+          </tr></thead><tbody></tbody></table>
         </div>
       </div>
 
       <div id="tab-leaderboard" class="hidden">
         <div class="panel glass">
-          <h3>Leaderboard</h3>
-          <table id="leaderTable"><thead><tr><th>Rank</th><th>Aircraft</th><th>Name</th><th>Airport</th><th>Progress</th><th>Total time</th></tr></thead><tbody></tbody></table>
+          <h3 data-i18n="a.title.leaderboard"></h3>
+          <table id="leaderTable"><thead><tr>
+            <th data-i18n="a.th.rank"></th><th data-i18n="a.th.aircraft"></th><th data-i18n="a.th.name"></th>
+            <th data-i18n="a.th.airport"></th><th data-i18n="a.th.progress"></th><th data-i18n="a.th.time"></th>
+          </tr></thead><tbody></tbody></table>
         </div>
       </div>
     </div>
@@ -1060,6 +1104,748 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
    Realtime sync across tabs via BroadcastChannel + localStorage
    ============================================================ */
 
+/* ============================================================
+   LANGUAGE
+   The event is a Vietnamese-language conference, so Vietnamese is the default and
+   English is the alternate. The choice is per DEVICE (localStorage), never synced —
+   the host can run the wall in Vietnamese while an English-speaking guest reads their
+   own phone in English, and both still see the same letters against the same options
+   (the option shuffle is seeded from the question id, not the language).
+   ============================================================ */
+const LANGS = ['vi','en'];
+let LANG = localStorage.getItem('vna_lang') || 'vi';
+if(LANGS.indexOf(LANG) < 0) LANG = 'vi';
+
+const STR = {
+vi: {
+  /* --- landing --- */
+  'landing.sub':'Hội nghị Vietnam Airlines dành cho các Đại lý Du lịch Việt Nam phục vụ Cộng đồng người Việt<br><br>📍 Milan, Ý<br>📅 23 tháng 9, 2026<br><br>Cảm ơn quý vị đã tham dự buổi gặp gỡ đặc biệt này của Vietnam Airlines và các đối tác du lịch thân thiết.<br><br>Chúc quý vị một hội nghị đầy cảm hứng, những kết nối ý nghĩa và một trải nghiệm thật trọn vẹn trong suốt sự kiện hôm nay.',
+  'landing.player':'Người chơi',
+  'landing.playerDesc':'Nhập tên, chọn máy bay và trả lời câu hỏi ngay trên điện thoại của bạn.',
+  'landing.playerGo':'Tham gia →',
+  'landing.presenter':'Màn hình lớn',
+  'landing.presenterDesc':'Bản đồ trực tiếp toàn màn hình cho màn LED — máy bay, bảng xếp hạng, các chặng.',
+  'landing.presenterGo':'Mở màn hình lớn →',
+  'landing.admin':'Bảng điều phối',
+  'landing.adminDesc':'Điều hành trò chơi: mở câu hỏi, công bố đáp án, quản lý người chơi và kết quả.',
+  'landing.adminGo':'Nhập mật khẩu →',
+  'landing.howto':'📖 Cách chơi',
+  'lang.label':'Ngôn ngữ',
+
+  /* --- how to play --- */
+  'rules.title':'✈️ Cách chơi — Sky Race',
+  'rules.close':'Đóng',
+  'rules.back':'← Quay lại',
+  'rules.next':'Tiếp →',
+  'rules.h.race':'Cuộc đua',
+  'rules.p.race1':'12 chặng từ START tới FINISH dọc theo tuyến đường hình chữ S. Mỗi chặng, tất cả cùng trả lời một câu hỏi trong <strong>20 giây</strong>. Đáp án được <strong>công bố tự động ngay khi hết giờ</strong>.',
+  'rules.p.race2':'Cuộc đua tiếp diễn cho tới khi có <strong>4 máy bay về tới FINISH</strong>. Về tới đích là bạn thấy ngay thứ hạng của mình, kể cả khi cuộc đua vẫn đang tiếp tục với những người khác.',
+  'rules.h.map':'🗺 Bản đồ hành trình',
+  'rules.h.cp':'📍 Các chặng mốc',
+  'rules.p.cp':'Năm điểm vàng phía trên là các chặng mốc. Ai <strong>đầu tiên</strong> tới HAN, SPC hoặc SGN sẽ được gắn dấu mốc bên cạnh tên mình trong suốt phần còn lại của cuộc đua.',
+  'rules.h.win':'🏆 Chiến thắng',
+  'rules.p.win':'Ai về FINISH trước sẽ thắng. Nếu nhiều máy bay cùng hạ cánh trong một lượt công bố, thứ tự xét theo <strong>số câu đúng</strong>, rồi tới <strong>tổng thời gian trả lời</strong> — nên trả lời nhanh rất quan trọng.',
+  'rules.h.clear':'🌈 Trời quang',
+  'rules.p.clear':'Mặc định. Trả lời đúng tiến <strong>1 chặng</strong>; trả lời sai thì đứng nguyên — không bị phạt.',
+  'rules.h.turb':'🌪 Nhiễu động',
+  'rules.p.turb':'Trả lời đúng thì <strong>đứng nguyên</strong>. Còn lại — sai, hoặc không trả lời — bị <strong>lùi 1 chặng</strong>. 50:50 và Turbo Boost bị khoá; đây là lúc duy nhất Thắt dây an toàn phát huy tác dụng.',
+  'rules.h.storm':'⛈ Bão',
+  'rules.p.storm':'Chỉ <strong>10 người trả lời đúng nhanh nhất</strong> được ATC cấp phép bay tiếp 1 chặng. Những người còn lại đứng nguyên, kể cả trả lời đúng nhưng ngoài top 10 — nhưng không ai bị lùi. Cả ba trợ giúp và Câu hỏi Quyền lực đều bị khoá.',
+  'rules.h.power':'☀️ Câu hỏi Quyền lực',
+  'rules.p.power':'Lượt thưởng duy nhất cả ván của người điều phối, kích hoạt trước khi mở câu hỏi. Người <strong>trả lời đúng nhanh nhất</strong> được <strong>+2 chặng</strong>, những người đúng khác <strong>+1</strong>, trả lời sai đứng nguyên. Không kích hoạt được trên chặng Nhiễu động hay Bão, và cả ba trợ giúp đều bị khoá.',
+  'rules.h.helps':'Ba trợ giúp của bạn',
+  'rules.p.helps':'Cả ba mở khoá ngay khi <strong>máy bay của chính bạn tới MUC</strong> — không phải khi cuộc đua tới MUC. Mỗi trợ giúp dùng được <strong>một lần cả ván</strong>.',
+  'rules.help.fifty':'50:50',
+  'rules.help.fiftyDesc':'Loại bỏ hai đáp án sai, chỉ còn đáp án đúng và một đáp án nhiễu. Bị khoá trong Nhiễu động, Bão và Câu hỏi Quyền lực.',
+  'rules.help.turbo':'Turbo Boost',
+  'rules.help.turboDesc':'Được ăn cả ngã về không. Đúng → <strong>+2 chặng</strong>. Sai → <strong>−1 chặng</strong>. Bật lên chưa mất gì cho tới khi bạn bấm Gửi, nên vẫn đổi ý được. Bị khoá trong Nhiễu động, Bão và Câu hỏi Quyền lực.',
+  'rules.help.belt':'Thắt dây an toàn',
+  'rules.help.beltDesc':'Lá chắn nhiễu động của bạn — và <strong>chỉ dùng được trong Nhiễu động</strong>. Vượt qua một câu trả lời sai mà không bị đẩy lùi một chặng. Vô dụng ở mọi lúc khác, nên hãy để dành tới khi nhiễu động ập đến.',
+  'rules.h.docs':'📎 Tài liệu chương trình',
+  'rules.p.docs':'Tài liệu hội nghị, Sales Kit và chương trình sẽ được liên kết tại đây.',
+  'rules.docs.salesKit':'📘 Vietnam Airlines Sales Kit',
+  'rules.docs.more':'Các tài liệu khác sẽ được bổ sung trước sự kiện.',
+
+  /* --- admin gate --- */
+  'gate.title':'Quyền điều phối',
+  'gate.desc':'Nhập mật khẩu điều phối để tiếp tục.',
+  'gate.ph':'Mật khẩu',
+  'gate.cancel':'Huỷ',
+  'gate.enter':'Vào',
+  'gate.wrong':'Sai mật khẩu — vui lòng thử lại.',
+  'gate.signing':'Đang đăng nhập…',
+  'gate.tooMany':'Thử quá nhiều lần — chờ một lát.',
+  'gate.fbFail':'Đăng nhập Firebase thất bại — kiểm tra mật khẩu tài khoản admin@vna-sky-race.local trên Firebase Console có khớp ADMIN_FIREBASE_PASSWORD trong index.html không.',
+  'gate.signedIn':'Đã đăng nhập điều phối · phòng {room}',
+
+  /* --- player: registration --- */
+  'p.join.title':'Tham gia cuộc đua',
+  'p.join.hint':'Quét mã xong. Nhập mã phòng, tên của bạn và chọn máy bay.',
+  'p.join.room':'Mã phòng',
+  'p.join.roomPh':'ví dụ SKY01',
+  'p.join.name':'Tên của bạn',
+  'p.join.namePh':'ví dụ Minh Anh',
+  'p.join.avatar':'Chọn máy bay của bạn',
+  'p.join.btn':'Lên máy bay →',
+  'p.join.needRoom':'Vui lòng nhập mã phòng',
+  'p.join.needName':'Vui lòng nhập tên của bạn',
+  'p.join.needAvatar':'Vui lòng chọn một máy bay',
+  'p.join.welcome':'Chào mừng lên chuyến bay, {name}!',
+  'p.join.roomFull':'Phòng đã đầy',
+  'p.join.roomUnreachable':'Không kết nối được tới phòng',
+
+  /* --- player: game --- */
+  'p.pos':'Thứ hạng',
+  'p.now':'Đang ở',
+  'p.total':'Tổng thời gian',
+  'p.aircraft':'Máy bay',
+  'p.of':'trên {n}',
+  'p.powerNote':'☀️ Câu hỏi Quyền lực — trả lời đúng để được <strong>+2 chặng</strong>!',
+  'p.stormNote':'⛈ Bão — chỉ <strong>10 người trả lời đúng nhanh nhất</strong> được ATC cấp phép bay tiếp. Những người còn lại đứng nguyên.',
+  'p.waitStart':'ĐANG CHỜ BẮT ĐẦU',
+  'p.waitStartMsg':'Câu hỏi sẽ mở ngay thôi. Sẵn sàng cất cánh!',
+  'p.waitNext':'Câu hỏi tiếp theo sắp tới…',
+  'p.readWarning':'Đọc cảnh báo phía trên — câu hỏi sắp hiện ra.',
+  'p.waitOpen':'Đang chờ người điều phối mở câu hỏi này…',
+  'p.awaitAnswers':'Các đáp án sẽ hiện khi người điều phối mở câu hỏi',
+  'p.selectAnswer':'Chọn một đáp án phía trên',
+  'p.submit':'Gửi đáp án →',
+  'p.submitHint':'Gửi ngay để có thời gian tốt hơn — nếu không, đáp án này sẽ tự khoá khi hết giờ.',
+  'p.locked':'🔒 Đã khoá đáp án',
+  'p.lockedTurbo':' kèm Turbo Boost',
+  'p.lockedBelt':' và Thắt dây an toàn',
+  'p.lockedWait':'. Đang chờ những người chơi khác…',
+  'p.timeUpAuto':'⏱️ Hết giờ — đáp án của bạn đã được khoá tự động.',
+  'p.timeUpNone':'⏱️ Hết giờ — bạn chưa gửi đáp án cho chặng này.',
+  'p.answersLocked':'⏳ Đã khoá đáp án. Sắp công bố…',
+  'p.timeUpToast':'Hết giờ — không nhận thêm đáp án cho chặng này',
+  'p.pickFirst':'Hãy chọn một đáp án trước',
+  'p.finished':'🏁 ĐÃ VỀ ĐÍCH',
+  'p.finishedPlace':'{medal} Bạn về đích ở vị trí thứ {n}!',
+  'p.finishedMsg':'Bạn đã hoàn thành Sky Race — cảm ơn bạn đã đồng hành cùng chúng tôi hôm nay.<br><br>Chúc bạn một hội nghị đầy cảm hứng, những kết nối ý nghĩa và một trải nghiệm thật trọn vẹn trong suốt sự kiện hôm nay.',
+  'p.raceComplete':'CUỘC ĐUA KẾT THÚC',
+  'p.placeN':'Hạng {n}',
+  'p.raceOver':'Cuộc đua đã kết thúc',
+  'p.outOf':'trên tổng số {n} phi công',
+  'p.prize1':'Bạn giành Cúp Vô địch 🏆!',
+  'p.prize2':'Bạn giành Huy chương Vàng 🥇!',
+  'p.prize3':'Bạn giành Huy chương Bạc 🥈!',
+  'p.prize4':'Bạn giành Huy chương Đồng 🥉!',
+  'p.congratsPodium':'Xin chúc mừng — một chuyến bay tuyệt vời. Mời bạn lên sân khấu nhận giải.',
+  'p.congratsOther':'Cảm ơn bạn đã đồng hành cùng chúng tôi hôm nay — mỗi chặng bạn bay đều là một phần của cuộc đua.',
+  'p.wish':'Chúc bạn một hội nghị đầy cảm hứng, những kết nối ý nghĩa và một trải nghiệm thật trọn vẹn trong suốt sự kiện hôm nay.',
+
+  /* --- player: reveal messages --- */
+  'p.rv.turbOk':'🌪 Đúng rồi — nhưng nhiễu động giữ máy bay của bạn đứng yên.',
+  'p.rv.turbBelt':'🔒 Dây an toàn đã cứu bạn — lẽ ra nhiễu động đã lấy mất một chặng, bạn giữ nguyên vị trí.',
+  'p.rv.turbBad':'🌪 Nhiễu động! Trả lời sai khiến bạn lùi lại một điểm đến.',
+  'p.rv.stormOk':'⛈ Được ATC cấp phép — bay tiếp sang chặng kế tiếp!',
+  'p.rv.stormSlow':'⛈ Đúng rồi, nhưng ATC chỉ cấp phép cho 10 người nhanh nhất — bạn đứng nguyên.',
+  'p.rv.stormBad':'⛈ Bão — máy bay nằm sân, đứng nguyên vị trí.',
+  'p.rv.powerOk':'⚡ Chính xác! Thưởng Câu hỏi Quyền lực đã được áp dụng cho người nhanh nhất.',
+  'p.rv.powerBad':'⚡ Câu hỏi Quyền lực — lần này chưa đúng, bạn đứng nguyên vị trí.',
+  'p.rv.turboOk':'Turbo Boost thành công — tiến 2 điểm đến!',
+  'p.rv.turboBad':'Turbo Boost phản tác dụng — lùi 1 điểm đến.',
+  'p.rv.ok':'✅ Chính xác! Máy bay của bạn tiến thêm một điểm đến.',
+  'p.rv.bad':'❌ Chưa đúng — máy bay của bạn đứng nguyên vị trí.',
+  'p.rv.none':'⏱️ Không gửi đáp án — máy bay đứng nguyên vị trí.',
+
+  /* --- player: helps --- */
+  'h.fifty':'50:50',
+  'h.turbo':'Turbo',
+  'h.belt':'Dây an toàn',
+  'h.locked':'50:50 · Turbo Boost · Thắt dây an toàn đều mở khoá khi máy bay của bạn tới {code}',
+  'h.fiftyTip':'Loại bỏ hai đáp án sai',
+  'h.fiftyUsed':'Đã dùng 50:50 rồi',
+  'h.turboTip':'Đúng +2 chặng · sai −1 chặng',
+  'h.turboUsed':'Đã dùng Turbo Boost rồi',
+  'h.beltTip':'Chỉ dùng trong nhiễu động — huỷ hình phạt lùi 1 chặng',
+  'h.beltUsed':'Đã dùng Thắt dây an toàn rồi',
+  'h.armedTurbo':'Đã bật Turbo — đúng +2 chặng, sai −1 chặng',
+  'h.armedBelt':'Đã thắt dây an toàn — trả lời sai sẽ không bị đẩy lùi',
+  'h.turbOnly':'🌪 Nhiễu động — lúc này chỉ Thắt dây an toàn có tác dụng',
+  'h.stormAll':'⛈ Bão — cả ba trợ giúp đều bị khoá',
+  'h.powerAll':'⚡ Câu hỏi Quyền lực — cả ba trợ giúp đều bị khoá',
+  'h.fiftyDone':'Đã loại bỏ hai đáp án sai',
+  'h.blockTurb':'🌪 {what} bị khoá trong nhiễu động',
+  'h.blockStorm':'⛈ {what} bị khoá trong bão — chỉ ATC cấp phép',
+  'h.blockPower':'⚡ {what} bị khoá trong Câu hỏi Quyền lực',
+  'h.blockLocked':'{what} mở khoá khi máy bay của bạn tới MUC',
+  'h.beltOnlyTurb':'Thắt dây an toàn chỉ dùng được trong nhiễu động',
+  'h.beltNeedMuc':'Thắt dây an toàn mở khoá khi máy bay của bạn tới MUC',
+  'h.nameTurbo':'Turbo Boost',
+  'h.nameFifty':'50:50',
+
+  /* --- business class ribbon --- */
+  'biz.title':'Hạng Thương gia · Hạng {n}',
+  'biz.place1':'nhất', 'biz.place2':'nhì', 'biz.place3':'ba',
+  'biz.chasing':'{name} đang bám sát bạn — {gap}',
+  'biz.level':'ngang bằng bạn',
+  'biz.oneLeg':'kém 1 chặng',
+  'biz.nLegs':'kém {n} chặng',
+  'biz.alone':'Bạn đang một mình dẫn đầu.',
+
+  /* --- weather announcements --- */
+  'wx.turb.title':'NHIỄU ĐỘNG PHÍA TRƯỚC',
+  'wx.turb.rule':'Trả lời đúng chỉ giữ nguyên vị trí. Sai — hoặc không trả lời — bị lùi 1 chặng. 50:50 và Turbo Boost bị khoá; Thắt dây an toàn là lá chắn duy nhất của bạn.',
+  'wx.storm.title':'BÃO PHÍA TRƯỚC',
+  'wx.storm.rule':'Chỉ 10 người trả lời đúng nhanh nhất được ATC cấp phép tiến 1 chặng. Những người còn lại đứng nguyên — không ai bị lùi. Cả ba trợ giúp đều bị khoá.',
+  'wx.power.title':'CÂU HỎI QUYỀN LỰC',
+  'wx.power.rule':'Người trả lời đúng nhanh nhất được +2 chặng. Những người đúng khác được +1. Trả lời sai đứng nguyên. Cả ba trợ giúp đều bị khoá.',
+  'wx.clear':'🌈 Trời quang',
+  'wx.turbulence':'🌪 Nhiễu động',
+  'wx.storm':'⛈ Bão',
+  'wx.power':'☀️ Câu hỏi Quyền lực',
+  'wx.finalRound':'☀️ CHẶNG QUYẾT ĐỊNH',
+
+  /* --- presenter --- */
+  'pres.fullscreen':'⛶ Toàn màn hình',
+  'pres.exitFullscreen':'⛶ Thoát toàn màn hình',
+  'pres.fsUnsupported':'Trình duyệt này không hỗ trợ chế độ toàn màn hình',
+  'pres.fsBlocked':'Trình duyệt đã chặn chế độ toàn màn hình',
+  'pres.leaderboard':'Bảng xếp hạng trực tiếp',
+  'pres.leaderboardN':'Bảng xếp hạng trực tiếp · {n}',
+  'pres.noPlayers':'Chưa có người chơi. Quét mã QR để tham gia.',
+  'pres.noneHere':'Hiện chưa có máy bay nào đỗ tại đây.',
+  'pres.othersOutside':'người chơi khác',
+  'pres.waitOpen':'Đang chờ người điều phối mở {leg}…',
+  'pres.qOpen':'{leg} đang mở — người chơi đang trả lời.',
+  'pres.qTurb':' 🌪 Nhiễu động đang có hiệu lực.',
+  'pres.qLocked':'{leg} đã khoá — chuẩn bị công bố.',
+  'pres.qRevealed':'{leg} — đáp án đúng: {letter}. Máy bay đang di chuyển…',
+  'pres.qRevealedPlain':'{leg} đã công bố.',
+  'pres.raceDone':'Cuộc đua kết thúc! 🏆',
+  'pres.awaitAnswers':'Đọc câu hỏi — các đáp án và đồng hồ sẽ tới ngay sau',
+  'pres.correctIs':'✅ Đáp án đúng: {letter} — {text}',
+  'pres.newLeader':'🔥 Dẫn đầu mới',
+  'pres.stormClear':'⛈ ATC CẤP PHÉP — {n} máy bay bay tiếp',
+  'pres.stormNone':'Không ai trả lời đúng kịp giờ.',
+  'pres.congrats':'Xin chúc mừng!',
+  'pres.winsRace':'thắng Sky Race!',
+  'pres.playAgain':'Chơi lại',
+  'pres.award':'Lễ trao giải',
+  'pres.champion':'Vô địch',
+  'pres.correctN':'{n} câu đúng',
+  'pres.placeN':'Hạng {n}',
+  'pres.milestoneTitle':'Người đầu tiên tới mỗi chặng mốc',
+  'pres.notReached':'chưa ai tới',
+  'pres.spc':'Chặng đặc biệt',
+
+  /* --- cabin bulletin --- */
+  'brief.title':'✈️ Thông báo khoang hành khách',
+  'brief.standby':'🛫 Kính mời tổ bay chuẩn bị khởi hành. Thống kê câu hỏi sẽ hiện tại đây sau khi công bố đáp án đầu tiên.',
+  'brief.fastest':'Đúng nhanh nhất',
+  'brief.noneCorrect':'Không ai trả lời đúng',
+  'brief.correct':'Số câu trả lời đúng',
+  'brief.ofN':'trên {n}',
+  'brief.rate':'Tỉ lệ đúng',
+  'brief.leaderAt':'Người dẫn đầu tại',
+  'brief.busiest':'Chặng đông nhất',
+  'brief.aircraftN':'{n} máy bay',
+  'brief.pace':'Nhịp độ khoang',
+  'brief.paceFast':'Nhanh',
+  'brief.paceSteady':'Ổn định',
+  'brief.paceSlow':'Chậm',
+  'brief.paceNone':'Chưa có dữ liệu',
+  'brief.avg':'trung bình {t}',
+
+  /* --- admin --- */
+  'a.nav.control':'🎮&nbsp; Điều khiển ván',
+  'a.nav.answers':'📝&nbsp; Đáp án đã gửi',
+  'a.nav.questions':'📋&nbsp; Ngân hàng câu hỏi',
+  'a.nav.players':'👥&nbsp; Quản lý người chơi',
+  'a.nav.leaderboard':'🏆&nbsp; Bảng xếp hạng',
+  'a.title.control':'Điều khiển ván',
+  'a.title.answers':'Đáp án đã gửi',
+  'a.title.questions':'Ngân hàng câu hỏi',
+  'a.title.players':'Quản lý người chơi',
+  'a.title.leaderboard':'Bảng xếp hạng',
+  'a.reset':'🗑️ Đặt lại ván (xoá hết người chơi)',
+  'a.stat.players':'Người chơi đã vào',
+  'a.stat.question':'Câu hỏi hiện tại',
+  'a.stat.submitted':'Đáp án đã gửi',
+  'a.stat.leader':'Người dẫn đầu',
+  'a.qcontrol':'Điều khiển câu hỏi',
+  'a.prev':'← Câu trước',
+  'a.showQ':'Hiện câu hỏi',
+  'a.openA':'Mở đáp án & chạy đồng hồ',
+  'a.openAWaiting':'Mở đáp án (đang hiện cảnh báo…)',
+  'a.showQTip':'Đưa cảnh báo thời tiết lên 10 giây (nếu có), rồi hiện câu hỏi — đáp án vẫn ẩn',
+  'a.openATip':'Hiện 4 đáp án và bắt đầu đếm ngược 20 giây',
+  'a.close':'Khoá câu hỏi',
+  'a.undo':'↩️ Hoàn tác công bố',
+  'a.undoLeg':'↩️ Hoàn tác chặng {n}',
+  'a.undoTip':'Quay lại lần công bố gần nhất — mọi máy bay trở về vị trí trước khi câu đó được tính điểm',
+  'a.next':'Câu tiếp theo →',
+  'a.resetProgress':'🔄 Đặt lại tiến trình',
+  'a.resetProgressTip':'Đặt lại tiến trình — về chặng 1, mọi máy bay về START',
+  'a.powerQ':'⚡ Câu hỏi Quyền lực',
+  'a.powerQBlocked':'⚡ Câu hỏi Quyền lực (bị khoá: thời tiết)',
+  'a.powerQUsed':'⚡ Câu hỏi Quyền lực (đã dùng)',
+  'a.powerQTip':'Buộc câu hỏi chặng này thành lượt thưởng, người đúng nhanh nhất được +2 chặng',
+  'a.controlNote':'Đáp án tự động công bố khi hết giờ · Cả ba trợ giúp (50:50, Turbo, Thắt dây an toàn) mở khoá riêng cho từng người khi máy bay của họ tới MUC · Nhiễu động tự áp dụng ở chặng 6 và 10, Bão ở chặng 8 · Câu hỏi Quyền lực không kích hoạt được trên chặng nhiễu động hay bão.',
+  'a.answerKey':'📖 Đáp án',
+  'a.answerKeyNote':'— dành cho bạn, không hiện cho người chơi',
+  'a.presenterNotes':'🎤 Ghi chú người dẫn',
+  'a.noNotes':'Câu hỏi này chưa có ghi chú người dẫn.',
+  'a.winner':'Người thắng cuộc',
+  'a.winnerNote':'Khi cuộc đua đã kết thúc (4 máy bay về đích), hiện màn hình "Xin chúc mừng!" toàn màn hình kèm pháo giấy trên màn hình lớn. Màn này vẫn ẩn cho tới khi bạn bấm nút — về tới đích không tự động hiện.',
+  'a.showCongrats':'🎉 Hiện Chúc mừng',
+  'a.hideCongrats':'Ẩn chúc mừng',
+  'a.awardTitle':'Lễ trao giải',
+  'a.awardNote':'Hiện bục trao giải top 4 và những người đầu tiên tới các chặng mốc trên màn hình lớn, kèm pháo hoa.',
+  'a.showAward':'🏆 Trao giải',
+  'a.hideAward':'Ẩn màn trao giải',
+  'a.feed':'Đáp án gửi trực tiếp — câu',
+  'a.noFeed':'Chặng này chưa mở câu hỏi.',
+  'a.noSubmissions':'Chưa có ai gửi đáp án.',
+  'a.allAnswers':'Toàn bộ đáp án theo từng chặng',
+  'a.qbank':'Ngân hàng câu hỏi',
+  'a.qbankNote':'Đáp án đúng được ẩn với người chơi',
+  'a.qbankFoot':'Tổng {total} câu hỏi, hỏi theo đúng thứ tự này, mỗi chặng một câu — không câu nào lặp lại. Còn {left} câu chưa dùng. Thứ tự đáp án đã được xáo so với tài liệu gốc (đáp án phía trên là thứ tự thật đang chạy).',
+  'a.registered':'Người chơi đã đăng ký',
+  'a.registeredNote':'Dùng <b>−1 / +1</b> để chỉnh vị trí người chơi bằng tay — cho trường hợp điện thoại hết pin giữa câu, mất kết nối, hay tranh chấp đã được giải quyết trên sân khấu.',
+  'a.th.aircraft':'Máy bay','a.th.name':'Tên','a.th.position':'Vị trí','a.th.correct':'Đúng','a.th.helps':'Trợ giúp còn',
+  'a.th.adjust':'Chỉnh','a.th.actions':'Thao tác','a.th.rank':'Hạng','a.th.airport':'Sân bay','a.th.progress':'Tiến độ','a.th.time':'Tổng thời gian',
+  'a.noPlayers':'Chưa có người chơi nào đăng ký.',
+  'a.remove':'Xoá',
+  'a.notPlayed':'chưa chơi',
+  'a.answersN':'{n} đáp án',
+  'a.noSubs':'Không có đáp án nào.',
+  'a.optionN':'Đáp án {letter}',
+  'a.pending':'(đang chọn)',
+  'a.submittedTag':'Đã gửi','a.selecting':'Đang chọn…',
+  'a.notOpened':'chưa mở',
+  'a.legStatus':'{leg} — trạng thái: {state}. {q}{wx} · còn {left} câu hỏi',
+  'a.turbLeg':' · 🌪 CHẶNG NHIỄU ĐỘNG',
+  'a.stormLeg':' · ⛈ CHẶNG BÃO',
+  'a.locked':'ĐÃ KHOÁ','a.revealed':'ĐÃ CÔNG BỐ',
+
+  /* --- admin toasts --- */
+  'a.t.finished':'Ván đã kết thúc — đặt lại để chơi lại.',
+  'a.t.noQuestions':'Hết câu hỏi trong ngân hàng — đã hỏi cả {n} câu.',
+  'a.t.wxUp':'Cảnh báo thời tiết đã hiện — câu hỏi tới sau 10 giây',
+  'a.t.qIn2s':'Câu hỏi hiện sau 2 giây (đáp án vẫn ẩn)',
+  'a.t.opened':'{leg} — đã mở đáp án, đồng hồ đang chạy',
+  'a.t.noOpen':'Hiện không có câu hỏi nào đang mở',
+  'a.t.answersLocked':'Đã khoá đáp án',
+  'a.t.closeFirst':'Hãy khoá câu hỏi trước',
+  'a.t.openFirst':'Hãy mở một câu hỏi trước',
+  'a.t.already':'Chặng {n} đã được công bố — máy bay không di chuyển lần nữa.',
+  'a.t.landed':'Đã công bố — {n} máy bay hạ cánh tại FINISH (tổng {total} tới lúc này)',
+  'a.t.moved':'Đã công bố đáp án — máy bay đã di chuyển',
+  'a.t.nothingUndo':'Không có gì để hoàn tác',
+  'a.t.confirmUndo':'Hoàn tác công bố Chặng {n}? Mọi máy bay sẽ trở về vị trí trước khi câu đó được tính điểm.',
+  'a.t.undone':'Đã hoàn tác công bố Chặng {n}',
+  'a.t.advanced':'Đã chuyển sang {leg}',
+  'a.t.atFirst':'Đang ở Chặng 1 rồi',
+  'a.t.confirmPrev':'Quay lại Chặng {n}? Chặng đó sẽ mở lại đúng câu hỏi cũ (vị trí máy bay giữ nguyên).',
+  'a.t.wentBack':'Đã quay lại {leg}',
+  'a.t.powerOnlyLobby':'Câu hỏi Quyền lực chỉ bật/tắt được trước khi mở câu hỏi',
+  'a.t.powerTurb':'🌪 Chặng {n} là chặng nhiễu động — không kích hoạt Câu hỏi Quyền lực được',
+  'a.t.powerStorm':'⛈ Chặng {n} là chặng bão — không kích hoạt Câu hỏi Quyền lực được',
+  'a.t.powerUsed':'Câu hỏi Quyền lực đã dùng trong ván này rồi',
+  'a.t.powerOn':'⚡ Đã kích hoạt Câu hỏi Quyền lực cho chặng này',
+  'a.t.powerOff':'Đã huỷ Câu hỏi Quyền lực — trả lại lượt dùng',
+  'a.t.resetConfirm':'Thao tác này xoá TẤT CẢ {n} người chơi và toàn bộ cuộc đua.\n\nGõ  RESET  để xác nhận:',
+  'a.t.resetCancel':'Đã huỷ đặt lại',
+  'a.t.resetAll':'Đặt lại toàn bộ ván đấu?',
+  'a.t.resetDone':'Đã đặt lại ván',
+  'a.t.resetProgressConfirm':'Đặt lại tiến trình? Chặng trở về 1 và mọi máy bay quay lại START. Người chơi vẫn giữ đăng ký.',
+  'a.t.resetProgressDone':'Đã đặt lại tiến trình — về Chặng 1',
+  'a.t.noPlayersYet':'Chưa có người chơi nào',
+  'a.t.awardShown':'Đã hiện lễ trao giải trên màn hình lớn',
+  'a.t.notFinished':'Cuộc đua chưa kết thúc',
+  'a.t.congratsShown':'Đã hiện màn chúc mừng trên màn hình lớn',
+  'a.t.confirmRemove':'Xoá "{name}" khỏi cuộc đua? Không thể hoàn tác — người này sẽ phải tham gia lại như người chơi mới.',
+  'a.t.removed':'Đã xoá {name}',
+  'a.t.alreadyAt':'{name} đã ở {code} rồi',
+  'a.t.nudged':'{name}: {from} → {to} (chỉnh tay)',
+  'sync.live':'🟢 TRỰC TIẾP · phòng {room}',
+  'sync.offline':'🟠 NGOẠI TUYẾN · chỉ máy này',
+  'sync.connecting':'⚪ đang kết nối…',
+  'sync.errAdmin':'⚠️ Lỗi đồng bộ — kiểm tra kết nối',
+  'sync.errSend':'⚠️ Không gửi được — kiểm tra kết nối',
+  'common.exit':'← Thoát',
+  'st.lobby':'CHỜ','st.question':'ĐANG HỎI','st.locked':'ĐÃ KHOÁ','st.reveal':'ĐÃ CÔNG BỐ','st.finished':'KẾT THÚC',
+  'common.legOf':'Chặng {n} / {total}',
+  'common.overtime':'Hiệp phụ {n}',
+},
+en: {
+  'landing.sub':'Vietnam Airlines Conference for Vietnamese Travel Agents Serving the Vietnamese Community<br><br>📍 Milan, Italy<br>📅 23 September 2026<br><br>Thank you for joining us at this special gathering of Vietnam Airlines and our valued travel partners.<br><br>We wish you an inspiring conference, meaningful connections, and an enjoyable experience throughout today\'s event.',
+  'landing.player':'Player',
+  'landing.playerDesc':'Join with your name, pick your aircraft, and answer questions from your phone.',
+  'landing.playerGo':'Join as player →',
+  'landing.presenter':'Presenter Screen',
+  'landing.presenterDesc':'Full-screen live map for the LED display — aircraft, leaderboard, checkpoints.',
+  'landing.presenterGo':'Open presenter →',
+  'landing.admin':'Admin Dashboard',
+  'landing.adminDesc':'Run the game: open questions, reveal answers, manage players and results.',
+  'landing.adminGo':'Enter password →',
+  'landing.howto':'📖 How to play',
+  'lang.label':'Language',
+
+  'rules.title':'✈️ How to Play — Sky Race',
+  'rules.close':'Close',
+  'rules.back':'← Back',
+  'rules.next':'Next →',
+  'rules.h.race':'The race',
+  'rules.p.race1':'12 legs from START to FINISH along an S-shaped route. Each leg, everyone answers one question within <strong>20 seconds</strong>. The answer is revealed <strong>automatically the moment the countdown ends</strong>.',
+  'rules.p.race2':'The race keeps going until at least <strong>4 aircraft land on FINISH</strong>. Reaching FINISH shows you your own placing right away, even while the race continues for everyone else.',
+  'rules.h.map':'🗺 Route map',
+  'rules.h.cp':'📍 Checkpoints',
+  'rules.p.cp':'The five gold stops above are checkpoints. Whoever is <strong>first</strong> to reach HAN, SPC or SGN earns a milestone marker next to their name for the rest of the race.',
+  'rules.h.win':'🏆 Winning',
+  'rules.p.win':'First to FINISH wins. If several aircraft land on the same reveal, they\'re ranked by <strong>correct answers</strong>, then by <strong>total answer time</strong> — so answering fast matters.',
+  'rules.h.clear':'🌈 Clear Skies',
+  'rules.p.clear':'The default. Correct answer advances you <strong>1 leg</strong>; a wrong answer holds your position — no penalty.',
+  'rules.h.turb':'🌪 Turbulence',
+  'rules.p.turb':'Correct answer <strong>holds</strong> your position. Anything else — wrong, or no answer at all — sends you <strong>back 1 leg</strong>. 50:50 and Turbo Boost are disabled; this is the only time Fasten Seatbelt works.',
+  'rules.h.storm':'⛈ Storm',
+  'rules.p.storm':'Only the <strong>10 fastest correct answers</strong> get ATC clearance to advance 1 leg. Everyone else holds position, including correct answers outside the top 10 — but nobody goes backwards. All three helps and the Power Question are disabled.',
+  'rules.h.power':'☀️ Power Question',
+  'rules.p.power':'The host\'s one-time bonus round for the whole game, armed before the question opens. The <strong>fastest correct</strong> answer gets <strong>+2 legs</strong>, every other correct answer <strong>+1</strong>, wrong answers hold. Can\'t be armed on a Turbulence or Storm leg, and all three helps are disabled.',
+  'rules.h.helps':'Your three helps',
+  'rules.p.helps':'All three unlock the moment <strong>your own aircraft reaches MUC</strong> — not when the race reaches MUC. Each one can be used <strong>once per game</strong>.',
+  'rules.help.fifty':'50:50',
+  'rules.help.fiftyDesc':'Removes two wrong answers, leaving the correct one and a single decoy. Disabled during Turbulence, Storm and the Power Question.',
+  'rules.help.turbo':'Turbo Boost',
+  'rules.help.turboDesc':'Double or nothing. Correct → <strong>+2 legs</strong>. Wrong → <strong>−1 leg</strong>. Arming it costs nothing until you press Submit, so you can change your mind. Disabled during Turbulence, Storm and the Power Question.',
+  'rules.help.belt':'Fasten Seatbelt',
+  'rules.help.beltDesc':'Your turbulence shield — and it <strong>only works during Turbulence</strong>. Ride out a wrong answer without being pushed back a leg. Useless otherwise, so hold on to it until turbulence hits.',
+  'rules.h.docs':'📎 Programme documents',
+  'rules.p.docs':'Conference materials, the Sales Kit and the agenda will be linked here.',
+  'rules.docs.salesKit':'📘 Vietnam Airlines Sales Kit',
+  'rules.docs.more':'More documents will be added here before the event.',
+
+  'gate.title':'Admin access',
+  'gate.desc':'Enter the admin password to continue.',
+  'gate.ph':'Password',
+  'gate.cancel':'Cancel',
+  'gate.enter':'Enter',
+  'gate.wrong':'Incorrect password — please try again.',
+  'gate.signing':'Signing in…',
+  'gate.tooMany':'Too many attempts — wait a moment.',
+  'gate.fbFail':'Firebase sign-in failed — make sure the admin@vna-sky-race.local account password in Firebase Console matches ADMIN_FIREBASE_PASSWORD in index.html.',
+  'gate.signedIn':'Signed in as admin · room {room}',
+
+  'p.join.title':'Join the race',
+  'p.join.hint':'Scan complete. Enter the room code, your name, and choose your aircraft.',
+  'p.join.room':'Room code',
+  'p.join.roomPh':'e.g. SKY01',
+  'p.join.name':'Your name',
+  'p.join.namePh':'e.g. Minh Anh',
+  'p.join.avatar':'Choose your aircraft',
+  'p.join.btn':'Board aircraft →',
+  'p.join.needRoom':'Please enter a room code',
+  'p.join.needName':'Please enter your name',
+  'p.join.needAvatar':'Please choose an aircraft',
+  'p.join.welcome':'Welcome aboard, {name}!',
+  'p.join.roomFull':'Room is full',
+  'p.join.roomUnreachable':'Could not reach room',
+
+  'p.pos':'Position',
+  'p.now':'Now at',
+  'p.total':'Total time',
+  'p.aircraft':'Aircraft',
+  'p.of':'of {n}',
+  'p.powerNote':'☀️ Power Question — answer correctly for <strong>+2 legs</strong>!',
+  'p.stormNote':'⛈ Storm — only the <strong>10 fastest correct answers</strong> get ATC clearance to continue. Everyone else holds position.',
+  'p.waitStart':'WAITING FOR GAME TO START',
+  'p.waitStartMsg':'Question will be open shortly. Get ready for takeoff!',
+  'p.waitNext':'Next question coming up…',
+  'p.readWarning':'Read the warning above — the question is coming.',
+  'p.waitOpen':'Waiting for the admin to open this question…',
+  'p.awaitAnswers':'Answers appear when the host opens the question',
+  'p.selectAnswer':'Select an answer above',
+  'p.submit':'Submit answer →',
+  'p.submitHint':'Submit now to bank a faster time — if you don\'t, this answer locks in when the clock runs out.',
+  'p.locked':'🔒 Answer locked in',
+  'p.lockedTurbo':' with Turbo Boost',
+  'p.lockedBelt':' and Fasten Seatbelt',
+  'p.lockedWait':'. Waiting for other players…',
+  'p.timeUpAuto':'⏱️ Time\'s up — your answer was locked in automatically.',
+  'p.timeUpNone':'⏱️ Time\'s up — no answer submitted for this leg.',
+  'p.answersLocked':'⏳ Answers locked. Revealing shortly…',
+  'p.timeUpToast':'Time\'s up — no more answers for this leg',
+  'p.pickFirst':'Pick an answer first',
+  'p.finished':'🏁 FINISHED',
+  'p.finishedPlace':'{medal} You landed in {n} place!',
+  'p.finishedMsg':'You\'ve completed the Sky Race — thank you for flying with us today.<br><br>We wish you an inspiring conference, meaningful connections, and an enjoyable experience throughout today\'s event.',
+  'p.raceComplete':'RACE COMPLETE',
+  'p.placeN':'{n} place',
+  'p.raceOver':'Race complete',
+  'p.outOf':'out of {n} pilots',
+  'p.prize1':'You win the Champion\'s Cup 🏆!',
+  'p.prize2':'You win the Gold Medal 🥇!',
+  'p.prize3':'You win the Silver Medal 🥈!',
+  'p.prize4':'You win the Bronze Medal 🥉!',
+  'p.congratsPodium':'Congratulations — a superb flight. Please come up to the stage to collect your award.',
+  'p.congratsOther':'Thank you for flying with us today — every leg you flew was part of the race.',
+  'p.wish':'We wish you an inspiring conference, meaningful connections, and an enjoyable experience throughout today\'s event.',
+
+  'p.rv.turbOk':'🌪 Correct — but turbulence holds your aircraft in place.',
+  'p.rv.turbBelt':'🔒 Seatbelt saved you — turbulence would have cost a leg, you hold position.',
+  'p.rv.turbBad':'🌪 Turbulence! Wrong answer sends you back one destination.',
+  'p.rv.stormOk':'⛈ ATC clearance granted — cleared to continue to the next leg!',
+  'p.rv.stormSlow':'⛈ Correct, but ATC only cleared the 10 fastest — you hold position.',
+  'p.rv.stormBad':'⛈ Storm — aircraft grounded, hold position.',
+  'p.rv.powerOk':'⚡ Correct! Power Question bonus applied for the fastest answer.',
+  'p.rv.powerBad':'⚡ Power Question — not correct this time, you hold position.',
+  'p.rv.turboOk':'Turbo Boost paid off — 2 destinations forward!',
+  'p.rv.turboBad':'Turbo Boost backfired — 1 destination back.',
+  'p.rv.ok':'✅ Correct! Your aircraft advances one destination.',
+  'p.rv.bad':'❌ Not quite — your aircraft holds position.',
+  'p.rv.none':'⏱️ No answer submitted — aircraft holds position.',
+
+  'h.fifty':'50:50',
+  'h.turbo':'Turbo',
+  'h.belt':'Seatbelt',
+  'h.locked':'50:50 · Turbo Boost · Fasten Seatbelt all unlock once your aircraft reaches {code}',
+  'h.fiftyTip':'Remove two wrong answers',
+  'h.fiftyUsed':'50:50 already used',
+  'h.turboTip':'Correct +2 legs · wrong −1 leg',
+  'h.turboUsed':'Turbo Boost already used',
+  'h.beltTip':'Turbulence only — cancels the −1 leg penalty',
+  'h.beltUsed':'Fasten Seatbelt already used',
+  'h.armedTurbo':'Turbo armed — correct +2 legs, wrong −1 leg',
+  'h.armedBelt':'Seatbelt fastened — a wrong answer will not push you back',
+  'h.turbOnly':'🌪 Turbulence — only Fasten Seatbelt works right now',
+  'h.stormAll':'⛈ Storm — all three helps are locked',
+  'h.powerAll':'⚡ Power Question — all three helps are locked',
+  'h.fiftyDone':'Two wrong answers removed',
+  'h.blockTurb':'🌪 {what} is locked during turbulence',
+  'h.blockStorm':'⛈ {what} is locked during the storm — ATC clearance only',
+  'h.blockPower':'⚡ {what} is locked on a Power Question',
+  'h.blockLocked':'{what} unlocks when your aircraft reaches MUC',
+  'h.beltOnlyTurb':'Fasten Seatbelt only works during turbulence',
+  'h.beltNeedMuc':'Fasten Seatbelt unlocks when your aircraft reaches MUC',
+  'h.nameTurbo':'Turbo Boost',
+  'h.nameFifty':'50:50',
+
+  'biz.title':'Business Class · {n} place',
+  'biz.place1':'1st','biz.place2':'2nd','biz.place3':'3rd',
+  'biz.chasing':'{name} is chasing you — {gap}',
+  'biz.level':'level with you',
+  'biz.oneLeg':'1 leg behind',
+  'biz.nLegs':'{n} legs behind',
+  'biz.alone':'You are out in front on your own.',
+
+  'wx.turb.title':'TURBULENCE AHEAD',
+  'wx.turb.rule':'A correct answer only holds your position. Wrong — or no answer at all — sends you back 1 leg. 50:50 and Turbo Boost are locked; Fasten Seatbelt is your only protection.',
+  'wx.storm.title':'STORM AHEAD',
+  'wx.storm.rule':'Only the 10 fastest correct answers get ATC clearance to advance 1 leg. Everyone else holds position — nobody goes backwards. All three helps are locked.',
+  'wx.power.title':'POWER QUESTION',
+  'wx.power.rule':'The fastest correct answer takes +2 legs. Every other correct answer takes +1. Wrong answers hold position. All three helps are locked.',
+  'wx.clear':'🌈 Clear Skies',
+  'wx.turbulence':'🌪 Turbulence',
+  'wx.storm':'⛈ Storm',
+  'wx.power':'☀️ Power Question',
+  'wx.finalRound':'☀️ FINAL ROUND',
+
+  'pres.fullscreen':'⛶ Fullscreen',
+  'pres.exitFullscreen':'⛶ Exit fullscreen',
+  'pres.fsUnsupported':'Fullscreen is not supported in this browser',
+  'pres.fsBlocked':'Fullscreen was blocked by the browser',
+  'pres.leaderboard':'Live Leaderboard',
+  'pres.leaderboardN':'Live Leaderboard · {n}',
+  'pres.noPlayers':'No players yet. Scan the QR code to join.',
+  'pres.noneHere':'No aircraft parked here right now.',
+  'pres.othersOutside':'other players',
+  'pres.waitOpen':'Waiting for admin to open {leg}…',
+  'pres.qOpen':'{leg} is open — players are answering.',
+  'pres.qTurb':' 🌪 Turbulence in effect.',
+  'pres.qLocked':'{leg} locked — preparing to reveal.',
+  'pres.qRevealed':'{leg} — correct answer: {letter}. Aircraft advancing…',
+  'pres.qRevealedPlain':'{leg} revealed.',
+  'pres.raceDone':'Race complete! 🏆',
+  'pres.awaitAnswers':'Read the question — the answers and the clock come next',
+  'pres.correctIs':'✅ Correct answer: {letter} — {text}',
+  'pres.newLeader':'🔥 New Leader',
+  'pres.stormClear':'⛈ ATC CLEARANCE — {n} aircraft continue',
+  'pres.stormNone':'No one answered correctly in time.',
+  'pres.congrats':'Congratulations!',
+  'pres.winsRace':'wins the Sky Race!',
+  'pres.playAgain':'Play again',
+  'pres.award':'Award Ceremony',
+  'pres.champion':'Champion',
+  'pres.correctN':'{n} correct',
+  'pres.placeN':'{n} place',
+  'pres.milestoneTitle':'First to reach each checkpoint',
+  'pres.notReached':'not reached yet',
+  'pres.spc':'Special Checkpoint',
+
+  'brief.title':'✈️ Cabin Bulletin',
+  'brief.standby':'🛫 Cabin crew, prepare for departure. Question statistics will appear here after the first answer is revealed.',
+  'brief.fastest':'Fastest correct',
+  'brief.noneCorrect':'Nobody answered correctly',
+  'brief.correct':'Correct answers',
+  'brief.ofN':'of {n}',
+  'brief.rate':'Success rate',
+  'brief.leaderAt':'Leader at',
+  'brief.busiest':'Busiest stop',
+  'brief.aircraftN':'{n} aircraft',
+  'brief.pace':'Cabin pace',
+  'brief.paceFast':'Fast',
+  'brief.paceSteady':'Steady',
+  'brief.paceSlow':'Slow',
+  'brief.paceNone':'No data',
+  'brief.avg':'avg {t}',
+
+  'a.nav.control':'🎮&nbsp; Game Control',
+  'a.nav.answers':'📝&nbsp; Submitted Answers',
+  'a.nav.questions':'📋&nbsp; Question Bank',
+  'a.nav.players':'👥&nbsp; Manage Players',
+  'a.nav.leaderboard':'🏆&nbsp; Leaderboard',
+  'a.title.control':'Game Control',
+  'a.title.answers':'Submitted Answers',
+  'a.title.questions':'Question Bank',
+  'a.title.players':'Manage Players',
+  'a.title.leaderboard':'Leaderboard',
+  'a.reset':'🗑️ Reset game (clear players)',
+  'a.stat.players':'Players joined',
+  'a.stat.question':'Current question',
+  'a.stat.submitted':'Answers submitted',
+  'a.stat.leader':'Current leader',
+  'a.qcontrol':'Question control',
+  'a.prev':'← Previous question',
+  'a.showQ':'Show question',
+  'a.openA':'Open answers & start clock',
+  'a.openAWaiting':'Open answers (warning showing…)',
+  'a.showQTip':'Puts any weather warning up for 10s, then the question text — answers stay hidden',
+  'a.openATip':'Reveals the four options and starts the 20s countdown',
+  'a.close':'Close question',
+  'a.undo':'↩️ Undo last reveal',
+  'a.undoLeg':'↩️ Undo reveal of leg {n}',
+  'a.undoTip':'Roll back the last reveal — every aircraft returns to where it was before that question was scored',
+  'a.next':'Next question →',
+  'a.resetProgress':'🔄 Reset progress',
+  'a.resetProgressTip':'Reset progress — back to Leg 1, all aircraft to start',
+  'a.powerQ':'⚡ Power Question',
+  'a.powerQBlocked':'⚡ Power Q (blocked: weather)',
+  'a.powerQUsed':'⚡ Power Q (already played)',
+  'a.powerQTip':'Force this leg into a bonus round where the fastest correct answer gets +2 legs',
+  'a.controlNote':'The answer reveals itself automatically when the countdown ends · All three helps (50:50, Turbo, Fasten Seatbelt) unlock per player once their own aircraft reaches MUC · Turbulence auto-applies on legs 6 &amp; 10, Storm on leg 8 · Power Question cannot be armed on a turbulence or storm leg.',
+  'a.answerKey':'📖 Answer key',
+  'a.answerKeyNote':'— for you, not shown to players',
+  'a.presenterNotes':'🎤 Presenter Notes',
+  'a.noNotes':'No presenter notes for this question.',
+  'a.winner':'Race winner',
+  'a.winnerNote':'Once the race has finished (4 aircraft landed), show the full-screen "Congratulations!" overlay with confetti on the presenter screen. It stays hidden until you press this — reaching FINISH does not show it automatically.',
+  'a.showCongrats':'🎉 Show Congratulations',
+  'a.hideCongrats':'Hide congratulations',
+  'a.awardTitle':'Award ceremony',
+  'a.awardNote':'Show the top 4 and checkpoint milestone winners on the presenter screen, with fireworks.',
+  'a.showAward':'🏆 Show award',
+  'a.hideAward':'Hide award overlay',
+  'a.feed':'Live answer feed — question',
+  'a.noFeed':'No question opened for this leg yet.',
+  'a.noSubmissions':'No submissions yet.',
+  'a.allAnswers':'All submitted answers by question',
+  'a.qbank':'Question bank',
+  'a.qbankNote':'Correct answers hidden from players',
+  'a.qbankFoot':'{total} questions total, asked in this order, one per leg — a question is never repeated. {left} still unused. Option order is shuffled from the source deck (the answer key above is the shuffled, live order).',
+  'a.registered':'Registered players',
+  'a.registeredNote':'Use <b>−1 / +1</b> to correct a player\'s position by hand — for a phone that died mid-question, a lost connection, or a dispute settled on stage.',
+  'a.th.aircraft':'Aircraft','a.th.name':'Name','a.th.position':'Position','a.th.correct':'Correct','a.th.helps':'Helps left',
+  'a.th.adjust':'Adjust','a.th.actions':'Actions','a.th.rank':'Rank','a.th.airport':'Airport','a.th.progress':'Progress','a.th.time':'Total time',
+  'a.noPlayers':'No players registered yet.',
+  'a.remove':'Remove',
+  'a.notPlayed':'not played yet',
+  'a.answersN':'{n} answers',
+  'a.noSubs':'No submissions.',
+  'a.optionN':'Option {letter}',
+  'a.pending':'(pending)',
+  'a.submittedTag':'Submitted','a.selecting':'Selecting…',
+  'a.notOpened':'not opened yet',
+  'a.legStatus':'{leg} — status: {state}. {q}{wx} · {left} questions left',
+  'a.turbLeg':' · 🌪 TURBULENCE LEG',
+  'a.stormLeg':' · ⛈ STORM LEG',
+  'a.locked':'LOCKED','a.revealed':'REVEALED',
+
+  'a.t.finished':'Race already finished — reset to play again.',
+  'a.t.noQuestions':'No questions left in the bank — all {n} have been asked.',
+  'a.t.wxUp':'Weather warning up — question follows in 10s',
+  'a.t.qIn2s':'Question appears in 2s (answers still hidden)',
+  'a.t.opened':'{leg} — answers open, clock running',
+  'a.t.noOpen':'No question is currently open',
+  'a.t.answersLocked':'Answers locked',
+  'a.t.closeFirst':'Close the question first',
+  'a.t.openFirst':'Open a question first',
+  'a.t.already':'Leg {n} was already revealed — aircraft not moved again.',
+  'a.t.landed':'Revealed — {n} aircraft landed at FINISH ({total} total so far)',
+  'a.t.moved':'Answer revealed — aircraft moved',
+  'a.t.nothingUndo':'Nothing to undo',
+  'a.t.confirmUndo':'Undo the reveal of Leg {n}? Every aircraft goes back to where it was before that question was scored.',
+  'a.t.undone':'Reveal of Leg {n} undone',
+  'a.t.advanced':'Advanced to {leg}',
+  'a.t.atFirst':'Already at Leg 1',
+  'a.t.confirmPrev':'Go back to Leg {n}? It reopens with the same question it had before (aircraft positions stay as they are).',
+  'a.t.wentBack':'Went back to {leg}',
+  'a.t.powerOnlyLobby':'Power Question can only be toggled before opening the question',
+  'a.t.powerTurb':'🌪 Leg {n} is a turbulence leg — Power Question cannot be armed here',
+  'a.t.powerStorm':'⛈ Leg {n} is a storm leg — Power Question cannot be armed here',
+  'a.t.powerUsed':'Power Question has already been played this game',
+  'a.t.powerOn':'⚡ Power Question armed for this leg',
+  'a.t.powerOff':'Power Question cancelled — charge returned',
+  'a.t.resetConfirm':'This clears ALL {n} players and the whole race.\n\nType  RESET  to confirm:',
+  'a.t.resetCancel':'Reset cancelled',
+  'a.t.resetAll':'Reset the entire game?',
+  'a.t.resetDone':'Game reset',
+  'a.t.resetProgressConfirm':'Reset progress? Leg will return to 1 and every aircraft goes back to START. Players stay registered.',
+  'a.t.resetProgressDone':'Progress reset — back to Leg 1',
+  'a.t.noPlayersYet':'No players yet',
+  'a.t.awardShown':'Award ceremony shown on presenter screen',
+  'a.t.notFinished':'Race has not finished yet',
+  'a.t.congratsShown':'Congratulations screen shown on presenter screen',
+  'a.t.confirmRemove':'Remove "{name}" from the race? This cannot be undone — they would have to join again as a new player.',
+  'a.t.removed':'{name} removed',
+  'a.t.alreadyAt':'{name} is already at {code}',
+  'a.t.nudged':'{name}: {from} → {to} (manual)',
+  'sync.live':'🟢 LIVE · room {room}',
+  'sync.offline':'🟠 OFFLINE · one device only',
+  'sync.connecting':'⚪ connecting…',
+  'sync.errAdmin':'⚠️ Sync error — check connection',
+  'sync.errSend':'⚠️ Could not send — check connection',
+  'common.exit':'← Exit',
+  'st.lobby':'LOBBY','st.question':'QUESTION','st.locked':'LOCKED','st.reveal':'REVEAL','st.finished':'FINISHED',
+  'common.legOf':'Leg {n} of {total}',
+  'common.overtime':'Overtime round {n}',
+}
+};
+
+/* Looks up a string in the active language, falling back to English and finally to the
+   key itself, so a missing translation degrades to something readable rather than blank.
+   {placeholders} in the string are substituted from `vars`. */
+function t(key, vars){
+  let s = (STR[LANG] && STR[LANG][key]);
+  if(s === undefined) s = (STR.en && STR.en[key]);
+  if(s === undefined) return key;
+  if(vars) Object.keys(vars).forEach(k=>{ s = s.split('{'+k+'}').join(vars[k]); });
+  return s;
+}
+/* Paints every string that lives in the static markup. Elements opt in with
+   data-i18n (textContent), data-i18n-html (innerHTML, for strings with <strong> in them),
+   data-i18n-ph (placeholder) or data-i18n-title (tooltip). */
+function applyStaticI18n(){
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-html]').forEach(el=>{ el.innerHTML = t(el.dataset.i18nHtml); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder = t(el.dataset.i18nPh); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.title = t(el.dataset.i18nTitle); });
+  document.querySelectorAll('.lang-opt').forEach(b=>{ b.classList.toggle('on', b.dataset.lang===LANG); });
+  // this one's label depends on runtime state, not just the language, so it can't be a data-i18n
+  if(typeof syncFullscreenBtn === 'function') syncFullscreenBtn();
+}
+function setLang(l){
+  if(LANGS.indexOf(l) < 0 || l === LANG) return;
+  LANG = l;
+  try{ localStorage.setItem('vna_lang', l); }catch(e){}
+  loadQuestions();   // re-reads the bank in the new language, same shuffle order
+  applyStaticI18n();
+  if(typeof rulesPage !== 'undefined' && !document.getElementById('rulesModal').classList.contains('hidden')) rulesGoPage(rulesPage);
+  renderAll();
+}
 // True "S" route: x traces one sine period (bulge right, then bulge left) while y
 // climbs from START at the bottom to FINISH at the top. x/y below are placeholders —
 // layoutRouteOnSCurve() overwrites them with points spaced evenly by arc length along
@@ -1114,50 +1900,153 @@ const ROUTE = [
 // Postgres RLS view could, so the bank is just a plain client-side array — the same tradeoff
 // the original pre-Supabase Firebase version made. QUESTIONS_BY_ID is the id-keyed lookup
 // every render/reveal call site uses; QUESTIONS itself is only iterated.
+// Question bank — the 31 questions from the event's Sales Kit deck, asked in this exact
+// order, one per leg, never repeating (see pickQuestionIndex). `explain` is the 🎤 Presenter
+// Notes line the host reads aloud after the answer is revealed.
+//
+// Each entry carries both languages. `correct` is an index into the ORIGINAL option order
+// and is shared by both, because the shuffle below is seeded from the question id alone —
+// so a Vietnamese phone and an English presenter screen always agree on which letter is right.
+//
+// Realtime Database has no server-side view to hide the answer key from players the way a
+// Postgres RLS view could, so the bank is just a plain client-side array — the same tradeoff
+// the original pre-Supabase Firebase version made. QUESTIONS_BY_ID is the id-keyed lookup
+// every render/reveal call site uses; QUESTIONS itself is only iterated.
 let QUESTIONS = [];
 let QUESTIONS_BY_ID = {};
 
-// [id, question, options, correct option index, presenter notes]
 const QUESTION_BANK = [
-  [1,"What is Vietnam Airlines' target for customer experience by 2030?",["Become Asia's largest airline","Achieve official Skytrax 5-Star certification","Operate 500 aircraft","Launch flights to every continent"],1,"Vietnam Airlines is continuously investing in service quality with the ambition of officially achieving Skytrax 5-Star certification by 2030. Every interaction with our customers—including those through our travel agent partners—contributes to this journey."],
-  [2,"In 2025, Vietnam Airlines celebrated which important milestone?",["20th Anniversary","25th Anniversary","30th Anniversary","35th Anniversary"],2,"For 30 years, Vietnam Airlines has connected Vietnam with the world. Today, we continue expanding our network, upgrading our fleet, and strengthening partnerships with travel agents worldwide."],
-  [3,"How many domestic destinations are currently served by Vietnam Airlines?",["18","20","22","25"],1,"With 20 domestic destinations, Vietnam Airlines offers one of the most comprehensive networks in Vietnam, making it easier for agents to build complete travel itineraries."],
-  [4,"How many nations and territories are included in Vietnam Airlines' international network?",["18","20","22","25"],2,"Vietnam Airlines currently flies across six geographic regions, serving 22 nations and territories while continuously expanding its global footprint."],
-  [5,"Which of the following European cities is currently served by Vietnam Airlines?",["Madrid","Vienna","Amsterdam","Zurich"],2,"Amsterdam is one of Vietnam Airlines' important European gateways, together with Paris, Frankfurt, Munich, London, Milan, Copenhagen, and Moscow."],
-  [6,"How many new routes of VNA are opened for 2026?",["2","3","4","5"],1,"Vietnam Airlines launched three new routes in 2026, further strengthening connectivity between Vietnam and international markets: AMS, HKT, CMB."],
-  [7,"Which cabin class is described as the best option for long-haul flights?",["Economy Class","Premium Economy Class","Business Class","Lotus Class"],1,"Premium Economy offers passengers greater comfort, extra legroom, priority services, affordable price and enhanced onboard amenities—making it an excellent value for long-haul travel."],
-  [8,"Which benefit is available to Business Class passengers?",["Free hotel stay","Unlimited Wi-Fi","Access to the Lotus Lounge","Free city tour"],2,"Business Class customers enjoy premium services including priority check-in, fast-track security where available, Lotus Lounge access, and fully flat seats on wide-body aircraft."],
-  [9,"Which of the following is NOT listed as an ancillary service offered by Vietnam Airlines?",["Advance Seat Selection","Excess Prepaid Baggage","Airport Hotel Booking","Special Meals"],2,"Ancillary services allow passengers to personalize their journey while generating additional revenue opportunities for travel agents. Whether it's selecting a preferred seat, purchasing extra baggage, upgrading a cabin, or requesting a special meal, these services improve the customer experience before the journey even begins."],
-  [10,"A leisure traveler is planning a multi-city trip across Vietnam after arriving from Europe. Which Vietnam Airlines strength provides the GREATEST value to this customer?",["Low-cost pricing","Extensive domestic network with seamless connections","Airport shopping discounts","Free hotel accommodation"],1,"Vietnam Airlines' extensive domestic network allows international travellers to continue their journey seamlessly throughout Vietnam. Whether visiting famous cities or emerging destinations, customers benefit from convenient connections under one trusted airline. This creates more itinerary options and greater selling opportunities for travel agents."],
-  [11,"Which statement BEST summarizes Vietnam Airlines' message to our travel agent partners?",["Focus on selling the lowest fares.","Build long-term success through premium products, excellent customer service, commercial collaboration, and mutual business growth.","Sell international routes only.","Prioritize online sales over agency partnerships."],1,"Throughout today's Sales Kit, one message has remained consistent: Vietnam Airlines is committed to building lasting partnerships with our travel agents. Together, we combine premium products, outstanding service, commercial collaboration, and customer loyalty to create sustainable business growth. Your success is our success, and we look forward to growing together for many years to come."],
-  [12,"Why does Vietnam Airlines continue expanding its international network instead of focusing only on existing routes?",["To reduce domestic operations","To strengthen global connectivity and create new travel opportunities","To compete only on ticket prices","To operate fewer connecting flights"],1,"Every new destination increases connectivity, supports tourism and business travel, and provides travel agents with more itinerary options to serve their customers. A stronger network means more opportunities to grow together."],
-  [13,"A customer wants extra comfort without paying for Business Class. Which Vietnam Airlines product should you recommend?",["Economy Class","Premium Economy Class","Sky Sofa","Transit Tour"],1,"Premium Economy bridges the gap between Economy and Business by offering greater comfort at a more affordable price, making it an attractive option for many travelers. Understanding customer needs helps agents recommend the right product."],
-  [14,"VNA marketing support for agents may include which of the following?",["Aircraft leasing support","Shared marketing campaigns and promotional materials","Airport construction funding","Free office rental"],1,"Marketing is a shared responsibility. Vietnam Airlines supports travel agents by co-funding marketing campaigns, destination promotions, roadshows, and providing promotional materials. Together, we can reach more customers while maximizing marketing efficiency."],
-  [15,"Which action demonstrates the role of an excellent Vietnam Airlines travel agent?",["Selling the cheapest ticket as quickly as possible.","Understanding customer needs and recommending the most suitable Vietnam Airlines products and services.","Selling only Economy Class.","Avoiding ancillary products."],1,"An excellent travel agent does much more than process reservations. By understanding each customer's needs and recommending the right products, services, and benefits, agents become trusted travel advisors. This consultative approach creates happier customers and stronger long-term business relationships."],
-  [16,"A customer wants a more comfortable journey than Economy Class but is not ready to pay for Business Class. Which cabin would you recommend?",["Economy Class","Premium Economy Class","Business Class","Transit Tour"],1,"Premium Economy is one of Vietnam Airlines' strongest value propositions for long-haul travel. It offers significantly more comfort than Economy—including wider seats, greater legroom, priority services, and enhanced meals—without the premium price of Business Class. When customers are looking for extra comfort at a reasonable cost, this is often the ideal recommendation."],
-  [17,"Which commercial program is specifically designed to support travel agents developing premium tour packages?",["Transit Tour","Tour Series Policy","Business FOC Ticket","Agent Care Policy"],1,"The Tour Series Policy is designed to support travel agents developing premium tour packages. It offers preferential pricing, booking allotments, guaranteed fares, and flexible seat release conditions, making it easier to build attractive travel products for customers."],
-  [18,"Vietnam Airlines evaluates sales incentives primarily based on...",["Number of employees.","Revenue performance and KPI achievement.","Office location.","Years of partnership only."],1,"Vietnam Airlines rewards agencies that consistently achieve their sales targets. Incentive programs are based on revenue performance, KPI achievement, and market commitments, ensuring that outstanding partners receive meaningful recognition and support."],
-  [19,"Why does Vietnam Airlines invest in co-branding events, roadshows and workshops with travel agents?",["To reduce ticket prices.","To strengthen brand exposure while sharing marketing costs.","To replace online marketing.","To promote only domestic destinations."],1,"Successful partnerships go beyond ticket sales. By organizing roadshows, workshops, and co-branding campaigns, Vietnam Airlines and travel agents can increase brand visibility, strengthen customer relationships, and share marketing resources more efficiently."],
-  [20,"Which combination best reflects Vietnam Airlines' partnership strategy?",["Lowest fares + limited services","Premium products + loyalty ecosystem + commercial collaboration","Fleet expansion only","Airport infrastructure investment only"],1,"Vietnam Airlines' partnership strategy is built on four pillars: premium products, a strong loyalty ecosystem, commercial collaboration, and joint marketing initiatives. Together, these create sustainable value for customers, travel agents, and the airline."],
-  [21,"A corporate client frequently travels between Europe and Vietnam and wants long-term travel benefits. Besides flight tickets, what additional value should an agent promote?",["Car rental","LotusMiles Membership","Airport parking","Charter flights"],1,"Corporate travelers value convenience, recognition, and long-term rewards. Recommending LotusMiles allows them to earn miles, enjoy exclusive benefits, and strengthen their relationship with Vietnam Airlines over time."],
-  [22,"Why does Vietnam Airlines provide marketing budgets and promotional materials to travel agents?",["To reduce airline operating costs.","To help agents promote Vietnam Airlines and stimulate local market demand.","To replace travel agency advertising.","To increase airport retail sales."],1,"Vietnam Airlines believes successful partnerships require continuous support. By sharing marketing budgets, promotional materials, and destination campaigns, we help our partners increase visibility, attract more customers, and drive sustainable sales growth."],
-  [23,"A customer has a long connection in Hanoi or Ho Chi Minh City. Which Vietnam Airlines service could enhance the passenger's experience?",["Business FOC Ticket","Transit Tour","Gold Agent Program","Tour Series"],1,"Long layovers can become memorable travel experiences. Vietnam Airlines offers Transit Tours in Hanoi and Ho Chi Minh City to provide transit passengers with an enjoyable way to explore Vietnam while waiting for their connecting flight, enhancing the overall travel experience."],
-  [24,"Which customer profile would benefit the MOST from recommending LotusMiles?",["A traveler taking only one domestic flight in their lifetime","A frequent business traveler between Europe and Vietnam","A passenger only interested in the lowest fare","A passenger travelling without checked baggage"],1,"Frequent business travellers are looking for more than just a flight—they value recognition, convenience, and long-term rewards. LotusMiles allows them to earn and redeem miles across flights and a wide range of lifestyle partners, creating value on every journey. As travel agents, introducing LotusMiles is an excellent way to build customer loyalty beyond a single booking."],
-  [25,"Vietnam Airlines invests in joint marketing campaigns with travel agents primarily to...",["Reduce aircraft operating costs","Increase brand awareness and stimulate customer demand together","Replace travel agencies with direct sales","Reduce ticket prices"],1,"Successful marketing is never a one-way effort. Vietnam Airlines actively works with travel agents through co-branding campaigns, roadshows, destination promotions, and joint events to inspire more people to travel. By combining resources and market expertise, both Vietnam Airlines and our partners can grow together more effectively."],
-  [26,"A customer is comparing airlines based only on price. As a Vietnam Airlines agent, which selling approach best reflects the Sales Kit?",["Immediately offer the lowest possible fare.","Highlight Vietnam Airlines' premium service, network, loyalty program, and overall travel value.","Recommend another airline.","Focus only on baggage allowance."],1,"Customers often compare prices first, but experienced travel consultants know that value goes far beyond the fare. Vietnam Airlines offers a premium travel experience, an extensive route network, loyalty rewards, and reliable service. By focusing on overall value rather than price alone, agents can build greater customer trust and satisfaction."],
-  [27,"Why does Vietnam Airlines continuously expand partnerships with banks, hotels and retailers through LotusMiles?",["To replace flight revenue.","To create a complete travel and lifestyle ecosystem that increases customer loyalty.","To reduce airport taxes.","To simplify ticket refunds."],1,"LotusMiles is designed as a lifestyle ecosystem, not simply a frequent flyer program. Through partnerships with banks, hotels, retailers, and many other brands, members can continue earning and redeeming miles in their everyday lives. This keeps customers engaged with Vietnam Airlines even when they are not travelling."],
-  [28,"A passenger has an eight-hour connection in Vietnam. Besides the flight itself, which service can create additional value?",["Business FOC Ticket","Transit Tour","Tour Series","Gold Agent Award"],1,"A long layover doesn't have to be wasted time. Vietnam Airlines' Transit Tour allows eligible passengers to discover Vietnam during their connection, transforming waiting time into a memorable travel experience. It's another example of how we continue adding value beyond the flight itself."],
-  [29,"According to Vietnam Airlines' commercial strategy, why are incentive programs offered to travel agents?",["To reward performance and encourage sustainable business growth.","To replace commission.","To reduce ticket prices.","To encourage one-time sales only."],0,"Incentive programs exist to recognise and reward genuine performance. By tying rewards to revenue and KPI achievement, Vietnam Airlines encourages partners to build sustainable, long-term business rather than chasing one-off sales."],
-  [30,"Which combination creates the STRONGEST long-term customer loyalty?",["Lowest airfare only","Comfortable flight + LotusMiles + quality service","Promotional baggage only","Airport shopping discounts only"],1,"Customer loyalty is created through consistent positive experiences—not just competitive pricing. Comfortable flights, excellent service, and meaningful rewards through LotusMiles encourage passengers to choose Vietnam Airlines again and again. Loyal customers are also more likely to recommend the airline to others."],
-  [31,"A corporate client asks why they should choose Vietnam Airlines instead of another full-service airline. Which answer best reflects the Sales Kit?",["Because Vietnam Airlines always has the cheapest tickets.","Because Vietnam Airlines combines a premium onboard experience, an expanding global network, and a comprehensive loyalty ecosystem.","Because Vietnam Airlines only operates direct flights.","Because Vietnam Airlines guarantees free upgrades."],1,"When customers ask why they should choose Vietnam Airlines, the answer goes far beyond the destination. Our expanding international network, modern fleet, premium onboard experience, and comprehensive loyalty ecosystem together deliver a reliable and rewarding travel experience. These strengths help differentiate Vietnam Airlines in a competitive market."],
-].map(([id,q,opts,correct,explain])=>({id,q,opts,correct,explain}));
+{id:1,correct:1,
+ en:{q:"What is Vietnam Airlines' target for customer experience by 2030?",opts:["Become Asia's largest airline","Achieve official Skytrax 5-Star certification","Operate 500 aircraft","Launch flights to every continent"],explain:"Vietnam Airlines is continuously investing in service quality with the ambition of officially achieving Skytrax 5-Star certification by 2030. Every interaction with our customers—including those through our travel agent partners—contributes to this journey."},
+ vi:{q:"Mục tiêu về trải nghiệm khách hàng của Vietnam Airlines đến năm 2030 là gì?",opts:["Trở thành hãng hàng không lớn nhất châu Á","Đạt chứng nhận 5 sao Skytrax chính thức","Khai thác 500 tàu bay","Mở đường bay tới tất cả các châu lục"],explain:"Vietnam Airlines liên tục đầu tư vào chất lượng dịch vụ với khát vọng chính thức đạt chứng nhận 5 sao Skytrax vào năm 2030. Mỗi tương tác với khách hàng — bao gồm cả những tương tác thông qua các đại lý du lịch đối tác — đều góp phần vào hành trình này."}},
+
+{id:2,correct:2,
+ en:{q:"In 2025, Vietnam Airlines celebrated which important milestone?",opts:["20th Anniversary","25th Anniversary","30th Anniversary","35th Anniversary"],explain:"For 30 years, Vietnam Airlines has connected Vietnam with the world. Today, we continue expanding our network, upgrading our fleet, and strengthening partnerships with travel agents worldwide."},
+ vi:{q:"Năm 2025, Vietnam Airlines kỷ niệm cột mốc quan trọng nào?",opts:["Kỷ niệm 20 năm","Kỷ niệm 25 năm","Kỷ niệm 30 năm","Kỷ niệm 35 năm"],explain:"Trong 30 năm, Vietnam Airlines đã kết nối Việt Nam với thế giới. Hôm nay, chúng tôi tiếp tục mở rộng mạng bay, nâng cấp đội tàu bay và củng cố quan hệ đối tác với các đại lý du lịch trên toàn cầu."}},
+
+{id:3,correct:1,
+ en:{q:"How many domestic destinations are currently served by Vietnam Airlines?",opts:["18","20","22","25"],explain:"With 20 domestic destinations, Vietnam Airlines offers one of the most comprehensive networks in Vietnam, making it easier for agents to build complete travel itineraries."},
+ vi:{q:"Hiện nay Vietnam Airlines khai thác bao nhiêu điểm đến nội địa?",opts:["18","20","22","25"],explain:"Với 20 điểm đến nội địa, Vietnam Airlines sở hữu một trong những mạng bay toàn diện nhất tại Việt Nam, giúp các đại lý dễ dàng xây dựng hành trình trọn vẹn cho khách."}},
+
+{id:4,correct:2,
+ en:{q:"How many nations and territories are included in Vietnam Airlines' international network?",opts:["18","20","22","25"],explain:"Vietnam Airlines currently flies across six geographic regions, serving 22 nations and territories while continuously expanding its global footprint."},
+ vi:{q:"Mạng bay quốc tế của Vietnam Airlines bao phủ bao nhiêu quốc gia và vùng lãnh thổ?",opts:["18","20","22","25"],explain:"Vietnam Airlines hiện khai thác trên sáu khu vực địa lý, phục vụ 22 quốc gia và vùng lãnh thổ, đồng thời không ngừng mở rộng dấu ấn toàn cầu."}},
+
+{id:5,correct:2,
+ en:{q:"Which of the following European cities is currently served by Vietnam Airlines?",opts:["Madrid","Vienna","Amsterdam","Zurich"],explain:"Amsterdam is one of Vietnam Airlines' important European gateways, together with Paris, Frankfurt, Munich, London, Milan, Copenhagen, and Moscow."},
+ vi:{q:"Thành phố châu Âu nào sau đây hiện đang được Vietnam Airlines khai thác?",opts:["Madrid","Vienna","Amsterdam","Zurich"],explain:"Amsterdam là một trong những cửa ngõ châu Âu quan trọng của Vietnam Airlines, cùng với Paris, Frankfurt, Munich, London, Milan, Copenhagen và Moscow."}},
+
+{id:6,correct:1,
+ en:{q:"How many new routes of VNA are opened for 2026?",opts:["2","3","4","5"],explain:"Vietnam Airlines launched three new routes in 2026, further strengthening connectivity between Vietnam and international markets: AMS, HKT, CMB."},
+ vi:{q:"Vietnam Airlines mở bao nhiêu đường bay mới trong năm 2026?",opts:["2","3","4","5"],explain:"Vietnam Airlines đã mở ba đường bay mới trong năm 2026, tăng cường kết nối giữa Việt Nam và các thị trường quốc tế: AMS, HKT, CMB."}},
+
+{id:7,correct:1,
+ en:{q:"Which cabin class is described as the best option for long-haul flights?",opts:["Economy Class","Premium Economy Class","Business Class","Lotus Class"],explain:"Premium Economy offers passengers greater comfort, extra legroom, priority services, affordable price and enhanced onboard amenities—making it an excellent value for long-haul travel."},
+ vi:{q:"Hạng ghế nào được xem là lựa chọn tốt nhất cho các chuyến bay đường dài?",opts:["Hạng Phổ thông (Economy)","Hạng Phổ thông Đặc biệt (Premium Economy)","Hạng Thương gia (Business)","Hạng Lotus"],explain:"Phổ thông Đặc biệt mang đến cho hành khách sự thoải mái hơn, chỗ để chân rộng rãi hơn, dịch vụ ưu tiên, mức giá hợp lý và tiện ích trên chuyến bay được nâng cấp — một lựa chọn rất đáng giá cho hành trình đường dài."}},
+
+{id:8,correct:2,
+ en:{q:"Which benefit is available to Business Class passengers?",opts:["Free hotel stay","Unlimited Wi-Fi","Access to the Lotus Lounge","Free city tour"],explain:"Business Class customers enjoy premium services including priority check-in, fast-track security where available, Lotus Lounge access, and fully flat seats on wide-body aircraft."},
+ vi:{q:"Quyền lợi nào dành cho hành khách Hạng Thương gia?",opts:["Nghỉ khách sạn miễn phí","Wi-Fi không giới hạn","Sử dụng phòng chờ Lotus Lounge","Tour thành phố miễn phí"],explain:"Khách Hạng Thương gia được hưởng các dịch vụ cao cấp gồm làm thủ tục ưu tiên, luồng an ninh nhanh tại những sân bay có áp dụng, sử dụng phòng chờ Lotus Lounge và ghế ngả phẳng hoàn toàn trên tàu bay thân rộng."}},
+
+{id:9,correct:2,
+ en:{q:"Which of the following is NOT listed as an ancillary service offered by Vietnam Airlines?",opts:["Advance Seat Selection","Excess Prepaid Baggage","Airport Hotel Booking","Special Meals"],explain:"Ancillary services allow passengers to personalize their journey while generating additional revenue opportunities for travel agents. Whether it's selecting a preferred seat, purchasing extra baggage, upgrading a cabin, or requesting a special meal, these services improve the customer experience before the journey even begins."},
+ vi:{q:"Dịch vụ nào sau đây KHÔNG nằm trong danh mục dịch vụ bổ trợ của Vietnam Airlines?",opts:["Chọn chỗ ngồi trước","Mua thêm hành lý trả trước","Đặt khách sạn tại sân bay","Suất ăn đặc biệt"],explain:"Dịch vụ bổ trợ cho phép hành khách cá nhân hoá hành trình, đồng thời tạo thêm nguồn doanh thu cho đại lý du lịch. Dù là chọn chỗ ngồi yêu thích, mua thêm hành lý, nâng hạng ghế hay đặt suất ăn đặc biệt, những dịch vụ này đều nâng cao trải nghiệm khách hàng ngay từ trước chuyến bay."}},
+
+{id:10,correct:1,
+ en:{q:"A leisure traveler is planning a multi-city trip across Vietnam after arriving from Europe. Which Vietnam Airlines strength provides the GREATEST value to this customer?",opts:["Low-cost pricing","Extensive domestic network with seamless connections","Airport shopping discounts","Free hotel accommodation"],explain:"Vietnam Airlines' extensive domestic network allows international travellers to continue their journey seamlessly throughout Vietnam. Whether visiting famous cities or emerging destinations, customers benefit from convenient connections under one trusted airline. This creates more itinerary options and greater selling opportunities for travel agents."},
+ vi:{q:"Một khách du lịch dự định đi nhiều thành phố tại Việt Nam sau khi bay từ châu Âu sang. Thế mạnh nào của Vietnam Airlines mang lại giá trị LỚN NHẤT cho khách này?",opts:["Giá vé rẻ","Mạng bay nội địa rộng khắp với kết nối liền mạch","Ưu đãi mua sắm tại sân bay","Chỗ ở khách sạn miễn phí"],explain:"Mạng bay nội địa rộng khắp của Vietnam Airlines giúp khách quốc tế tiếp tục hành trình một cách liền mạch trong lãnh thổ Việt Nam. Dù là tới các thành phố nổi tiếng hay điểm đến mới nổi, khách đều được kết nối thuận tiện trong cùng một hãng hàng không đáng tin cậy. Điều này mở ra nhiều lựa chọn hành trình và cơ hội bán hàng lớn hơn cho đại lý."}},
+
+{id:11,correct:1,
+ en:{q:"Which statement BEST summarizes Vietnam Airlines' message to our travel agent partners?",opts:["Focus on selling the lowest fares.","Build long-term success through premium products, excellent customer service, commercial collaboration, and mutual business growth.","Sell international routes only.","Prioritize online sales over agency partnerships."],explain:"Throughout today's Sales Kit, one message has remained consistent: Vietnam Airlines is committed to building lasting partnerships with our travel agents. Together, we combine premium products, outstanding service, commercial collaboration, and customer loyalty to create sustainable business growth. Your success is our success, and we look forward to growing together for many years to come."},
+ vi:{q:"Thông điệp nào TÓM TẮT ĐÚNG NHẤT những gì Vietnam Airlines muốn gửi tới các đại lý đối tác?",opts:["Tập trung bán vé giá thấp nhất.","Xây dựng thành công dài hạn thông qua sản phẩm cao cấp, dịch vụ khách hàng xuất sắc, hợp tác thương mại và cùng nhau tăng trưởng.","Chỉ bán các đường bay quốc tế.","Ưu tiên bán trực tuyến hơn hợp tác với đại lý."],explain:"Xuyên suốt Sales Kit hôm nay, một thông điệp luôn nhất quán: Vietnam Airlines cam kết xây dựng quan hệ đối tác bền vững với các đại lý du lịch. Cùng nhau, chúng ta kết hợp sản phẩm cao cấp, dịch vụ xuất sắc, hợp tác thương mại và lòng trung thành của khách hàng để tạo nên tăng trưởng kinh doanh bền vững. Thành công của quý vị là thành công của chúng tôi, và chúng tôi mong được cùng phát triển trong nhiều năm tới."}},
+
+{id:12,correct:1,
+ en:{q:"Why does Vietnam Airlines continue expanding its international network instead of focusing only on existing routes?",opts:["To reduce domestic operations","To strengthen global connectivity and create new travel opportunities","To compete only on ticket prices","To operate fewer connecting flights"],explain:"Every new destination increases connectivity, supports tourism and business travel, and provides travel agents with more itinerary options to serve their customers. A stronger network means more opportunities to grow together."},
+ vi:{q:"Vì sao Vietnam Airlines tiếp tục mở rộng mạng bay quốc tế thay vì chỉ tập trung vào các đường bay hiện có?",opts:["Để giảm khai thác nội địa","Để tăng cường kết nối toàn cầu và tạo ra cơ hội du lịch mới","Để chỉ cạnh tranh về giá vé","Để giảm số chuyến bay nối chuyến"],explain:"Mỗi điểm đến mới đều làm tăng khả năng kết nối, hỗ trợ du lịch và công tác, đồng thời mang lại cho đại lý nhiều lựa chọn hành trình hơn để phục vụ khách. Mạng bay mạnh hơn đồng nghĩa với nhiều cơ hội cùng phát triển hơn."}},
+
+{id:13,correct:1,
+ en:{q:"A customer wants extra comfort without paying for Business Class. Which Vietnam Airlines product should you recommend?",opts:["Economy Class","Premium Economy Class","Sky Sofa","Transit Tour"],explain:"Premium Economy bridges the gap between Economy and Business by offering greater comfort at a more affordable price, making it an attractive option for many travelers. Understanding customer needs helps agents recommend the right product."},
+ vi:{q:"Khách muốn thoải mái hơn nhưng không phải trả tiền cho Hạng Thương gia. Bạn nên tư vấn sản phẩm nào của Vietnam Airlines?",opts:["Hạng Phổ thông (Economy)","Hạng Phổ thông Đặc biệt (Premium Economy)","Sky Sofa","Transit Tour"],explain:"Phổ thông Đặc biệt là cầu nối giữa Phổ thông và Thương gia, mang lại sự thoải mái hơn với mức giá dễ chịu hơn, là lựa chọn hấp dẫn với nhiều khách hàng. Hiểu nhu cầu khách giúp đại lý tư vấn đúng sản phẩm."}},
+
+{id:14,correct:1,
+ en:{q:"VNA marketing support for agents may include which of the following?",opts:["Aircraft leasing support","Shared marketing campaigns and promotional materials","Airport construction funding","Free office rental"],explain:"Marketing is a shared responsibility. Vietnam Airlines supports travel agents by co-funding marketing campaigns, destination promotions, roadshows, and providing promotional materials. Together, we can reach more customers while maximizing marketing efficiency."},
+ vi:{q:"Hỗ trợ marketing của Vietnam Airlines dành cho đại lý có thể bao gồm nội dung nào sau đây?",opts:["Hỗ trợ thuê tàu bay","Chiến dịch marketing chung và ấn phẩm quảng bá","Tài trợ xây dựng sân bay","Cho thuê văn phòng miễn phí"],explain:"Marketing là trách nhiệm chung. Vietnam Airlines hỗ trợ đại lý du lịch bằng cách đồng tài trợ các chiến dịch marketing, chương trình quảng bá điểm đến, roadshow và cung cấp ấn phẩm quảng bá. Cùng nhau, chúng ta tiếp cận được nhiều khách hàng hơn với hiệu quả marketing tối ưu."}},
+
+{id:15,correct:1,
+ en:{q:"Which action demonstrates the role of an excellent Vietnam Airlines travel agent?",opts:["Selling the cheapest ticket as quickly as possible.","Understanding customer needs and recommending the most suitable Vietnam Airlines products and services.","Selling only Economy Class.","Avoiding ancillary products."],explain:"An excellent travel agent does much more than process reservations. By understanding each customer's needs and recommending the right products, services, and benefits, agents become trusted travel advisors. This consultative approach creates happier customers and stronger long-term business relationships."},
+ vi:{q:"Hành động nào thể hiện đúng vai trò của một đại lý xuất sắc của Vietnam Airlines?",opts:["Bán tấm vé rẻ nhất càng nhanh càng tốt.","Hiểu nhu cầu khách hàng và tư vấn sản phẩm, dịch vụ Vietnam Airlines phù hợp nhất.","Chỉ bán Hạng Phổ thông.","Tránh bán các sản phẩm bổ trợ."],explain:"Một đại lý xuất sắc làm nhiều hơn việc xử lý đặt chỗ. Bằng cách hiểu nhu cầu của từng khách và tư vấn đúng sản phẩm, dịch vụ, quyền lợi, đại lý trở thành nhà tư vấn du lịch đáng tin cậy. Cách tiếp cận tư vấn này tạo ra khách hàng hài lòng hơn và quan hệ kinh doanh dài hạn bền chặt hơn."}},
+
+{id:16,correct:1,
+ en:{q:"A customer wants a more comfortable journey than Economy Class but is not ready to pay for Business Class. Which cabin would you recommend?",opts:["Economy Class","Premium Economy Class","Business Class","Transit Tour"],explain:"Premium Economy is one of Vietnam Airlines' strongest value propositions for long-haul travel. It offers significantly more comfort than Economy—including wider seats, greater legroom, priority services, and enhanced meals—without the premium price of Business Class. When customers are looking for extra comfort at a reasonable cost, this is often the ideal recommendation."},
+ vi:{q:"Khách muốn hành trình thoải mái hơn Hạng Phổ thông nhưng chưa sẵn sàng chi trả cho Hạng Thương gia. Bạn tư vấn hạng ghế nào?",opts:["Hạng Phổ thông (Economy)","Hạng Phổ thông Đặc biệt (Premium Economy)","Hạng Thương gia (Business)","Transit Tour"],explain:"Phổ thông Đặc biệt là một trong những lợi thế giá trị nhất của Vietnam Airlines cho hành trình đường dài. Hạng ghế này thoải mái hơn hẳn Phổ thông — ghế rộng hơn, chỗ để chân nhiều hơn, dịch vụ ưu tiên và suất ăn nâng cấp — mà không phải trả mức giá của Hạng Thương gia. Khi khách tìm kiếm sự thoải mái hơn với chi phí hợp lý, đây thường là gợi ý lý tưởng."}},
+
+{id:17,correct:1,
+ en:{q:"Which commercial program is specifically designed to support travel agents developing premium tour packages?",opts:["Transit Tour","Tour Series Policy","Business FOC Ticket","Agent Care Policy"],explain:"The Tour Series Policy is designed to support travel agents developing premium tour packages. It offers preferential pricing, booking allotments, guaranteed fares, and flexible seat release conditions, making it easier to build attractive travel products for customers."},
+ vi:{q:"Chương trình thương mại nào được thiết kế riêng để hỗ trợ đại lý xây dựng các gói tour cao cấp?",opts:["Transit Tour","Chính sách Tour Series","Vé Business FOC","Chính sách Agent Care"],explain:"Chính sách Tour Series được thiết kế để hỗ trợ đại lý phát triển các gói tour cao cấp, với giá ưu đãi, hạn mức chỗ, mức giá được đảm bảo và điều kiện hoàn chỗ linh hoạt, giúp xây dựng sản phẩm du lịch hấp dẫn dễ dàng hơn."}},
+
+{id:18,correct:1,
+ en:{q:"Vietnam Airlines evaluates sales incentives primarily based on...",opts:["Number of employees.","Revenue performance and KPI achievement.","Office location.","Years of partnership only."],explain:"Vietnam Airlines rewards agencies that consistently achieve their sales targets. Incentive programs are based on revenue performance, KPI achievement, and market commitments, ensuring that outstanding partners receive meaningful recognition and support."},
+ vi:{q:"Vietnam Airlines đánh giá chương trình thưởng bán hàng chủ yếu dựa trên...",opts:["Số lượng nhân viên.","Kết quả doanh thu và mức độ hoàn thành KPI.","Vị trí văn phòng.","Chỉ dựa trên số năm hợp tác."],explain:"Vietnam Airlines tưởng thưởng những đại lý liên tục đạt mục tiêu bán hàng. Các chương trình thưởng dựa trên kết quả doanh thu, mức độ hoàn thành KPI và cam kết thị trường, đảm bảo những đối tác xuất sắc nhận được sự ghi nhận và hỗ trợ xứng đáng."}},
+
+{id:19,correct:1,
+ en:{q:"Why does Vietnam Airlines invest in co-branding events, roadshows and workshops with travel agents?",opts:["To reduce ticket prices.","To strengthen brand exposure while sharing marketing costs.","To replace online marketing.","To promote only domestic destinations."],explain:"Successful partnerships go beyond ticket sales. By organizing roadshows, workshops, and co-branding campaigns, Vietnam Airlines and travel agents can increase brand visibility, strengthen customer relationships, and share marketing resources more efficiently."},
+ vi:{q:"Vì sao Vietnam Airlines đầu tư vào các sự kiện đồng thương hiệu, roadshow và workshop cùng đại lý?",opts:["Để giảm giá vé.","Để tăng độ nhận diện thương hiệu đồng thời chia sẻ chi phí marketing.","Để thay thế marketing trực tuyến.","Để chỉ quảng bá điểm đến nội địa."],explain:"Quan hệ đối tác thành công không dừng lại ở việc bán vé. Thông qua roadshow, workshop và các chiến dịch đồng thương hiệu, Vietnam Airlines và đại lý cùng tăng độ nhận diện, củng cố quan hệ khách hàng và chia sẻ nguồn lực marketing hiệu quả hơn."}},
+
+{id:20,correct:1,
+ en:{q:"Which combination best reflects Vietnam Airlines' partnership strategy?",opts:["Lowest fares + limited services","Premium products + loyalty ecosystem + commercial collaboration","Fleet expansion only","Airport infrastructure investment only"],explain:"Vietnam Airlines' partnership strategy is built on four pillars: premium products, a strong loyalty ecosystem, commercial collaboration, and joint marketing initiatives. Together, these create sustainable value for customers, travel agents, and the airline."},
+ vi:{q:"Tổ hợp nào phản ánh đúng nhất chiến lược đối tác của Vietnam Airlines?",opts:["Giá thấp nhất + dịch vụ hạn chế","Sản phẩm cao cấp + hệ sinh thái khách hàng thân thiết + hợp tác thương mại","Chỉ mở rộng đội tàu bay","Chỉ đầu tư hạ tầng sân bay"],explain:"Chiến lược đối tác của Vietnam Airlines dựa trên bốn trụ cột: sản phẩm cao cấp, hệ sinh thái khách hàng thân thiết vững mạnh, hợp tác thương mại và các sáng kiến marketing chung. Cùng nhau, chúng tạo ra giá trị bền vững cho khách hàng, đại lý và hãng."}},
+
+{id:21,correct:1,
+ en:{q:"A corporate client frequently travels between Europe and Vietnam and wants long-term travel benefits. Besides flight tickets, what additional value should an agent promote?",opts:["Car rental","LotusMiles Membership","Airport parking","Charter flights"],explain:"Corporate travelers value convenience, recognition, and long-term rewards. Recommending LotusMiles allows them to earn miles, enjoy exclusive benefits, and strengthen their relationship with Vietnam Airlines over time."},
+ vi:{q:"Một khách hàng doanh nghiệp thường xuyên bay giữa châu Âu và Việt Nam, mong muốn quyền lợi dài hạn. Ngoài vé máy bay, đại lý nên giới thiệu thêm giá trị nào?",opts:["Thuê xe","Thẻ hội viên LotusMiles","Đỗ xe sân bay","Chuyến bay thuê chuyến"],explain:"Khách hàng doanh nghiệp coi trọng sự tiện lợi, sự ghi nhận và quyền lợi dài hạn. Giới thiệu LotusMiles giúp họ tích luỹ dặm, hưởng ưu đãi độc quyền và gắn bó lâu dài hơn với Vietnam Airlines."}},
+
+{id:22,correct:1,
+ en:{q:"Why does Vietnam Airlines provide marketing budgets and promotional materials to travel agents?",opts:["To reduce airline operating costs.","To help agents promote Vietnam Airlines and stimulate local market demand.","To replace travel agency advertising.","To increase airport retail sales."],explain:"Vietnam Airlines believes successful partnerships require continuous support. By sharing marketing budgets, promotional materials, and destination campaigns, we help our partners increase visibility, attract more customers, and drive sustainable sales growth."},
+ vi:{q:"Vì sao Vietnam Airlines cung cấp ngân sách marketing và ấn phẩm quảng bá cho đại lý?",opts:["Để giảm chi phí khai thác của hãng.","Để giúp đại lý quảng bá Vietnam Airlines và kích cầu thị trường địa phương.","Để thay thế hoạt động quảng cáo của đại lý.","Để tăng doanh thu bán lẻ tại sân bay."],explain:"Vietnam Airlines tin rằng quan hệ đối tác thành công cần sự hỗ trợ liên tục. Bằng việc chia sẻ ngân sách marketing, ấn phẩm quảng bá và các chiến dịch điểm đến, chúng tôi giúp đối tác tăng độ hiện diện, thu hút thêm khách hàng và thúc đẩy tăng trưởng doanh số bền vững."}},
+
+{id:23,correct:1,
+ en:{q:"A customer has a long connection in Hanoi or Ho Chi Minh City. Which Vietnam Airlines service could enhance the passenger's experience?",opts:["Business FOC Ticket","Transit Tour","Gold Agent Program","Tour Series"],explain:"Long layovers can become memorable travel experiences. Vietnam Airlines offers Transit Tours in Hanoi and Ho Chi Minh City to provide transit passengers with an enjoyable way to explore Vietnam while waiting for their connecting flight, enhancing the overall travel experience."},
+ vi:{q:"Khách có thời gian nối chuyến dài tại Hà Nội hoặc TP. Hồ Chí Minh. Dịch vụ nào của Vietnam Airlines có thể nâng cao trải nghiệm của khách?",opts:["Vé Business FOC","Transit Tour","Chương trình Gold Agent","Tour Series"],explain:"Thời gian nối chuyến dài có thể trở thành trải nghiệm đáng nhớ. Vietnam Airlines cung cấp Transit Tour tại Hà Nội và TP. Hồ Chí Minh, giúp khách nối chuyến khám phá Việt Nam trong lúc chờ chuyến bay tiếp theo, nâng cao trải nghiệm tổng thể."}},
+
+{id:24,correct:1,
+ en:{q:"Which customer profile would benefit the MOST from recommending LotusMiles?",opts:["A traveler taking only one domestic flight in their lifetime","A frequent business traveler between Europe and Vietnam","A passenger only interested in the lowest fare","A passenger travelling without checked baggage"],explain:"Frequent business travellers are looking for more than just a flight—they value recognition, convenience, and long-term rewards. LotusMiles allows them to earn and redeem miles across flights and a wide range of lifestyle partners, creating value on every journey. As travel agents, introducing LotusMiles is an excellent way to build customer loyalty beyond a single booking."},
+ vi:{q:"Nhóm khách hàng nào hưởng lợi NHIỀU NHẤT khi được giới thiệu LotusMiles?",opts:["Khách chỉ bay nội địa một lần trong đời","Khách công tác thường xuyên giữa châu Âu và Việt Nam","Khách chỉ quan tâm tới giá vé thấp nhất","Khách bay không ký gửi hành lý"],explain:"Khách công tác thường xuyên tìm kiếm nhiều hơn một chuyến bay — họ coi trọng sự ghi nhận, tiện lợi và quyền lợi dài hạn. LotusMiles cho phép họ tích luỹ và sử dụng dặm trên các chuyến bay cũng như với nhiều đối tác trong đời sống, tạo giá trị trên mọi hành trình. Với đại lý, giới thiệu LotusMiles là cách tuyệt vời để xây dựng lòng trung thành vượt ra ngoài một lần đặt chỗ."}},
+
+{id:25,correct:1,
+ en:{q:"Vietnam Airlines invests in joint marketing campaigns with travel agents primarily to...",opts:["Reduce aircraft operating costs","Increase brand awareness and stimulate customer demand together","Replace travel agencies with direct sales","Reduce ticket prices"],explain:"Successful marketing is never a one-way effort. Vietnam Airlines actively works with travel agents through co-branding campaigns, roadshows, destination promotions, and joint events to inspire more people to travel. By combining resources and market expertise, both Vietnam Airlines and our partners can grow together more effectively."},
+ vi:{q:"Vietnam Airlines đầu tư vào các chiến dịch marketing chung với đại lý chủ yếu nhằm...",opts:["Giảm chi phí khai thác tàu bay","Cùng tăng độ nhận diện thương hiệu và kích cầu khách hàng","Thay thế đại lý bằng bán hàng trực tiếp","Giảm giá vé"],explain:"Marketing thành công không bao giờ là nỗ lực một chiều. Vietnam Airlines chủ động hợp tác với đại lý qua các chiến dịch đồng thương hiệu, roadshow, chương trình quảng bá điểm đến và sự kiện chung để truyền cảm hứng du lịch cho nhiều người hơn. Bằng cách kết hợp nguồn lực và hiểu biết thị trường, cả hai bên cùng phát triển hiệu quả hơn."}},
+
+{id:26,correct:1,
+ en:{q:"A customer is comparing airlines based only on price. As a Vietnam Airlines agent, which selling approach best reflects the Sales Kit?",opts:["Immediately offer the lowest possible fare.","Highlight Vietnam Airlines' premium service, network, loyalty program, and overall travel value.","Recommend another airline.","Focus only on baggage allowance."],explain:"Customers often compare prices first, but experienced travel consultants know that value goes far beyond the fare. Vietnam Airlines offers a premium travel experience, an extensive route network, loyalty rewards, and reliable service. By focusing on overall value rather than price alone, agents can build greater customer trust and satisfaction."},
+ vi:{q:"Khách đang so sánh các hãng chỉ dựa trên giá. Là đại lý của Vietnam Airlines, cách bán hàng nào phản ánh đúng tinh thần Sales Kit?",opts:["Đưa ngay mức giá thấp nhất có thể.","Nhấn mạnh dịch vụ cao cấp, mạng bay, chương trình khách hàng thân thiết và giá trị tổng thể của Vietnam Airlines.","Giới thiệu khách sang hãng khác.","Chỉ tập trung vào tiêu chuẩn hành lý."],explain:"Khách thường so sánh giá trước tiên, nhưng nhà tư vấn du lịch giàu kinh nghiệm hiểu rằng giá trị vượt xa con số trên vé. Vietnam Airlines mang đến trải nghiệm cao cấp, mạng bay rộng, quyền lợi khách hàng thân thiết và dịch vụ tin cậy. Khi tập trung vào giá trị tổng thể thay vì chỉ giá vé, đại lý xây dựng được niềm tin và sự hài lòng lớn hơn."}},
+
+{id:27,correct:1,
+ en:{q:"Why does Vietnam Airlines continuously expand partnerships with banks, hotels and retailers through LotusMiles?",opts:["To replace flight revenue.","To create a complete travel and lifestyle ecosystem that increases customer loyalty.","To reduce airport taxes.","To simplify ticket refunds."],explain:"LotusMiles is designed as a lifestyle ecosystem, not simply a frequent flyer program. Through partnerships with banks, hotels, retailers, and many other brands, members can continue earning and redeeming miles in their everyday lives. This keeps customers engaged with Vietnam Airlines even when they are not travelling."},
+ vi:{q:"Vì sao Vietnam Airlines liên tục mở rộng hợp tác với ngân hàng, khách sạn và nhà bán lẻ thông qua LotusMiles?",opts:["Để thay thế doanh thu từ vận chuyển hàng không.","Để tạo hệ sinh thái du lịch và phong cách sống trọn vẹn, gia tăng lòng trung thành của khách hàng.","Để giảm thuế sân bay.","Để đơn giản hoá việc hoàn vé."],explain:"LotusMiles được thiết kế như một hệ sinh thái phong cách sống, không đơn thuần là chương trình khách hàng thường xuyên. Thông qua hợp tác với ngân hàng, khách sạn, nhà bán lẻ và nhiều thương hiệu khác, hội viên có thể tiếp tục tích luỹ và sử dụng dặm trong đời sống hằng ngày. Điều này giữ khách hàng gắn kết với Vietnam Airlines ngay cả khi họ không bay."}},
+
+{id:28,correct:1,
+ en:{q:"A passenger has an eight-hour connection in Vietnam. Besides the flight itself, which service can create additional value?",opts:["Business FOC Ticket","Transit Tour","Tour Series","Gold Agent Award"],explain:"A long layover doesn't have to be wasted time. Vietnam Airlines' Transit Tour allows eligible passengers to discover Vietnam during their connection, transforming waiting time into a memorable travel experience. It's another example of how we continue adding value beyond the flight itself."},
+ vi:{q:"Khách có thời gian nối chuyến tám tiếng tại Việt Nam. Ngoài chuyến bay, dịch vụ nào có thể tạo thêm giá trị?",opts:["Vé Business FOC","Transit Tour","Tour Series","Giải thưởng Gold Agent"],explain:"Thời gian chờ dài không nhất thiết là thời gian lãng phí. Transit Tour của Vietnam Airlines cho phép hành khách đủ điều kiện khám phá Việt Nam ngay trong thời gian nối chuyến, biến thời gian chờ thành trải nghiệm đáng nhớ. Đây là một ví dụ nữa cho thấy chúng tôi liên tục gia tăng giá trị vượt ra ngoài chuyến bay."}},
+
+{id:29,correct:0,
+ en:{q:"According to Vietnam Airlines' commercial strategy, why are incentive programs offered to travel agents?",opts:["To reward performance and encourage sustainable business growth.","To replace commission.","To reduce ticket prices.","To encourage one-time sales only."],explain:"Incentive programs exist to recognise and reward genuine performance. By tying rewards to revenue and KPI achievement, Vietnam Airlines encourages partners to build sustainable, long-term business rather than chasing one-off sales."},
+ vi:{q:"Theo chiến lược thương mại của Vietnam Airlines, vì sao các chương trình thưởng được dành cho đại lý?",opts:["Để tưởng thưởng kết quả và khuyến khích tăng trưởng kinh doanh bền vững.","Để thay thế hoa hồng.","Để giảm giá vé.","Để chỉ khuyến khích bán hàng một lần."],explain:"Các chương trình thưởng tồn tại để ghi nhận và tưởng thưởng kết quả thực chất. Bằng cách gắn phần thưởng với doanh thu và mức độ hoàn thành KPI, Vietnam Airlines khuyến khích đối tác xây dựng kinh doanh bền vững, dài hạn thay vì chạy theo những thương vụ nhất thời."}},
+
+{id:30,correct:1,
+ en:{q:"Which combination creates the STRONGEST long-term customer loyalty?",opts:["Lowest airfare only","Comfortable flight + LotusMiles + quality service","Promotional baggage only","Airport shopping discounts only"],explain:"Customer loyalty is created through consistent positive experiences—not just competitive pricing. Comfortable flights, excellent service, and meaningful rewards through LotusMiles encourage passengers to choose Vietnam Airlines again and again. Loyal customers are also more likely to recommend the airline to others."},
+ vi:{q:"Tổ hợp nào tạo ra lòng trung thành khách hàng dài hạn MẠNH NHẤT?",opts:["Chỉ giá vé thấp nhất","Chuyến bay thoải mái + LotusMiles + dịch vụ chất lượng","Chỉ ưu đãi hành lý","Chỉ ưu đãi mua sắm tại sân bay"],explain:"Lòng trung thành được tạo nên từ những trải nghiệm tích cực nhất quán — không chỉ từ giá cạnh tranh. Chuyến bay thoải mái, dịch vụ xuất sắc và phần thưởng thiết thực qua LotusMiles khiến hành khách chọn Vietnam Airlines lần này qua lần khác. Khách hàng trung thành cũng sẵn sàng giới thiệu hãng cho người khác hơn."}},
+
+{id:31,correct:1,
+ en:{q:"A corporate client asks why they should choose Vietnam Airlines instead of another full-service airline. Which answer best reflects the Sales Kit?",opts:["Because Vietnam Airlines always has the cheapest tickets.","Because Vietnam Airlines combines a premium onboard experience, an expanding global network, and a comprehensive loyalty ecosystem.","Because Vietnam Airlines only operates direct flights.","Because Vietnam Airlines guarantees free upgrades."],explain:"When customers ask why they should choose Vietnam Airlines, the answer goes far beyond the destination. Our expanding international network, modern fleet, premium onboard experience, and comprehensive loyalty ecosystem together deliver a reliable and rewarding travel experience. These strengths help differentiate Vietnam Airlines in a competitive market."},
+ vi:{q:"Khách hàng doanh nghiệp hỏi vì sao nên chọn Vietnam Airlines thay vì một hãng dịch vụ đầy đủ khác. Câu trả lời nào phản ánh đúng nhất Sales Kit?",opts:["Vì Vietnam Airlines luôn có vé rẻ nhất.","Vì Vietnam Airlines kết hợp trải nghiệm cao cấp trên chuyến bay, mạng bay toàn cầu đang mở rộng và hệ sinh thái khách hàng thân thiết toàn diện.","Vì Vietnam Airlines chỉ khai thác các chuyến bay thẳng.","Vì Vietnam Airlines đảm bảo nâng hạng miễn phí."],explain:"Khi khách hỏi vì sao nên chọn Vietnam Airlines, câu trả lời vượt xa điểm đến. Mạng bay quốc tế đang mở rộng, đội tàu bay hiện đại, trải nghiệm cao cấp trên chuyến bay và hệ sinh thái khách hàng thân thiết toàn diện cùng mang lại một hành trình đáng tin cậy và xứng đáng. Những thế mạnh này giúp Vietnam Airlines khác biệt trong một thị trường cạnh tranh."}},
+];
 
 /* The source deck has the correct answer at position B for 29 of the 31 questions, which
    players would spot within a few legs and then simply always pick B. So each question's
    four options get shuffled — but by a PRNG seeded purely from the question id, so every
    phone, the presenter screen and the admin dashboard independently derive the identical
-   order with nothing to sync. Question wording and the answer itself are untouched; only
-   which letter it sits behind changes. */
+   order with nothing to sync, AND the Vietnamese and English copies of a question end up
+   with the answer behind the same letter. Wording and the answer itself are untouched. */
 function seededRandom(seed){
   let t = seed >>> 0;
   return function(){
@@ -1168,23 +2057,28 @@ function seededRandom(seed){
     return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
   };
 }
-function shuffleOptions(q){
-  const rand = seededRandom(q.id * 2654435761);
-  const order = q.opts.map((_,i)=>i);
+function shuffleOrderFor(id, n){
+  const rand = seededRandom(id * 2654435761);
+  const order = [];
+  for(let i=0;i<n;i++) order.push(i);
   for(let i=order.length-1; i>0; i--){
     const j = Math.floor(rand()*(i+1));
     [order[i], order[j]] = [order[j], order[i]];
   }
-  return {
-    id: q.id,
-    q: q.q,
-    explain: q.explain,
-    opts: order.map(i=>q.opts[i]),
-    correct: order.indexOf(q.correct),
-  };
+  return order;
 }
 function loadQuestions(){
-  QUESTIONS = QUESTION_BANK.map(shuffleOptions);
+  QUESTIONS = QUESTION_BANK.map(raw=>{
+    const L = raw[LANG] || raw.en;
+    const order = shuffleOrderFor(raw.id, L.opts.length);
+    return {
+      id: raw.id,
+      q: L.q,
+      explain: L.explain,
+      opts: order.map(i=>L.opts[i]),
+      correct: order.indexOf(raw.correct),
+    };
+  });
   QUESTIONS_BY_ID = {};
   QUESTIONS.forEach(q=>{ QUESTIONS_BY_ID[q.id] = q; });
 }
@@ -1261,16 +2155,16 @@ function finalRoundActive(){
 // Does THIS leg carry a warning at all — independent of whether the card is still showing.
 function wxKindForLeg(){
   if(isTurbulenceLeg(state.currentQ)) return {
-    cls:'wx-turbulence', icon:'🌪', title:'TURBULENCE AHEAD',
-    rule:'A correct answer only holds your position. Wrong — or no answer at all — sends you back 1 leg. 50:50 and Turbo Boost are locked; Fasten Seatbelt is your only protection.'
+    cls:'wx-turbulence', icon:'🌪', title:t('wx.turb.title'),
+    rule:t('wx.turb.rule')
   };
   if(isStormLeg(state.currentQ)) return {
-    cls:'wx-storm', icon:'⛈', title:'STORM AHEAD',
-    rule:'Only the 10 fastest correct answers get ATC clearance to advance 1 leg. Everyone else holds position — nobody goes backwards. All three helps are locked.'
+    cls:'wx-storm', icon:'⛈', title:t('wx.storm.title'),
+    rule:t('wx.storm.rule')
   };
   if(state.powerQuestionActive) return {
-    cls:'wx-power', icon:'⚡', title:'POWER QUESTION',
-    rule:'The fastest correct answer takes +2 legs. Every other correct answer takes +1. Wrong answers hold position. All three helps are locked.'
+    cls:'wx-power', icon:'⚡', title:t('wx.power.title'),
+    rule:t('wx.power.rule')
   };
   return null;
 }
@@ -1298,7 +2192,7 @@ function questionPreviewReady(){
 // read as past the end of the board (e.g. "Leg 13 of 12").
 function legLabel(legIndex){
   const totalLegs = ROUTE.length - 1;
-  return legIndex < totalLegs ? `Leg ${legIndex+1} of ${totalLegs}` : `Overtime round ${legIndex+1-totalLegs}`;
+  return legIndex < totalLegs ? t('common.legOf',{n:legIndex+1,total:totalLegs}) : t('common.overtime',{n:legIndex+1-totalLegs});
 }
 function planeSvg(color){
   return '<svg class="plane-ico" viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.18em;"><path fill="'+color+'" d="M21 16v-1.9l-8-4.95V4.5a1.5 1.5 0 0 0-3 0v4.65l-8 4.95V16l8-2.5v4.9l-2.2 1.6V22l3.7-1.1 3.7 1.1v-1.5L13.5 18v-4.9z"/></svg>';
@@ -1454,7 +2348,7 @@ function fbWriteAdmin(){
       longestStreak: p.longestStreak||0, answeredCount: p.answeredCount||0,
     };
   });
-  db.ref().update(u).catch(e=>{ console.warn('[sync] admin write failed', e); toast('⚠️ Sync error — check connection'); });
+  db.ref().update(u).catch(e=>{ console.warn('[sync] admin write failed', e); toast(t('sync.errAdmin')); });
 }
 function fbWriteMine(){
   if(FB.mode!=='online' || !myPlayerId) return;
@@ -1471,7 +2365,7 @@ function fbWriteMine(){
     _answers[state.currentQ] = _answers[state.currentQ] || {};
     _answers[state.currentQ][myPlayerId] = row;
   }
-  db.ref().update(u).catch(e=>{ console.warn('[sync] player write failed', e); toast('⚠️ Could not send — check connection'); });
+  db.ref().update(u).catch(e=>{ console.warn('[sync] player write failed', e); toast(t('sync.errSend')); });
 }
 /* the admin client creates a progress node for anyone who has just joined */
 function reconcileProgress(){
@@ -1492,9 +2386,9 @@ function setSyncBadge(){
     document.body.appendChild(el);
   }
   const map = {
-    online:  ['🟢 LIVE · room '+ROOM, 'rgba(46,204,113,.6)'],
-    offline: ['🟠 OFFLINE · one device only', 'rgba(240,180,60,.6)'],
-    init:    ['⚪ connecting…', 'var(--glass-brd)'],
+    online:  [t('sync.live',{room:ROOM}), 'rgba(46,204,113,.6)'],
+    offline: [t('sync.offline'), 'rgba(240,180,60,.6)'],
+    init:    [t('sync.connecting'), 'var(--glass-brd)'],
   };
   const [txt, brd] = map[FB.mode] || map.init;
   el.textContent = txt;
@@ -1580,10 +2474,10 @@ async function fbInit(){
 async function fbValidateRoom(code){
   try{
     const snap = await db.ref('rooms/'+code+'/profiles').once('value');
-    if(snap.numChildren() >= MAX_PLAYERS_PER_ROOM) return { ok:false, reason:'Room is full' };
+    if(snap.numChildren() >= MAX_PLAYERS_PER_ROOM) return { ok:false, reason:t('p.join.roomFull') };
     return { ok:true };
   }catch(e){
-    return { ok:false, reason:'Could not reach room' };
+    return { ok:false, reason:t('p.join.roomUnreachable') };
   }
 }
 function fbSwitchRoom(code){
@@ -1626,12 +2520,13 @@ function uid(){ return 'p_' + Math.random().toString(36).slice(2,9); }
 function go(view){
   document.querySelectorAll('.app > section').forEach(s=>s.classList.add('hidden'));
   document.getElementById('view-'+view).classList.remove('hidden');
+  document.body.classList.toggle('on-landing', view==='landing'); // shows the floating VI/EN switch
   let back = document.getElementById('backBtn');
   if(view!=='landing'){
     if(!back){
       back = document.createElement('button');
       back.id='backBtn'; back.className='btn btn-ghost btn-sm back-btn';
-      back.textContent='← Exit';
+      back.textContent=t('common.exit');
       back.onclick = ()=>go('landing');
       document.body.appendChild(back);
     }
@@ -1710,14 +2605,14 @@ async function submitAdminGate(){
   const err = document.getElementById('adminGateError');
   if(!v) return;
 
-  if(v.toUpperCase() !== ADMIN_PASSWORD){ err.textContent = 'Incorrect password — please try again.'; return; }
+  if(v.toUpperCase() !== ADMIN_PASSWORD){ err.textContent = t('gate.wrong'); return; }
 
   if(FB.mode!=='online'){
     FB.role='admin'; closeAdminGate(); go('admin');
     return;
   }
 
-  err.textContent = 'Signing in…';
+  err.textContent = t('gate.signing');
   try{
     // the admin typed ADMIN_PASSWORD above; ADMIN_FIREBASE_PASSWORD (a different,
     // Firebase-valid constant — see the comment above ADMIN_PASSWORD) is what
@@ -1730,11 +2625,11 @@ async function submitAdminGate(){
     reconcileProgress();
     closeAdminGate();
     go('admin');
-    toast('Signed in as admin · room '+ROOM);
+    toast(t('gate.signedIn',{room:ROOM}));
   }catch(e){
     err.textContent = (e && e.code==='auth/too-many-requests')
-      ? 'Too many attempts — wait a moment.'
-      : 'Firebase sign-in failed — make sure the admin@vna-sky-race.local account password in Firebase Console matches ADMIN_FIREBASE_PASSWORD in index.html.';
+      ? t('gate.tooMany')
+      : t('gate.fbFail');
   }
 }
 document.addEventListener('keydown', (e)=>{
@@ -1781,9 +2676,9 @@ document.getElementById('pRoomCode').value = ROOM;
 async function playerJoin(){
   const roomInput = document.getElementById('pRoomCode').value.trim().toUpperCase();
   const name = document.getElementById('pName').value.trim();
-  if(!roomInput){ toast('Please enter a room code'); return; }
-  if(!name){ toast('Please enter your name'); return; }
-  if(!selectedAvatar){ toast('Please choose an aircraft'); return; }
+  if(!roomInput){ toast(t('p.join.needRoom')); return; }
+  if(!name){ toast(t('p.join.needName')); return; }
+  if(!selectedAvatar){ toast(t('p.join.needAvatar')); return; }
 
   const joinBtn = document.getElementById('pJoinBtn');
   joinBtn.disabled = true;
@@ -1807,7 +2702,7 @@ async function playerJoin(){
     document.getElementById('pRegistration').classList.add('hidden');
     document.getElementById('pGame').classList.remove('hidden');
     renderPlayer();
-    toast('Welcome aboard, ' + name + '!');
+    toast(t('p.join.welcome',{name:name}));
   } finally {
     joinBtn.disabled = false;
   }
@@ -1836,8 +2731,8 @@ function paintCountdowns(){
   const remain = secondsRemaining();
   const running = state.gameState==='question' && remain!==null;
   const urgent = running && remain<=URGENT_SECONDS;
-  const idle = state.gameState==='locked' ? 'LOCKED'
-             : state.gameState==='reveal' ? 'REVEALED' : '--';
+  const idle = state.gameState==='locked' ? t('a.locked')
+             : state.gameState==='reveal' ? t('a.revealed') : '--';
 
   const p = document.getElementById('pTimer');
   if(p){
@@ -1860,7 +2755,7 @@ function playerSubmitAnswer(choiceIdx){
   const me = state.players[myPlayerId];
   if(!me) return;
   if(state.gameState !== 'question') return;
-  if(myTimeUp()){ toast("Time's up — no more answers for this leg"); return; }
+  if(myTimeUp()){ toast(t('p.timeUpToast')); return; }
   const existing = me.answers[state.currentQ];
   if(existing && existing.submitted) return;
   me.answers[state.currentQ] = { choice: choiceIdx, submitted:false, turbo: existing ? !!existing.turbo : false };
@@ -1899,10 +2794,10 @@ function boostsBlocked(){
   return me_turbulenceActive() || me_stormActive() || !!state.powerQuestionActive;
 }
 function boostBlockedReason(what){
-  if(me_turbulenceActive()) return '🌪 '+what+' is locked during turbulence';
-  if(me_stormActive()) return '⛈ '+what+' is locked during the storm — ATC clearance only';
-  if(state.powerQuestionActive) return '⚡ '+what+' is locked on a Power Question';
-  return what+' unlocks when your aircraft reaches MUC';
+  if(me_turbulenceActive()) return t('h.blockTurb',{what:what});
+  if(me_stormActive()) return t('h.blockStorm',{what:what});
+  if(state.powerQuestionActive) return t('h.blockPower',{what:what});
+  return t('h.blockLocked',{what:what});
 }
 // true while the player can still change their mind about this leg
 function canActNow(){
@@ -1921,9 +2816,9 @@ function isTurboEligibleNow(){
 function playerToggleTurbo(){
   const me = state.players[myPlayerId];
   if(!me) return;
-  if(me.turboUsed){ toast('Turbo Boost already used'); return; }
-  if(myTimeUp()){ toast("Time's up — no more answers for this leg"); return; }
-  if(!isTurboEligibleNow()){ toast(boostBlockedReason('Turbo Boost')); return; }
+  if(me.turboUsed){ toast(t('h.turboUsed')); return; }
+  if(myTimeUp()){ toast(t('p.timeUpToast')); return; }
+  if(!isTurboEligibleNow()){ toast(boostBlockedReason(t('h.nameTurbo'))); return; }
   const existing = myAnswerDraft();
   if(existing.submitted) return;
   existing.turbo = !existing.turbo;
@@ -1934,24 +2829,24 @@ function playerToggleTurbo(){
 function playerUseFifty(){
   const me = state.players[myPlayerId];
   if(!me) return;
-  if(me.fiftyUsed){ toast('50:50 already used'); return; }
-  if(myTimeUp()){ toast("Time's up — no more answers for this leg"); return; }
-  if(!helpsUnlocked() || boostsBlocked()){ toast(boostBlockedReason('50:50')); return; }
+  if(me.fiftyUsed){ toast(t('h.fiftyUsed')); return; }
+  if(myTimeUp()){ toast(t('p.timeUpToast')); return; }
+  if(!helpsUnlocked() || boostsBlocked()){ toast(boostBlockedReason(t('h.nameFifty'))); return; }
   const existing = myAnswerDraft();
   if(existing.submitted || existing.fifty) return;
   existing.fifty = true;
   me.answers[state.currentQ] = existing;
   saveState();
   renderPlayer();
-  toast('Two wrong answers removed');
+  toast(t('h.fiftyDone'));
 }
 function playerToggleSeatbelt(){
   const me = state.players[myPlayerId];
   if(!me) return;
-  if(me.seatbeltUsed){ toast('Fasten Seatbelt already used'); return; }
-  if(myTimeUp()){ toast("Time's up — no more answers for this leg"); return; }
-  if(!helpsUnlocked()){ toast('Fasten Seatbelt unlocks when your aircraft reaches MUC'); return; }
-  if(!me_turbulenceActive()){ toast('Fasten Seatbelt only works during turbulence'); return; }
+  if(me.seatbeltUsed){ toast(t('h.beltUsed')); return; }
+  if(myTimeUp()){ toast(t('p.timeUpToast')); return; }
+  if(!helpsUnlocked()){ toast(t('h.beltNeedMuc')); return; }
+  if(!me_turbulenceActive()){ toast(t('h.beltOnlyTurb')); return; }
   const existing = myAnswerDraft();
   if(existing.submitted) return;
   existing.seatbelt = !existing.seatbelt;
@@ -1982,9 +2877,9 @@ function eliminatedOptions(){
 function playerConfirmSubmit(){
   const me = state.players[myPlayerId];
   if(!me) return;
-  if(myTimeUp()){ toast("Time's up — no more answers for this leg"); renderPlayer(); return; }
+  if(myTimeUp()){ toast(t('p.timeUpToast')); renderPlayer(); return; }
   const a = me.answers[state.currentQ];
-  if(!a || a.choice===null || a.choice===undefined){ toast('Pick an answer first'); return; }
+  if(!a || a.choice===null || a.choice===undefined){ toast(t('p.pickFirst')); return; }
   a.submitted = true;
   a.timeTaken = state.questionOpenedAt ? (Date.now() - state.questionOpenedAt) : 0;
   // NB: totalAnswerTime is NOT accumulated here. It lives on the admin-owned progress node,
@@ -2072,19 +2967,19 @@ function renderBizRibbon(me){
   view.classList.toggle('biz-gold', isTop3);
   if(!isTop3){ wrap.innerHTML = ''; return; }
   const medal = RANK_TROPHY[idx];
-  const place = ['1st','2nd','3rd'][idx];
+  const place = t('biz.place'+(idx+1));
   const chaser = ranked[idx+1];
   let sub;
   if(chaser){
     const gap = (me.position||0) - (chaser.position||0);
-    const gapTxt = gap<=0 ? 'level with you' : (gap===1 ? '1 leg behind' : gap+' legs behind');
-    sub = `${escapeHtml(chaser.name)} is chasing you — ${gapTxt}`;
+    const gapTxt = gap<=0 ? t('biz.level') : (gap===1 ? t('biz.oneLeg') : t('biz.nLegs',{n:gap}));
+    sub = t('biz.chasing',{name:escapeHtml(chaser.name), gap:gapTxt});
   } else {
-    sub = 'You are out in front on your own.';
+    sub = t('biz.alone');
   }
   wrap.innerHTML = `<div class="biz-ribbon">
     <div class="medal">${medal}</div>
-    <div><div class="tt">Business Class · ${place} place</div><div class="sb">${sub}</div></div>
+    <div><div class="tt">${t('biz.title',{n:place})}</div><div class="sb">${sub}</div></div>
   </div>`;
 }
 
@@ -2093,7 +2988,7 @@ function renderHelps(me, myAns){
   const wrap = document.getElementById('pHelpsWrap');
   if(!wrap) return;
   if(!helpsUnlocked()){
-    wrap.innerHTML = `<div class="help-hint">50:50 · Turbo Boost · Fasten Seatbelt all unlock once your aircraft reaches ${ROUTE[TURBO_MIN_LEG].code}</div>`;
+    wrap.innerHTML = `<div class="help-hint">${t('h.locked',{code:ROUTE[TURBO_MIN_LEG].code})}</div>`;
     return;
   }
   const live = canActNow();
@@ -2105,29 +3000,33 @@ function renderHelps(me, myAns){
   const btn = (ic, lb, spent, armed, disabled, title, fn)=>
     `<button class="help-btn${spent?' spent':(armed?' armed':'')}" ${disabled?'disabled':''} title="${title}" onclick="${fn}"><span class="ic">${ic}</span><span class="lb">${lb}</span></button>`;
   wrap.innerHTML = `<div class="help-row">
-    ${btn(HELP_ICONS.fifty,'50:50', fiftyGone, false, fiftyGone || !boostOk,
-        fiftyGone?'50:50 already used':'Remove two wrong answers', 'playerUseFifty()')}
-    ${btn(HELP_ICONS.turbo,'Turbo', !!me.turboUsed, armedTurbo, !!me.turboUsed || !boostOk,
-        me.turboUsed?'Turbo Boost already used':'Correct +2 legs · wrong −1 leg', 'playerToggleTurbo()')}
-    ${btn(HELP_ICONS.seatbelt,'Seatbelt', !!me.seatbeltUsed, armedBelt, !!me.seatbeltUsed || !beltOk,
-        me.seatbeltUsed?'Fasten Seatbelt already used':'Turbulence only — cancels the −1 leg penalty', 'playerToggleSeatbelt()')}
+    ${btn(HELP_ICONS.fifty,t('h.fifty'), fiftyGone, false, fiftyGone || !boostOk,
+        fiftyGone?t('h.fiftyUsed'):t('h.fiftyTip'), 'playerUseFifty()')}
+    ${btn(HELP_ICONS.turbo,t('h.turbo'), !!me.turboUsed, armedTurbo, !!me.turboUsed || !boostOk,
+        me.turboUsed?t('h.turboUsed'):t('h.turboTip'), 'playerToggleTurbo()')}
+    ${btn(HELP_ICONS.seatbelt,t('h.belt'), !!me.seatbeltUsed, armedBelt, !!me.seatbeltUsed || !beltOk,
+        me.seatbeltUsed?t('h.beltUsed'):t('h.beltTip'), 'playerToggleSeatbelt()')}
   </div>`;
   let hint = '';
-  if(armedTurbo) hint = 'Turbo armed — correct +2 legs, wrong −1 leg';
-  else if(armedBelt) hint = 'Seatbelt fastened — a wrong answer will not push you back';
-  else if(me_turbulenceActive()) hint = '🌪 Turbulence — only Fasten Seatbelt works right now';
-  else if(me_stormActive()) hint = '⛈ Storm — all three helps are locked';
-  else if(state.powerQuestionActive) hint = '⚡ Power Question — all three helps are locked';
+  if(armedTurbo) hint = t('h.armedTurbo');
+  else if(armedBelt) hint = t('h.armedBelt');
+  else if(me_turbulenceActive()) hint = t('h.turbOnly');
+  else if(me_stormActive()) hint = t('h.stormAll');
+  else if(state.powerQuestionActive) hint = t('h.powerAll');
   if(hint) wrap.innerHTML += `<div class="help-hint">${hint}</div>`;
 }
 
 function renderPlayer(){
   const badge = document.getElementById('pStateBadge');
-  badge.textContent = state.gameState.toUpperCase();
+  badge.textContent = t('st.'+state.gameState);
 
   if(!myPlayerId || !state.players[myPlayerId]){
     document.getElementById('pRegistration').classList.remove('hidden');
     document.getElementById('pGame').classList.add('hidden');
+    // drop any skin left over from a previous session, otherwise a reset or a removed
+    // player leaves the join screen wearing the gold business-class background
+    document.getElementById('view-player').classList.remove('biz-gold','wx-turbulence','wx-storm','wx-power','final-round-theme');
+    const fx = document.getElementById('playerFx'); if(fx) fx.remove();
     return;
   }
   document.getElementById('pRegistration').classList.add('hidden');
@@ -2140,7 +3039,7 @@ function renderPlayer(){
   const myRankIdx = ranked.findIndex(p=>p.id===myPlayerId);
   const myRank = myRankIdx>=0 ? (myRankIdx+1) : '—';
   const here = ROUTE[me.position];
-  document.getElementById('pDest').innerHTML = `#${myRank} <span style="font-size:11px; opacity:.6;">of ${ranked.length}</span>`;
+  document.getElementById('pDest').innerHTML = `#${myRank} <span style="font-size:11px; opacity:.6;">${t('p.of',{n:ranked.length})}</span>`;
   document.getElementById('pLocation').innerHTML = `${here.code} <span style="font-size:10.5px; opacity:.6; font-family:var(--font-body);">${escapeHtml(here.city)}</span>`;
   // total answer time — the tie-break when several aircraft land on the same reveal
   document.getElementById('pTotalTime').textContent = formatTime(me.totalAnswerTime);
@@ -2176,19 +3075,16 @@ function renderPlayer(){
     const place = idx>=0 ? idx+1 : null;
     const onPodium = place && place<=FINISHERS_TO_END;
     const medal = onPodium ? RANK_TROPHY[place-1] : '✈️';
-    const prize = ['the Champion\'s Cup 🏆','the Gold Medal 🥇','the Silver Medal 🥈','the Bronze Medal 🥉'][place-1];
-    eyebrow.textContent = 'RACE COMPLETE';
+    eyebrow.textContent = t('p.raceComplete');
     qText.innerHTML = `
       <div style="font-size:40px; line-height:1; margin-bottom:8px;">${medal}</div>
-      <div style="font-size:22px; font-weight:800; margin-bottom:4px;">${place ? ordinal(place)+' place' : 'Race complete'}</div>
+      <div style="font-size:22px; font-weight:800; margin-bottom:4px;">${place ? t('p.placeN',{n:ordinal(place)}) : t('p.raceOver')}</div>
       <div style="font-size:13px; font-weight:600; color:var(--vna-gold-light); margin-bottom:12px;">
-        ${onPodium ? 'You win '+prize+'!' : (place ? 'out of '+rankedAll.length+' pilots' : '')}
+        ${onPodium ? t('p.prize'+place) : (place ? t('p.outOf',{n:rankedAll.length}) : '')}
       </div>
       <div style="font-size:14px; font-weight:400; color:rgba(255,255,255,.85); line-height:1.6;">
-        ${onPodium
-          ? 'Congratulations — a superb flight. Please come up to the stage to collect your award.'
-          : 'Thank you for flying with us today — every leg you flew was part of the race.'}
-        <br><br>We wish you an inspiring conference, meaningful connections, and an enjoyable experience throughout today's event.
+        ${onPodium ? t('p.congratsPodium') : t('p.congratsOther')}
+        <br><br>${t('p.wish')}
       </div>`;
     optsEl.innerHTML=''; bannerEl.classList.add('hidden'); clearTimer();
     if(powerNoteEl) powerNoteEl.classList.add('hidden');
@@ -2201,8 +3097,8 @@ function renderPlayer(){
   // itself keeps going for everyone else until at least 4 aircraft have landed.
   if(me.finishRank){
     const medal = RANK_TROPHY[me.finishRank-1] || '🏅';
-    eyebrow.textContent = '🏁 FINISHED';
-    qText.innerHTML = `<div style="font-size:21px; font-weight:800; margin-bottom:12px;">${medal} You landed in ${ordinal(me.finishRank)} place!</div><div style="font-size:14px; font-weight:400; color:rgba(255,255,255,.82); line-height:1.55;">You've completed the Sky Race — thank you for flying with us today.<br><br>We wish you an inspiring conference, meaningful connections, and an enjoyable experience throughout today's event.</div>`;
+    eyebrow.textContent = t('p.finished');
+    qText.innerHTML = `<div style="font-size:21px; font-weight:800; margin-bottom:12px;">${t('p.finishedPlace',{medal:medal, n:ordinal(me.finishRank)})}</div><div style="font-size:14px; font-weight:400; color:rgba(255,255,255,.82); line-height:1.55;">${t('p.finishedMsg')}</div>`;
     optsEl.innerHTML=''; bannerEl.classList.add('hidden'); clearTimer();
     if(powerNoteEl) powerNoteEl.classList.add('hidden');
     if(stormNoteEl) stormNoteEl.classList.add('hidden');
@@ -2219,13 +3115,13 @@ function renderPlayer(){
     if(staged){
       eyebrow.textContent = legLabel(state.currentQ);
       qText.textContent = QUESTIONS_BY_ID[state.currentQuestionIndex].q;
-      optsEl.innerHTML = `<div class="p-await">Answers appear when the host opens the question</div>`;
+      optsEl.innerHTML = `<div class="p-await">${t('p.awaitAnswers')}</div>`;
     } else {
       const waiting = !!state.legAnnouncedAt;
-      eyebrow.textContent = waiting ? legLabel(state.currentQ) : 'WAITING FOR GAME TO START';
+      eyebrow.textContent = waiting ? legLabel(state.currentQ) : t('p.waitStart');
       qText.textContent = wxAnnounceActive()
-        ? 'Read the warning above — the question is coming.'
-        : (waiting ? 'Next question coming up…' : 'Question will be open shortly. Get ready for takeoff!');
+        ? t('p.readWarning')
+        : (waiting ? t('p.waitNext') : t('p.waitStartMsg'));
       optsEl.innerHTML = '';
     }
     bannerEl.classList.add('hidden'); clearTimer();
@@ -2236,7 +3132,7 @@ function renderPlayer(){
   }
   if(state.currentQuestionIndex===null || state.currentQuestionIndex===undefined){
     eyebrow.textContent = legLabel(state.currentQ);
-    qText.textContent = 'Waiting for the admin to open this question…';
+    qText.textContent = t('p.waitOpen');
     optsEl.innerHTML=''; bannerEl.classList.add('hidden'); clearTimer();
     if(powerNoteEl) powerNoteEl.classList.add('hidden');
     if(stormNoteEl) stormNoteEl.classList.add('hidden');
@@ -2286,41 +3182,41 @@ function renderPlayer(){
   if(state.gameState==='question'){
     if(myAns && myAns.submitted){
       bannerEl.classList.add('locked');
-      bannerEl.innerHTML = '🔒 Answer locked in' + (myAns.turbo?' with Turbo Boost':'') + (myAns.seatbelt?' and Fasten Seatbelt':'') + '. Waiting for other players…';
+      bannerEl.innerHTML = t('p.locked') + (myAns.turbo?t('p.lockedTurbo'):'') + (myAns.seatbelt?t('p.lockedBelt'):'') + t('p.lockedWait');
     } else if(timeUp){
       bannerEl.classList.add('locked');
       // a pick that was never submitted is locked in automatically at reveal, so say so
       bannerEl.innerHTML = (myAns && myAns.choice!==null && myAns.choice!==undefined)
-        ? "⏱️ Time's up — your answer was locked in automatically."
-        : "⏱️ Time's up — no answer submitted for this leg.";
+        ? t('p.timeUpAuto')
+        : t('p.timeUpNone');
     } else if(myAns && myAns.choice!==null && myAns.choice!==undefined){
       bannerEl.classList.add('wait');
       bannerEl.innerHTML = `<button class="btn btn-primary btn-block" onclick="playerConfirmSubmit()">Submit answer →</button>
         <div style="font-size:11px; color:rgba(255,255,255,.55); margin-top:7px;">Submit now to bank a faster time — if you don't, this answer locks in when the clock runs out.</div>`;
     } else {
       bannerEl.classList.add('wait');
-      bannerEl.innerHTML = 'Select an answer above';
+      bannerEl.innerHTML = t('p.selectAnswer');
     }
   } else if(state.gameState==='locked'){
     bannerEl.classList.add('locked');
-    bannerEl.innerHTML = '⏳ Answers locked. Revealing shortly…';
+    bannerEl.innerHTML = t('p.answersLocked');
   } else if(revealed){
     const correct = myAns && myAns.choice===state.currentCorrectIndex;
     const turbulent = isTurbulenceLeg(state.currentQ);
     let msg;
     if(turbulent){
-      if(correct) msg = '🌪 Correct — but turbulence holds your aircraft in place.';
-      else if(myAns && myAns.seatbelt) msg = 'Seatbelt saved you — turbulence would have cost a leg, you hold position.';
-      else msg = '🌪 Turbulence! Wrong answer sends you back one destination.';
+      if(correct) msg = t('p.rv.turbOk');
+      else if(myAns && myAns.seatbelt) msg = t('p.rv.turbBelt');
+      else msg = t('p.rv.turbBad');
     } else if(isStormLeg(state.currentQ)){
       const cleared = !!(state.stormClearedIds && state.stormClearedIds.includes(myPlayerId));
-      msg = cleared ? '⛈ ATC clearance granted — cleared to continue to the next leg!' : (correct ? '⛈ Correct, but ATC only cleared the 10 fastest — you hold position.' : '⛈ Storm — aircraft grounded, hold position.');
+      msg = cleared ? t('p.rv.stormOk') : (correct ? t('p.rv.stormSlow') : t('p.rv.stormBad'));
     } else if(state.powerQuestionActive){
-      msg = correct ? '⚡ Correct! Power Question bonus applied for the fastest answer.' : '⚡ Power Question — not correct this time, you hold position.';
+      msg = correct ? t('p.rv.powerOk') : t('p.rv.powerBad');
     } else if(myAns && myAns.turbo){
-      msg = correct ? 'Turbo Boost paid off — 2 destinations forward!' : 'Turbo Boost backfired — 1 destination back.';
+      msg = correct ? t('p.rv.turboOk') : t('p.rv.turboBad');
     } else {
-      msg = correct ? '✅ Correct! Your aircraft advances one destination.' : (myAns ? '❌ Not quite — your aircraft holds position.' : '⏱️ No answer submitted — aircraft holds position.');
+      msg = correct ? t('p.rv.ok') : (myAns ? t('p.rv.bad') : t('p.rv.none'));
     }
     bannerEl.classList.add(correct ? 'correct':'wrong');
     bannerEl.innerHTML = msg;
@@ -2442,7 +3338,7 @@ function showNewLeaderBanner(name){
     el.className = 'new-leader-banner';
     presenterEl.appendChild(el);
   }
-  el.innerHTML = `<div class="tag">🔥 New Leader</div><div class="who">${escapeHtml(name)}</div>`;
+  el.innerHTML = `<div class="tag">${t('pres.newLeader')}</div><div class="who">${escapeHtml(name)}</div>`;
   // reflow so re-adding "show" retriggers the transition even if a banner is already up
   el.classList.remove('show'); void el.offsetWidth;
   el.classList.add('show');
@@ -2580,7 +3476,7 @@ function renderPresenterLeaderboard(){
       .sort((a,b)=>(a.totalAnswerTime||0)-(b.totalAnswerTime||0));
     if(titleEl) titleEl.textContent = `📍 ${node.code} · ${node.city}`;
     el.innerHTML = here.length===0
-      ? `<p style="color:rgba(255,255,255,.5); font-size:13px;">No aircraft parked here right now.</p>`
+      ? `<p style="color:rgba(255,255,255,.5); font-size:13px;">${t('pres.noneHere')}</p>`
       : here.map(p=>`
         <div class="lead-row">
           <div class="av">${avatarHTML(p.avatar,'1em','#FFFFFF')}</div>
@@ -2589,17 +3485,17 @@ function renderPresenterLeaderboard(){
       `).join('');
     return; // the hover view wipes the DOM, so the row cache below is rebuilt fresh next time
   }
-  if(titleEl) titleEl.textContent = 'Live Leaderboard';
+  if(titleEl) titleEl.textContent = t('pres.leaderboard');
   const ranked = rankedPlayers();
   if(ranked.length===0){
-    el.innerHTML = '<p style="color:rgba(255,255,255,.5); font-size:13px;">No players yet. Scan the QR code to join.</p>';
+    el.innerHTML = `<p style="color:rgba(255,255,255,.5); font-size:13px;">${t('pres.noPlayers')}</p>`;
     Object.keys(presenterLeaderRowEls).forEach(k=>delete presenterLeaderRowEls[k]);
     return;
   }
   const totalLegs = ROUTE.length - 1;
   // The leaderboard lists EVERY player (the panel scrolls). The route map is unaffected —
   // it still draws named tokens for the top 5 and a "+N" pile for everyone else.
-  if(titleEl) titleEl.textContent = `Live Leaderboard · ${ranked.length}`;
+  if(titleEl) titleEl.textContent = t('pres.leaderboardN',{n:ranked.length});
 
   // Drop anything in the panel that isn't one of our tracked rows — e.g. the "No players
   // yet" placeholder left over from the empty state above, the first time players join.
@@ -2672,7 +3568,7 @@ function renderPresenterBrief(){
 
   if(leg===null || !qd || players.length===0){
     if(legEl) legEl.textContent = '—';
-    body.innerHTML = `<div class="brief-empty brief-item wide">🛫 Cabin crew, prepare for departure. Question statistics will appear here after the first answer is revealed.</div>`;
+    body.innerHTML = `<div class="brief-empty brief-item wide">${t('brief.standby')}</div>`;
     return;
   }
   if(legEl) legEl.textContent = legLabel(leg).toUpperCase();
@@ -2696,27 +3592,27 @@ function renderPresenterBrief(){
   const times = answers.map(x=>x.a.timeTaken).filter(t=>typeof t==='number');
   const avg = times.length ? times.reduce((s,t)=>s+t,0)/times.length : null;
   let pace, paceCls, paceIcon;
-  if(avg===null){ pace='No data'; paceCls=''; paceIcon='📉'; }
-  else if(avg < 7000){ pace='Fast'; paceCls='pace-fast'; paceIcon='🚀'; }
-  else if(avg < 14000){ pace='Steady'; paceCls='pace-med'; paceIcon='🧭'; }
-  else { pace='Slow'; paceCls='pace-slow'; paceIcon='🐢'; }
+  if(avg===null){ pace=t('brief.paceNone'); paceCls=''; paceIcon='📉'; }
+  else if(avg < 7000){ pace=t('brief.paceFast'); paceCls='pace-fast'; paceIcon='🚀'; }
+  else if(avg < 14000){ pace=t('brief.paceSteady'); paceCls='pace-med'; paceIcon='🧭'; }
+  else { pace=t('brief.paceSlow'); paceCls='pace-slow'; paceIcon='🐢'; }
 
   // flows inline rather than one name per line — three stacked lines pushed the bulletin
   // past the bottom of a 800px-tall presenter screen
   const podiumHtml = podium.length
     ? podium.map((x,i)=>`<span class="bnm">${['🥇','🥈','🥉'][i]} ${escapeHtml(x.p.name)} <span class="sub">${formatTime(x.a.timeTaken)}</span></span>`).join('')
-    : '<span class="sub">Nobody answered correctly</span>';
+    : ('<span class="sub">'+t('brief.noneCorrect')+'</span>');
 
   const item = (icon, label, value, wide)=>
     `<div class="brief-item${wide?' wide':''}"><span class="bi">${icon}</span><div><div class="bl">${label}</div><div class="bv">${value}</div></div></div>`;
 
   body.innerHTML =
-    item('⚡','Fastest correct', podiumHtml, true) +
-    item('✅','Correct answers', `${correct.length} <span class="sub">of ${players.length}</span>`) +
-    item('📊','Success rate', `${rate}%`) +
-    item('👑','Leader at', leader ? `${ROUTE[leader.position].code} <span class="sub">${escapeHtml(ROUTE[leader.position].city)}</span>` : '—') +
-    item('🛬','Busiest stop', busyPos!==null ? `${ROUTE[busyPos].code} <span class="sub">${busyN} aircraft</span>` : '—') +
-    item(paceIcon,'Cabin pace', `<span class="${paceCls}">${pace}</span>${avg!==null?` <span class="sub">avg ${formatTime(avg)}</span>`:''}`, true);
+    item('⚡',t('brief.fastest'), podiumHtml, true) +
+    item('✅',t('brief.correct'), `${correct.length} <span class="sub">${t('brief.ofN',{n:players.length})}</span>`) +
+    item('📊',t('brief.rate'), `${rate}%`) +
+    item('👑',t('brief.leaderAt'), leader ? `${ROUTE[leader.position].code} <span class="sub">${escapeHtml(ROUTE[leader.position].city)}</span>` : '—') +
+    item('🛬',t('brief.busiest'), busyPos!==null ? `${ROUTE[busyPos].code} <span class="sub">${t('brief.aircraftN',{n:busyN})}</span>` : '—') +
+    item(paceIcon,t('brief.pace'), `<span class="${paceCls}">${pace}</span>${avg!==null?` <span class="sub">${t('brief.avg',{t:formatTime(avg)})}</span>`:''}`, true);
 }
 
 function rankedPlayers(){
@@ -2735,6 +3631,8 @@ function formatTime(ms){
   return (ms/1000).toFixed(1)+'s';
 }
 function ordinal(n){
+  // Vietnamese has no ordinal suffix — the surrounding string already says "Hạng"/"thứ"
+  if(LANG === 'vi') return String(n);
   const s = ['th','st','nd','rd'], v = n % 100;
   return n + (s[(v-20)%10] || s[v] || s[0]);
 }
@@ -2759,21 +3657,21 @@ function togglePresenterFullscreen(){
     return;
   }
   const req = el.requestFullscreen || el.webkitRequestFullscreen;
-  if(!req){ toast('Fullscreen is not supported in this browser'); return; }
-  Promise.resolve(req.call(el)).catch(()=>toast('Fullscreen was blocked by the browser'));
+  if(!req){ toast(t('pres.fsUnsupported')); return; }
+  Promise.resolve(req.call(el)).catch(()=>toast(t('pres.fsBlocked')));
 }
 function syncFullscreenBtn(){
   const btn = document.getElementById('presFullscreenBtn');
   if(!btn) return;
   const isFull = document.fullscreenElement || document.webkitFullscreenElement;
-  btn.textContent = isFull ? '⛶ Exit fullscreen' : '⛶ Fullscreen';
+  btn.textContent = isFull ? t('pres.exitFullscreen') : t('pres.fullscreen');
 }
 document.addEventListener('fullscreenchange', syncFullscreenBtn);
 document.addEventListener('webkitfullscreenchange', syncFullscreenBtn);
 
 function renderPresenter(){
   const pill = document.getElementById('presStatePill');
-  pill.textContent = state.gameState.toUpperCase();
+  pill.textContent = t('st.'+state.gameState);
   renderPresenterPlanes();
   renderPresenterLeaderboard();
   renderPresenterBrief();
@@ -2797,7 +3695,7 @@ function renderPresenter(){
   // pre-existing "storm" naming used for Turbulence's rain/lightning theme, to avoid confusion.
   const thunderOn = isStormLeg(state.currentQ) && !turbulent;
   if(weatherBadge){
-    weatherBadge.innerHTML = turbulent ? '🌪 Turbulence' : (thunderOn ? '⛈ Storm' : (powerOn ? '☀️ Power Question' : '🌈 Clear Skies'));
+    weatherBadge.innerHTML = turbulent ? t('wx.turbulence') : (thunderOn ? t('wx.storm') : (powerOn ? t('wx.power') : t('wx.clear')));
     weatherBadge.classList.toggle('weather-storm', turbulent);
     weatherBadge.classList.toggle('weather-power', powerOn);
     weatherBadge.classList.toggle('weather-thunder', thunderOn);
@@ -2870,7 +3768,7 @@ function renderPresenter(){
       if(!p) return '';
       return `<div class="storm-clear-row"><span class="rank">#${i+1}</span>${avatarHTML(p.avatar,'1.1em','#FFFFFF')}<span class="nm">${escapeHtml(p.name)}</span></div>`;
     }).join('');
-    stormClearOverlay.innerHTML = `<div class="storm-clear-title">⛈ ATC CLEARANCE — ${state.stormClearedIds.length} aircraft continue</div><div class="storm-clear-list">${rows || '<div class=\"storm-clear-row\">No one answered correctly in time.</div>'}</div>`;
+    stormClearOverlay.innerHTML = `<div class="storm-clear-title">${t('pres.stormClear',{n:state.stormClearedIds.length})}</div><div class="storm-clear-list">${rows || ('<div class="storm-clear-row">'+t('pres.stormNone')+'</div>')}</div>`;
   } else if(!showStormClear && stormClearOverlay){
     stormClearOverlay.remove();
   }
@@ -2904,11 +3802,11 @@ function renderPresenter(){
       </div>
       <div class="pq-text">${escapeHtml(qd.q)}</div>
       ${previewing
-        ? `<div class="pq-await">Read the question — the answers and the clock come next</div>`
+        ? `<div class="pq-await">${t('pres.awaitAnswers')}</div>`
         : `<div class="pq-opts">
         ${qd.opts.map((o,i)=>`<div class="pq-opt${(revealed && i===correctIdx)?' correct':''}"><span class="k">${String.fromCharCode(65+i)}</span><span>${escapeHtml(o)}</span></div>`).join('')}
       </div>`}
-      ${(revealed && correctIdx!==null && correctIdx!==undefined) ? `<div class="pq-answer-tag">✅ Correct answer: ${String.fromCharCode(65+correctIdx)} — ${escapeHtml(qd.opts[correctIdx])}</div>` : ''}
+      ${(revealed && correctIdx!==null && correctIdx!==undefined) ? `<div class="pq-answer-tag">${t('pres.correctIs',{letter:String.fromCharCode(65+correctIdx), text:escapeHtml(qd.opts[correctIdx])})}</div>` : ''}
     `;
   } else if(pqEl){
     pqEl.remove();
@@ -2931,11 +3829,11 @@ function renderPresenter(){
   }
 
   const statusEl = document.getElementById('presQStatus');
-  if(state.gameState==='lobby') statusEl.textContent = `Waiting for admin to open ${legLabel(state.currentQ)}…`;
-  else if(state.gameState==='question') statusEl.textContent = `${legLabel(state.currentQ)} is open — players are answering.${turbulent?' 🌪 Turbulence in effect.':''}`;
-  else if(state.gameState==='locked') statusEl.textContent = `${legLabel(state.currentQ)} locked — preparing to reveal.`;
-  else if(state.gameState==='reveal') statusEl.textContent = (qKnown && state.currentCorrectIndex!==null && state.currentCorrectIndex!==undefined) ? `${legLabel(state.currentQ)} — correct answer: ${String.fromCharCode(65+state.currentCorrectIndex)}. Aircraft advancing…` : `${legLabel(state.currentQ)} revealed.`;
-  else if(state.gameState==='finished') statusEl.textContent = 'Race complete! 🏆';
+  if(state.gameState==='lobby') statusEl.textContent = t('pres.waitOpen',{leg:legLabel(state.currentQ)});
+  else if(state.gameState==='question') statusEl.textContent = t('pres.qOpen',{leg:legLabel(state.currentQ)}) + (turbulent?t('pres.qTurb'):'');
+  else if(state.gameState==='locked') statusEl.textContent = t('pres.qLocked',{leg:legLabel(state.currentQ)});
+  else if(state.gameState==='reveal') statusEl.textContent = (qKnown && state.currentCorrectIndex!==null && state.currentCorrectIndex!==undefined) ? t('pres.qRevealed',{leg:legLabel(state.currentQ), letter:String.fromCharCode(65+state.currentCorrectIndex)}) : t('pres.qRevealedPlain',{leg:legLabel(state.currentQ)});
+  else if(state.gameState==='finished') statusEl.textContent = t('pres.raceDone');
 
   // winner overlay — only appears once the admin explicitly triggers it (Game Control ->
   // "Show Congratulations"), not automatically the instant the race finishes.
@@ -2952,14 +3850,14 @@ function renderPresenter(){
     const podium = rankedPlayers().slice(0,3);
     overlay.innerHTML = `
       <div class="trophy">🏆</div>
-      <h1>Congratulations!</h1>
-      <div style="font-size:20px;">${avatarHTML(winner.avatar,'1.1em','#FFFFFF')} <span class="pname">${escapeHtml(winner.name)}</span> wins the Sky Race!</div>
+      <h1>${t('pres.congrats')}</h1>
+      <div style="font-size:20px;">${avatarHTML(winner.avatar,'1.1em','#FFFFFF')} <span class="pname">${escapeHtml(winner.name)}</span> ${t('pres.winsRace')}</div>
       <div class="podium">
         ${podium[1]?`<div class="col c2"><div>${avatarHTML(podium[1].avatar,'1.3em','#FFFFFF')}</div><div class="bar">2</div><div class="podium-name">${escapeHtml(podium[1].name)}</div></div>`:''}
         ${podium[0]?`<div class="col c1"><div>${avatarHTML(podium[0].avatar,'1.3em','#FFFFFF')}</div><div class="bar">1</div><div class="podium-name">${escapeHtml(podium[0].name)}</div></div>`:''}
         ${podium[2]?`<div class="col c3"><div>${avatarHTML(podium[2].avatar,'1.3em','#FFFFFF')}</div><div class="bar">3</div><div class="podium-name">${escapeHtml(podium[2].name)}</div></div>`:''}
       </div>
-      <button class="btn btn-primary" style="margin-top:34px;" onclick="resetGame()">Play again</button>
+      <button class="btn btn-primary" style="margin-top:34px;" onclick="resetGame()">${t('pres.playAgain')}</button>
     `;
   } else if(overlay){
     overlay.remove();
@@ -2983,32 +3881,32 @@ function renderPresenter(){
     const milestoneRows = ['HAN','SPC','SGN'].map(code=>{
       const pid = state.milestones[code];
       const p = pid ? state.players[pid] : null;
-      const label = code==='SPC' ? 'Special Checkpoint' : code;
+      const label = code==='SPC' ? t('pres.spc') : code;
       return `<div style="display:flex; align-items:center; gap:8px; justify-content:center; font-size:13.5px; margin-top:6px;">
         <span class="tag mono">${label}</span>
-        <span>${p ? avatarHTML(p.avatar,'1em','#FFFFFF')+' '+escapeHtml(p.name) : '<span style="color:rgba(255,255,255,.45);">not reached yet</span>'}</span>
+        <span>${p ? avatarHTML(p.avatar,'1em','#FFFFFF')+' '+escapeHtml(p.name) : '<span style="color:rgba(255,255,255,.45);">'+t('pres.notReached')+'</span>'}</span>
       </div>`;
     }).join('');
     awardOverlay.innerHTML = `
-      <h1 style="font-size:30px; margin:0 0 18px;">Award Ceremony</h1>
+      <h1 style="font-size:30px; margin:0 0 18px;">${t('pres.award')}</h1>
       ${champion ? `
         <div class="champion-block">
           <div class="champion-cup">🏆</div>
-          <div class="champion-eyebrow">Champion</div>
+          <div class="champion-eyebrow">${t('pres.champion')}</div>
           <div class="champion-name">${escapeHtml(champion.name)}</div>
-          <div class="champion-sub">${avatarHTML(champion.avatar,'1.1em','#FFFFFF')} &nbsp;${champion.correctCount||0} correct · ⏱ ${formatTime(champion.totalAnswerTime)}</div>
+          <div class="champion-sub">${avatarHTML(champion.avatar,'1.1em','#FFFFFF')} &nbsp;${t('pres.correctN',{n:champion.correctCount||0})} · ⏱ ${formatTime(champion.totalAnswerTime)}</div>
         </div>` : ''}
       <div class="medal-row">
         ${medallists.map((p,i)=>`
           <div class="medal-card">
             <div class="medal-ico">${RANK_TROPHY[i+1]}</div>
-            <div class="medal-place">${ordinal(i+2)} place</div>
+            <div class="medal-place">${t('pres.placeN',{n:ordinal(i+2)})}</div>
             <div class="medal-name">${escapeHtml(p.name)}</div>
             <div class="medal-sub">${avatarHTML(p.avatar,'1em','#FFFFFF')} &nbsp;⏱ ${formatTime(p.totalAnswerTime)}</div>
           </div>`).join('')}
       </div>
       <div style="margin-top:24px; text-align:center;">
-        <div style="font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:rgba(255,255,255,.55); margin-bottom:4px;">First to reach each checkpoint</div>
+        <div style="font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:rgba(255,255,255,.55); margin-bottom:4px;">${t('pres.milestoneTitle')}</div>
         ${milestoneRows}
       </div>
     `;
@@ -3082,7 +3980,7 @@ function adminTab(tab){
   ['control','answers','questions','players','leaderboard'].forEach(t=>{
     document.getElementById('tab-'+t).classList.toggle('hidden', t!==tab);
   });
-  const titles = {control:'Game Control', answers:'Submitted Answers', questions:'Question Editor', players:'Manage Players', leaderboard:'Leaderboard'};
+  const titles = {control:t('a.title.control'), answers:t('a.title.answers'), questions:t('a.title.questions'), players:t('a.title.players'), leaderboard:t('a.title.leaderboard')};
   document.getElementById('adminTabTitle').textContent = titles[tab];
   renderAdmin();
 }
@@ -3097,13 +3995,13 @@ function adminTab(tab){
    The button relabels itself between the two (see renderAdmin), so it always says which
    of the two it is about to do. */
 function adminStageQuestion(){
-  if(state.gameState==='finished'){ toast('Race already finished — reset to play again.'); return false; }
-  if(!ensureQuestionPicked()){ toast('No questions left in the bank — all '+QUESTIONS.length+' have been asked.'); return false; }
+  if(state.gameState==='finished'){ toast(t('a.t.finished')); return false; }
+  if(!ensureQuestionPicked()){ toast(t('a.t.noQuestions',{n:QUESTIONS.length})); return false; }
   state.legAnnouncedAt = Date.now();
   return true;
 }
 function adminOpenQuestion(){
-  if(state.gameState==='finished'){ toast('Race already finished — reset to play again.'); return; }
+  if(state.gameState==='finished'){ toast(t('a.t.finished')); return; }
   // nothing staged for this leg yet -> stage it and stop; the next press starts the clock
   if(state.gameState==='lobby' && (state.currentQuestionIndex===null || state.currentQuestionIndex===undefined)){
     if(!adminStageQuestion()) return;
@@ -3111,7 +4009,7 @@ function adminOpenQuestion(){
     toast(wxKindForLeg() ? 'Weather warning up — question follows in 10s' : 'Question appears in 2s (answers still hidden)');
     return;
   }
-  if(!ensureQuestionPicked()){ toast('No questions left in the bank — all '+QUESTIONS.length+' have been asked.'); return; }
+  if(!ensureQuestionPicked()){ toast(t('a.t.noQuestions',{n:QUESTIONS.length})); return; }
   state.gameState = 'question';
   state.questionOpenedAt = Date.now();
   // Hard deadline enforced by the database rules against Firebase server time, so a late
@@ -3121,20 +4019,20 @@ function adminOpenQuestion(){
   toast(legLabel(state.currentQ)+' — answers open, clock running');
 }
 function adminCloseQuestion(){
-  if(state.gameState!=='question'){ toast('No question is currently open'); return; }
+  if(state.gameState!=='question'){ toast(t('a.t.noOpen')); return; }
   state.gameState = 'locked';
   saveState();
-  toast('Answers locked');
+  toast(t('a.t.answersLocked'));
 }
 function adminRevealAnswer(){
-  if(state.gameState!=='locked' && state.gameState!=='question'){ toast('Close the question first'); return; }
-  if(state.currentQuestionIndex===null || state.currentQuestionIndex===undefined){ toast('Open a question first'); return; }
+  if(state.gameState!=='locked' && state.gameState!=='question'){ toast(t('a.t.closeFirst')); return; }
+  if(state.currentQuestionIndex===null || state.currentQuestionIndex===undefined){ toast(t('a.t.openFirst')); return; }
   // ---- idempotency guard: a leg can only ever be scored once ----
   state.revealedLegs = state.revealedLegs || {};
   if(state.revealedLegs[state.currentQ]){
     state.gameState = 'reveal';
     saveState();
-    toast('Leg '+(state.currentQ+1)+' was already revealed — aircraft not moved again.');
+    toast(t('a.t.already',{n:state.currentQ+1}));
     return;
   }
 
@@ -3285,16 +4183,16 @@ function adminRevealAnswer(){
   }
   saveState();
   toast(newArrivals.length
-    ? `Revealed — ${newArrivals.length} aircraft landed at FINISH (${totalFinishers} total so far)`
-    : 'Answer revealed — aircraft moved');
+    ? t('a.t.landed',{n:newArrivals.length, total:totalFinishers})
+    : t('a.t.moved'));
 }
 
 /* One-step rollback of the last Reveal. The safety net for: wrong answer key,
    a disputed question, or opening the wrong leg by mistake. */
 function adminUndoReveal(){
   const snap = state.undoSnapshot;
-  if(!snap){ toast('Nothing to undo'); return; }
-  if(!confirm(`Undo the reveal of Leg ${snap.leg+1}? Every aircraft goes back to where it was before that question was scored.`)) return;
+  if(!snap){ toast(t('a.t.nothingUndo')); return; }
+  if(!confirm(t('a.t.confirmUndo',{n:snap.leg+1}))) return;
   state.players = JSON.parse(JSON.stringify(snap.players));
   state.milestones = JSON.parse(JSON.stringify(snap.milestones||{}));
   state.winnerId = snap.winnerId;
@@ -3313,10 +4211,10 @@ function adminUndoReveal(){
   }
   state.congratsShown = false;
   saveState();
-  toast('Reveal of Leg '+(snap.leg+1)+' undone');
+  toast(t('a.t.undone',{n:snap.leg+1}));
 }
 function adminNextQuestion(){
-  if(state.gameState==='finished'){ toast('Race finished — reset to play again.'); return; }
+  if(state.gameState==='finished'){ toast(t('a.t.finished')); return; }
   // The map only has 12 legs, but with fewer than 4 aircraft landed there's no "last leg" —
   // the race keeps going into overtime rounds (see legLabel()) until 3 have reached FINISH.
   // armed but the leg was never scored -> hand the Power Question charge back
@@ -3335,12 +4233,12 @@ function adminNextQuestion(){
   // text goes up with the answers still hidden until the admin opens them
   adminStageQuestion();
   saveState();
-  toast('Advanced to '+legLabel(state.currentQ).toLowerCase());
+  toast(t('a.t.advanced',{leg:legLabel(state.currentQ)}));
 }
 function adminPrevQuestion(){
-  if(state.gameState==='finished'){ toast('Race finished — reset to play again.'); return; }
-  if(state.currentQ <= 0){ toast('Already at Leg 1'); return; }
-  if(!confirm('Go back to Leg '+state.currentQ+'? It reopens with the same question it had before (aircraft positions stay as they are).')) return;
+  if(state.gameState==='finished'){ toast(t('a.t.finished')); return; }
+  if(state.currentQ <= 0){ toast(t('a.t.atFirst')); return; }
+  if(!confirm(t('a.t.confirmPrev',{n:state.currentQ}))) return;
   // armed but the leg was never scored -> hand the Power Question charge back
   if(state.powerQuestionActive && !(state.revealedLegs && state.revealedLegs[state.currentQ])){
     state.powerQuestionUsed = false;
@@ -3356,13 +4254,13 @@ function adminPrevQuestion(){
   if(state.winnerId){ state.winnerId = null; }
   adminStageQuestion();
   saveState();
-  toast('Went back to '+legLabel(state.currentQ).toLowerCase());
+  toast(t('a.t.wentBack',{leg:legLabel(state.currentQ)}));
 }
 function adminTogglePowerQuestion(){
-  if(state.gameState!=='lobby'){ toast('Power Question can only be toggled before opening the question'); return; }
-  if(isTurbulenceLeg(state.currentQ)){ toast('🌪 Leg '+(state.currentQ+1)+' is a turbulence leg — Power Question cannot be armed here'); return; }
-  if(isStormLeg(state.currentQ)){ toast('⛈ Leg '+(state.currentQ+1)+' is a storm leg — Power Question cannot be armed here'); return; }
-  if(state.powerQuestionUsed && !state.powerQuestionActive){ toast('Power Question has already been played this game'); return; }
+  if(state.gameState!=='lobby'){ toast(t('a.t.powerOnlyLobby')); return; }
+  if(isTurbulenceLeg(state.currentQ)){ toast(t('a.t.powerTurb',{n:state.currentQ+1})); return; }
+  if(isStormLeg(state.currentQ)){ toast(t('a.t.powerStorm',{n:state.currentQ+1})); return; }
+  if(state.powerQuestionUsed && !state.powerQuestionActive){ toast(t('a.t.powerUsed')); return; }
   state.powerQuestionActive = !state.powerQuestionActive;
   // arming it is itself an announcement — restart the 10s warning window so the room sees it
   if(state.powerQuestionActive) state.legAnnouncedAt = Date.now();
@@ -3377,10 +4275,10 @@ function resetGame(){
   // during an event that is unrecoverable. Requires typing the word to confirm.
   const live = state.gameState!=='lobby' || Object.keys(state.players).length>0;
   if(live){
-    const typed = prompt('This clears ALL '+Object.keys(state.players).length+' players and the whole race.\n\nType  RESET  to confirm:');
+    const typed = prompt(t('a.t.resetConfirm',{n:Object.keys(state.players).length}));
     if(typed===null) return;
-    if(typed.trim().toUpperCase()!=='RESET'){ toast('Reset cancelled'); return; }
-  } else if(!confirm('Reset the entire game?')) return;
+    if(typed.trim().toUpperCase()!=='RESET'){ toast(t('a.t.resetCancel')); return; }
+  } else if(!confirm(t('a.t.resetAll'))) return;
   state = defaultState();
   resetPresenterCinematics();
   // saveState() only ever writes the admin's *current* players (there are none
@@ -3395,7 +4293,7 @@ function resetGame(){
     _profiles = {}; _progress = {}; _answers = {};
   }
   saveState();
-  toast('Game reset');
+  toast(t('a.t.resetDone'));
 }
 // Cinematic trackers live outside `state` (they're purely local presenter-screen visual
 // state, never synced), so a game reset has to clear them explicitly.
@@ -3416,7 +4314,7 @@ function resetPresenterCinematics(){
   if(banner) banner.remove();
 }
 function resetProgress(){
-  if(!confirm('Reset progress? Leg will return to 1 and every aircraft goes back to START. Players stay registered.')) return;
+  if(!confirm(t('a.t.resetProgressConfirm'))) return;
   Object.values(state.players).forEach(p=>{
     p.position = 0;
     p.correctCount = 0;
@@ -3452,27 +4350,27 @@ function resetProgress(){
   state.finishSeq = 0;
   resetPresenterCinematics();
   saveState();
-  toast('Progress reset — back to Leg 1');
+  toast(t('a.t.resetProgressDone'));
 }
 // Congratulations and Award Ceremony are both full-screen presenter overlays — showing
 // both at once would stack illegibly, so triggering either one dismisses the other.
 function triggerAward(){
-  if(Object.keys(state.players).length===0){ toast('No players yet'); return; }
+  if(Object.keys(state.players).length===0){ toast(t('a.t.noPlayersYet')); return; }
   state.awardShown = true;
   state.congratsShown = false;
   saveState();
-  toast('Award ceremony shown on presenter screen');
+  toast(t('a.t.awardShown'));
 }
 function hideAward(){
   state.awardShown = false;
   saveState();
 }
 function triggerCongrats(){
-  if(state.gameState!=='finished' || !state.winnerId){ toast('Race has not finished yet'); return; }
+  if(state.gameState!=='finished' || !state.winnerId){ toast(t('a.t.notFinished')); return; }
   state.awardShown = false;
   state.congratsShown = true;
   saveState();
-  toast('Congratulations screen shown on presenter screen');
+  toast(t('a.t.congratsShown'));
 }
 function hideCongrats(){
   state.congratsShown = false;
@@ -3481,7 +4379,7 @@ function hideCongrats(){
 function removePlayer(id){
   const p = state.players[id];
   if(!p) return;
-  if(!confirm('Remove "'+p.name+'" from the race? This cannot be undone — they would have to join again as a new player.')) return;
+  if(!confirm(t('a.t.confirmRemove',{name:p.name}))) return;
   delete state.players[id];
   delete _profiles[id];
   delete _progress[id];
@@ -3492,7 +4390,7 @@ function removePlayer(id){
     }).catch(e=>console.warn('[sync] player delete failed', e));
   }
   saveState();
-  toast(p.name+' removed');
+  toast(t('a.t.removed',{name:p.name}));
 }
 
 /* Manual override — the universal escape hatch during a live event.
@@ -3503,13 +4401,13 @@ function adminNudgePlayer(id, delta){
   if(!p) return;
   const before = p.position;
   p.position = Math.max(0, Math.min(p.position + delta, ROUTE.length-1));
-  if(p.position===before){ toast(p.name+' is already at '+ROUTE[before].code); return; }
+  if(p.position===before){ toast(t('a.t.alreadyAt',{name:p.name, code:ROUTE[before].code})); return; }
   const landedCode = ROUTE[p.position].code;
   if(['HAN','SPC','SGN'].includes(landedCode) && !state.milestones[landedCode]){
     state.milestones[landedCode] = p.id;
   }
   saveState();
-  toast(p.name+': '+ROUTE[before].code+' → '+ROUTE[p.position].code+' (manual)');
+  toast(t('a.t.nudged',{name:p.name, from:ROUTE[before].code, to:ROUTE[p.position].code}));
 }
 
 function renderQuestionEditor(){
@@ -3524,24 +4422,24 @@ function renderQuestionEditor(){
         </div>
       </div>
     </div>
-  `).join('') + `<p style="margin-top:16px; font-size:12.5px; color:rgba(255,255,255,.5);">${QUESTIONS.length} questions total, asked in this order, one per leg — a question is never repeated. ${questionsRemaining()} still unused. Option order is shuffled from the source deck (the answer key above is the shuffled, live order).</p>`;
+  `).join('') + `<p style="margin-top:16px; font-size:12.5px; color:rgba(255,255,255,.5);">${t('a.qbankFoot',{total:QUESTIONS.length, left:questionsRemaining()})}</p>`;
 }
 
 function renderAdminAnswerFeed(){
   const feed = document.getElementById('adminAnswerFeed');
   document.getElementById('feedQNum').textContent = state.currentQ+1;
   if(state.currentQuestionIndex===null || state.currentQuestionIndex===undefined){
-    feed.innerHTML = '<p style="color:rgba(255,255,255,.5); font-size:13.5px;">No question opened for this leg yet.</p>'; return;
+    feed.innerHTML = `<p style="color:rgba(255,255,255,.5); font-size:13.5px;">${t('a.noFeed')}</p>`; return;
   }
   const entries = Object.values(state.players).filter(p=>p.answers[state.currentQ]);
-  if(entries.length===0){ feed.innerHTML = '<p style="color:rgba(255,255,255,.5); font-size:13.5px;">No submissions yet.</p>'; return; }
+  if(entries.length===0){ feed.innerHTML = `<p style="color:rgba(255,255,255,.5); font-size:13.5px;">${t('a.noSubmissions')}</p>`; return; }
   const correctIdx = QUESTIONS_BY_ID[state.currentQuestionIndex].correct;
   const revealed = state.gameState==='reveal' || state.gameState==='finished';
   feed.innerHTML = entries.map(p=>{
     const a = p.answers[state.currentQ];
     let cls='answer-tile';
     if(revealed) cls += a.choice===correctIdx ? ' correct-tile' : ' wrong-tile';
-    return `<div class="${cls}"><div class="nm">${avatarHTML(p.avatar)} ${escapeHtml(p.name)}${a.turbo?' ⚡':''}</div><div class="ans">${a.submitted?'Submitted':'Selecting…'} · Option ${String.fromCharCode(65+a.choice)}</div></div>`;
+    return `<div class="${cls}"><div class="nm">${avatarHTML(p.avatar)} ${escapeHtml(p.name)}${a.turbo?' ⚡':''}</div><div class="ans">${a.submitted?t('a.submittedTag'):t('a.selecting')} · ${t('a.optionN',{letter:String.fromCharCode(65+a.choice)})}</div></div>`;
   }).join('');
 }
 
@@ -3552,13 +4450,13 @@ function renderAnswersFull(){
   for(let leg=0; leg<totalLegs; leg++){
     const qIdx = state.questionIndexByLeg[leg];
     const entries = Object.values(state.players).filter(p=>p.answers[leg]);
-    const qLabel = (qIdx!==undefined && QUESTIONS_BY_ID[qIdx]) ? `Q${qIdx}: ${escapeHtml(QUESTIONS_BY_ID[qIdx].q)}` : 'not played yet';
-    html += `<h3 style="margin:18px 0 8px; font-size:13px;">Leg ${leg+1} <span class="tag">${entries.length} answers</span></h3>`;
+    const qLabel = (qIdx!==undefined && QUESTIONS_BY_ID[qIdx]) ? `Q${qIdx}: ${escapeHtml(QUESTIONS_BY_ID[qIdx].q)}` : t('a.notPlayed');
+    html += `<h3 style="margin:18px 0 8px; font-size:13px;">${legLabel(leg)} <span class="tag">${t('a.answersN',{n:entries.length})}</span></h3>`;
     html += `<p style="font-size:12px; color:rgba(255,255,255,.5); margin:0 0 8px;">${qLabel}</p>`;
-    if(entries.length===0){ html += `<p style="font-size:12.5px; color:rgba(255,255,255,.45); margin:0 0 10px;">No submissions.</p>`; continue; }
+    if(entries.length===0){ html += `<p style="font-size:12.5px; color:rgba(255,255,255,.45); margin:0 0 10px;">${t('a.noSubs')}</p>`; continue; }
     html += `<div class="answer-grid" style="margin-bottom:10px;">` + entries.map(p=>{
       const a = p.answers[leg];
-      return `<div class="answer-tile"><div class="nm">${avatarHTML(p.avatar)} ${escapeHtml(p.name)}${a.turbo?' ⚡':''}</div><div class="ans">Option ${String.fromCharCode(65+a.choice)} ${a.submitted?'✓':'(pending)'}</div></div>`;
+      return `<div class="answer-tile"><div class="nm">${avatarHTML(p.avatar)} ${escapeHtml(p.name)}${a.turbo?' ⚡':''}</div><div class="ans">${t('a.optionN',{letter:String.fromCharCode(65+a.choice)})} ${a.submitted?'✓':t('a.pending')}</div></div>`;
     }).join('') + `</div>`;
   }
   el.innerHTML = html;
@@ -3578,7 +4476,7 @@ function helpTags(p){
 function renderPlayersTable(){
   const tbody = document.querySelector('#playersTable tbody');
   const players = Object.values(state.players);
-  if(players.length===0){ tbody.innerHTML = `<tr><td colspan="7" style="color:rgba(255,255,255,.45);">No players registered yet.</td></tr>`; return; }
+  if(players.length===0){ tbody.innerHTML = `<tr><td colspan="7" style="color:rgba(255,255,255,.45);">${t('a.noPlayers')}</td></tr>`; return; }
   tbody.innerHTML = players.map(p=>`
     <tr>
       <td>${avatarHTML(p.avatar)}</td>
@@ -3590,7 +4488,7 @@ function renderPlayersTable(){
         <button class="btn btn-ghost btn-sm" onclick="adminNudgePlayer('${p.id}',-1)">−1</button>
         <button class="btn btn-ghost btn-sm" onclick="adminNudgePlayer('${p.id}',1)">+1</button>
       </td>
-      <td><button class="btn btn-danger btn-sm" onclick="removePlayer('${p.id}')">Remove</button></td>
+      <td><button class="btn btn-danger btn-sm" onclick="removePlayer('${p.id}')">${t('a.remove')}</button></td>
     </tr>
   `).join('');
 }
@@ -3598,7 +4496,7 @@ function renderPlayersTable(){
 function renderLeaderTable(){
   const tbody = document.querySelector('#leaderTable tbody');
   const ranked = rankedPlayers();
-  if(ranked.length===0){ tbody.innerHTML = `<tr><td colspan="5" style="color:rgba(255,255,255,.45);">No players yet.</td></tr>`; return; }
+  if(ranked.length===0){ tbody.innerHTML = `<tr><td colspan="6" style="color:rgba(255,255,255,.45);">${t('a.noPlayers')}</td></tr>`; return; }
   tbody.innerHTML = ranked.map((p,i)=>`
     <tr>
       <td class="mono">${i<4?RANK_TROPHY[i]:('#'+(i+1))}</td>
@@ -3620,12 +4518,12 @@ function renderAdmin(){
   document.getElementById('statSubmitted').textContent = players.filter(p=>p.answers[state.currentQ]).length;
   const ranked = rankedPlayers();
   document.getElementById('statLeader').textContent = ranked.length ? ranked[0].name : '—';
-  document.getElementById('adminStateBadge').textContent = state.gameState.toUpperCase();
+  document.getElementById('adminStateBadge').textContent = t('st.'+state.gameState);
   const qLabel = (state.currentQuestionIndex!==null && state.currentQuestionIndex!==undefined && QUESTIONS_BY_ID[state.currentQuestionIndex])
     ? `"${QUESTIONS_BY_ID[state.currentQuestionIndex].q}" (Q${state.currentQuestionIndex})`
-    : 'not opened yet';
-  const turbulentNote = isTurbulenceLeg(state.currentQ) ? ' · 🌪 TURBULENCE LEG' : (isStormLeg(state.currentQ) ? ' · ⛈ STORM LEG' : '');
-  document.getElementById('adminCurrentQ').textContent = `${legLabel(state.currentQ)} — status: ${state.gameState}. ${qLabel}${turbulentNote} · ${questionsRemaining()} questions left`;
+    : t('a.notOpened');
+  const turbulentNote = isTurbulenceLeg(state.currentQ) ? t('a.turbLeg') : (isStormLeg(state.currentQ) ? t('a.stormLeg') : '');
+  document.getElementById('adminCurrentQ').textContent = t('a.legStatus',{leg:legLabel(state.currentQ), state:t('st.'+state.gameState), q:qLabel, wx:turbulentNote, left:questionsRemaining()});
 
   paintCountdowns(); // same clock as the players and the wall — see paintCountdowns()
 
@@ -3645,8 +4543,8 @@ function renderAdmin(){
         </div>
       `).join('')}
       <div class="presenter-notes">
-        <div class="pn-title">🎤 Presenter Notes</div>
-        <div class="pn-body">${qd.explain ? escapeHtml(qd.explain) : '<span style="color:rgba(255,255,255,.4); font-style:italic;">No presenter notes for this question.</span>'}</div>
+        <div class="pn-title">${t('a.presenterNotes')}</div>
+        <div class="pn-body">${qd.explain ? escapeHtml(qd.explain) : '<span style="color:rgba(255,255,255,.4); font-style:italic;">'+t('a.noNotes')+'</span>'}</div>
       </div>
     `;
   } else {
@@ -3660,14 +4558,14 @@ function renderAdmin(){
   if(openBtn){
     const staged = state.currentQuestionIndex!==null && state.currentQuestionIndex!==undefined;
     if(state.gameState==='lobby' && !staged){
-      openBtn.textContent = 'Show question';
-      openBtn.title = 'Puts any weather warning up for 10s, then the question text — answers stay hidden';
+      openBtn.textContent = t('a.showQ');
+      openBtn.title = t('a.showQTip');
     } else if(state.gameState==='lobby'){
-      openBtn.textContent = wxAnnounceActive() ? 'Open answers (warning showing…)' : 'Open answers & start clock';
-      openBtn.title = 'Reveals the four options and starts the 20s countdown';
+      openBtn.textContent = wxAnnounceActive() ? t('a.openAWaiting') : t('a.openA');
+      openBtn.title = t('a.openATip');
     } else {
-      openBtn.textContent = 'Open answers & start clock';
-      openBtn.title = 'Reveals the four options and starts the 20s countdown';
+      openBtn.textContent = t('a.openA');
+      openBtn.title = t('a.openATip');
     }
     openBtn.disabled = state.gameState==='question' || state.gameState==='finished';
   }
@@ -3678,14 +4576,14 @@ function renderAdmin(){
     powerBtn.classList.toggle('btn-ghost', !state.powerQuestionActive);
     const powerBlocked = isTurbulenceLeg(state.currentQ) || (state.powerQuestionUsed && !state.powerQuestionActive);
     powerBtn.disabled = state.gameState!=='lobby' || powerBlocked;
-    powerBtn.textContent = isTurbulenceLeg(state.currentQ) ? '⚡ Power Q (blocked: turbulence)'
-      : (state.powerQuestionUsed && !state.powerQuestionActive) ? '⚡ Power Q (already played)'
-      : '⚡ Power Question';
+    powerBtn.textContent = (isTurbulenceLeg(state.currentQ) || isStormLeg(state.currentQ)) ? t('a.powerQBlocked')
+      : (state.powerQuestionUsed && !state.powerQuestionActive) ? t('a.powerQUsed')
+      : t('a.powerQ');
   }
   const undoBtn = document.getElementById('undoBtn');
   if(undoBtn){
     undoBtn.disabled = !state.undoSnapshot;
-    undoBtn.textContent = state.undoSnapshot ? `↩️ Undo reveal of Leg ${state.undoSnapshot.leg+1}` : '↩️ Undo last reveal';
+    undoBtn.textContent = state.undoSnapshot ? t('a.undoLeg',{n:state.undoSnapshot.leg+1}) : t('a.undo');
   }
 
   if(currentTab==='control') renderAdminAnswerFeed();
@@ -3752,6 +4650,7 @@ setInterval(paintCountdowns, 200);
 
 /* init route from hash, then bring up the sync layer */
 (function init(){
+  applyStaticI18n();   // paint every data-i18n string before the first render
   const v = location.hash.replace('#','');
   if(v==='admin'){ go('landing'); openAdminGate(); }
   else if(['player','presenter'].includes(v)) go(v);

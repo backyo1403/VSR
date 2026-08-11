@@ -19,6 +19,12 @@ VNA_Race/
 
 **Bản đồ:** 12 chặng, `START → CDG → AMS → HAN★ → MUC → MOW → SPC★ → LHR → MXP → CPH → SGN★ → FRA → FINISH★`
 
+**Ngôn ngữ:** app có nút **VI/EN**, **mặc định tiếng Việt**. Nút nằm ở góc trên bên phải màn hình chính, và lặp lại ngay trên thẻ đăng ký của người chơi (khách quét QR vào thẳng `#player` nên không thấy màn hình chính). Toàn bộ giao diện — kể cả **câu hỏi, đáp án và ghi chú người dẫn** — đều đổi theo.
+
+Lựa chọn ngôn ngữ lưu **theo từng thiết bị** (`localStorage`), không đồng bộ: MC có thể chạy màn LED tiếng Việt trong khi một khách nước ngoài đọc điện thoại tiếng Anh. Hai bên vẫn thấy **cùng một chữ cái ứng với cùng một đáp án**, vì thứ tự xáo đáp án chỉ phụ thuộc id câu hỏi chứ không phụ thuộc ngôn ngữ.
+
+> ⚠️ Bản dịch tiếng Việt của 31 câu hỏi và ghi chú người dẫn **nên được người của Vietnam Airlines rà lại trước sự kiện** — MC sẽ đọc trước các đại lý du lịch và nội dung có nhiều thuật ngữ ngành. Các tên riêng sản phẩm (LotusMiles, Transit Tour, Tour Series, Business FOC, Gold Agent, Premium Economy…) được giữ nguyên tiếng Anh theo cách gọi thông dụng trong ngành.
+
 **Ngân hàng câu hỏi:** 31 câu (từ `Question.docx`), hỏi **lần lượt theo đúng thứ tự** trong file, mỗi chặng một câu, **câu đã dùng không bao giờ lặp lại**. Hết 31 câu thì admin không mở thêm được câu mới.
 
 > Vị trí A/B/C/D của mỗi câu được **xáo tự động** khi vào game. File gốc có 29/31 câu đáp án đúng nằm ở B — nếu giữ nguyên, người chơi chỉ cần luôn bấm B là thắng. Nội dung câu hỏi và đáp án đúng giữ nguyên 100%, chỉ đổi vị trí chữ cái. Thuật toán xáo là tất định (seed theo id câu hỏi) nên mọi điện thoại, màn LED và dashboard admin đều thấy **cùng một thứ tự** mà không cần đồng bộ gì thêm.
