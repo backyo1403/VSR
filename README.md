@@ -46,19 +46,19 @@ Cả ba **mở khoá riêng cho từng người khi máy bay của họ tới MU
 
 | Trợ giúp | Tác dụng | Bị khoá khi |
 |---|---|---|
-| ✂️ **50:50** | Loại bỏ 2 đáp án sai | turbulence · storm · power question |
-| ⚡ **Turbo Boost** | Đúng → **+2 chặng**, sai → **−1 chặng** | turbulence · storm · power question |
+| ✂️ **50:50** | Loại bỏ 2 đáp án sai | turbulence · storm · Trời nắng đẹp |
+| ⚡ **Turbo Boost** | Đúng → **+2 chặng**, sai → **−1 chặng** | turbulence · storm · Trời nắng đẹp |
 | 🔒 **Fasten Seatbelt** | **Chỉ dùng được trong turbulence** — trả lời sai vẫn **không bị lùi 1 chặng** | mọi chặng không phải turbulence |
 
 Bật Turbo/Seatbelt mà không bấm Nộp thì không bị phạt và không mất lượt.
 
-**Power Question** — nút của admin, **một lần duy nhất cả ván**, bấm trước khi mở câu hỏi. Màn LED hiện ⚡ POWER QUESTION. Người **trả lời đúng nhanh nhất** được **+2 chặng**, người đúng khác +1, người sai đứng nguyên. Không bật được trên chặng turbulence/storm. Huỷ trước khi mở câu thì được trả lại lượt. Cả ba trợ giúp bị khoá.
+**☀️ Trời nắng đẹp / Sunshine** — nút của admin, **một lần duy nhất cả ván**, bấm trước khi mở câu hỏi. Màn LED hiện ☀️ TRỜI NẮNG ĐẸP. Người **trả lời đúng nhanh nhất** được **+2 chặng**, người đúng khác +1, người sai đứng nguyên. Không bật được trên chặng turbulence/storm. Huỷ trước khi mở câu thì được trả lại lượt. Cả ba trợ giúp bị khoá.
 
 **Turbulence** — tự động ở **chặng 6 và chặng 10**. Màn LED chuyển theme mưa sấm chớp, badge đổi từ 🌈 Clear Skies sang 🌪 Turbulence. Trả lời đúng **đứng nguyên**, **không đúng thì lùi 1 chặng** (kể cả người không trả lời) — trừ khi bật 🔒 Fasten Seatbelt. 50:50 và Turbo bị khoá.
 
-**Thông báo thời tiết** — ngay khi admin bấm *Next question →* vào chặng turbulence/storm (hoặc arm Power Question), màn presenter **và** màn của mọi người chơi hiện **thông báo to** kèm luật chơi. Bấm *Open question* thì thông báo to biến mất, chỉ còn badge thời tiết nhỏ ở góc.
+**Thông báo thời tiết** — ngay khi admin bấm *Next question →* vào chặng turbulence/storm (hoặc bật Trời nắng đẹp), màn presenter **và** màn của mọi người chơi hiện **thông báo to** kèm luật chơi. Bấm *Open question* thì thông báo to biến mất, chỉ còn badge thời tiết nhỏ ở góc.
 
-**⛈ Storm** — tự động ở **chặng 8**. Màn LED đổi badge sang ⛈ Storm, theme tối/mưa nặng hơn turbulence. Chỉ **10 người trả lời đúng nhanh nhất** (tính theo thời gian riêng của câu này) được ATC cấp phép bay tiếp **+1 chặng**; tất cả người chơi còn lại đứng nguyên (kể cả đúng nhưng không lọt top 10). Turbo và Power Question đều bị khoá ở chặng này. Sau khi admin bấm Reveal, màn presenter hiện danh sách 10 người được bay tiếp trong 10 giây.
+**⛈ Storm** — tự động ở **chặng 8**. Màn LED đổi badge sang ⛈ Storm, theme tối/mưa nặng hơn turbulence. Chỉ **10 người trả lời đúng nhanh nhất** (tính theo thời gian riêng của câu này) được ATC cấp phép bay tiếp **+1 chặng**; tất cả người chơi còn lại đứng nguyên (kể cả đúng nhưng không lọt top 10). Turbo và Trời nắng đẹp đều bị khoá ở chặng này. Sau khi admin bấm Reveal, màn presenter hiện danh sách 10 người được bay tiếp trong 10 giây.
 
 **Kết thúc ván & Overtime** — ván đấu chỉ thực sự kết thúc (`FINISHED`) khi có **đủ 4 người chơi về tới FINISH**. Bản đồ chỉ có 12 chặng, nhưng nếu hết chặng 12 mà chưa đủ 4 người về đích, admin vẫn bấm **Next question →** để mở thêm câu hỏi — màn hình hiện **"Overtime round N"** thay vì số chặng. Ai về tới FINISH trước sẽ thấy ngay màn hình cá nhân báo thứ hạng + lời chúc, kể cả khi ván vẫn đang tiếp diễn cho người khác.
 
@@ -66,10 +66,12 @@ Bật Turbo/Seatbelt mà không bấm Nộp thì không bị phạt và không m
 
 | Hạng | Giải |
 |---|---|
-| 1 | 🏆 Cúp vô địch |
-| 2 | 🥇 Huy chương vàng |
-| 3 | 🥈 Huy chương bạc |
-| 4 | 🥉 Huy chương đồng |
+| 1 | 🏆 Cúp vô địch — 1 vé máy bay hạng Thương gia |
+| 2 | 🥇 Huy chương vàng — 1 vé máy bay hạng Phổ thông Đặc biệt |
+| 3 | 🥈 Huy chương bạc — 1 voucher nâng hạng lên Thương gia |
+| 4 | 🥉 Huy chương đồng — 1 vé máy bay hạng Phổ thông |
+
+Cùng rất nhiều phần quà nhỏ hấp dẫn khác. Danh sách giải thưởng hiện ngay trong **Hướng dẫn** (trang 1).
 
 Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng xếp hạng admin, màn hình cá nhân khi về đích và **lễ trao giải** (tên nhà vô địch hiện to nhất kèm cúp, ba người còn lại xếp thành hàng vàng–bạc–đồng).
 
@@ -81,11 +83,13 @@ Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng 
 
 **Live Leaderboard** hiện **tất cả người chơi** (panel tự cuộn). Riêng bản đồ vẫn giữ nguyên cách hiển thị cũ: 5 máy bay dẫn đầu có tên, còn lại gộp thành cụm `+N`.
 
-**✈️ Cabin Bulletin** — ô ngay dưới leaderboard (cao bằng 1/2), viết theo giọng thông báo trên máy bay, tổng kết **câu vừa xong**: 3 người trả lời đúng nhanh nhất 🥇🥈🥉, số người đúng ✅, tỉ lệ đúng 📊, người dẫn đầu đang ở chặng nào 👑, chặng đông máy bay nhất 🛬, và nhịp độ phòng 🚀/🧭/🐢 (theo thời gian trả lời trung bình: dưới 7s Fast, dưới 14s Steady, còn lại Slow).
+**✈️ Cabin Bulletin** — ô ngay dưới leaderboard (cao bằng 1/2), viết theo giọng thông báo trên máy bay, tổng kết **câu vừa xong**: người trả lời đúng nhanh nhất 🥇, số người đúng ✅, tỉ lệ đúng 📊, người dẫn đầu đang ở chặng nào 👑, chặng đông máy bay nhất 🛬, và nhịp độ phòng 🚀/🧭/🐢 (theo thời gian trả lời trung bình: dưới 7s Fast, dưới 14s Steady, còn lại Slow).
 
 **Màn hình người chơi** hiện **route map nằm ngang** thay cho thanh tiến độ: 13 điểm dừng nối liền nhau, điểm đang đứng sáng vàng và to hơn kèm tên mã, điểm đã qua mờ đi, điểm phía trước mờ hơn nữa.
 
-**Top 3** — ai đang đứng hạng 1/2/3 sẽ thấy màn hình chuyển sang **vàng business class của Vietnam Airlines**, kèm dòng báo ai đang bám sát phía sau và cách bao nhiêu chặng.
+**📖 Hướng dẫn** có 5 trang: (1) luật chơi + giải thưởng, (2) **bản đồ hành trình vẽ tĩnh** — cùng đường cong chữ S và cùng toạ độ mà màn presenter dùng, để người chơi hình dung trước sa bàn sẽ đua, (3) các loại thời tiết, (4) ba trợ giúp, (5) tài liệu chương trình (Sales Kit tiếng Việt + tiếng Anh).
+
+**Nâng hạng khoang theo thứ hạng** — người **dẫn đầu** thấy màn hình chuyển sang **vàng Hạng Thương gia**, người **hạng nhì** sang **xanh ngọc Hạng Phổ thông Đặc biệt**, từ hạng ba trở xuống giữ giao diện thường. Cả hai đều kèm dòng báo ai đang bám sát phía sau và cách bao nhiêu chặng.
 
 **Màn presenter** — khi admin mở câu hỏi, màn LED hiện **câu hỏi + 4 đáp án + đồng hồ đếm ngược cỡ lớn** trên nền đặc (không blur, để đọc được từ cuối phòng), bảng xếp hạng vẫn hiện bên phải. Có nút **⛶ Fullscreen** ở góc trên.
 

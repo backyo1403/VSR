@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Vietnam Airlines Sky Race</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<!-- Be Vietnam Pro carries the full Vietnamese character set; Sora does not (Google Fonts
+     ships it with latin + latin-ext only), so Vietnamese diacritics fell back per-character
+     to a system face and headings/questions rendered visibly uneven. See html[lang=vi] below. -->
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.2/confetti.browser.min.js"></script>
 
 <!-- ============================================================
@@ -51,6 +54,14 @@ const ADMIN_EMAIL = "admin@vna-sky-race.local";
   --font-display:'Sora',sans-serif;
   --font-body:'Inter',sans-serif;
   --font-mono:'JetBrains Mono',monospace;
+}
+/* Vietnamese swaps the display face to Be Vietnam Pro. Sora ships without the Vietnamese
+   subset, so every ế ộ ữ ằ in a heading or a presenter question fell through to whatever
+   system font the device happened to pick — the letters sat at different weights and
+   widths inside the same word. Be Vietnam Pro covers the whole set in one face. */
+html[lang="vi"]{
+  --font-display:'Be Vietnam Pro','Inter',sans-serif;
+  --font-body:'Be Vietnam Pro','Inter',sans-serif;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;height:100%;}
@@ -645,6 +656,20 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
   background:linear-gradient(120deg,rgba(212,175,55,.9),rgba(240,214,120,.78)); color:#2a1d00;
   box-shadow:0 10px 28px rgba(212,175,55,.35);
 }
+/* 2nd place rides Premium Economy — the jade green of that cabin, same layout as gold */
+#view-player.cabin-premium{background:linear-gradient(180deg,#04211a 0%,#0A4436 42%,#177A5F 100%);}
+#view-player.cabin-premium .q-card,
+#view-player.cabin-premium .dest-strip,
+#view-player.cabin-premium .status-banner{border-color:rgba(46,190,150,.42); background:rgba(6,52,40,.5);}
+#view-player.cabin-premium .opt-btn{background:rgba(255,255,255,.07); border-color:rgba(46,190,150,.3);}
+#view-player.cabin-premium .opt-btn.picked{border-color:#3FD6A6; background:rgba(63,214,166,.2);}
+#view-player.cabin-premium .opt-btn.correct{border-color:var(--good); background:rgba(46,204,113,.3);}
+#view-player.cabin-premium .opt-btn.wrong{border-color:var(--bad); background:rgba(225,82,82,.26);}
+#view-player.cabin-premium .opt-btn.eliminated{opacity:.22;}
+.biz-ribbon.prem-ribbon{
+  background:linear-gradient(120deg,#1E9B77,#39C79B); color:#03251c;
+  box-shadow:0 10px 28px rgba(30,155,119,.35);
+}
 .biz-ribbon .medal{font-size:26px; line-height:1;}
 .biz-ribbon .tt{font-family:var(--font-display); font-weight:800; font-size:15px; letter-spacing:.03em;}
 .biz-ribbon .sb{font-size:11.5px; font-weight:600; opacity:.82; margin-top:1px;}
@@ -664,6 +689,16 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
 .rules-doc-link{display:inline-flex; align-items:center; gap:8px; padding:11px 15px; border-radius:12px; text-decoration:none;
   background:rgba(212,175,55,.14); border:1px solid rgba(212,175,55,.42); color:var(--vna-gold-light); font-weight:600; font-size:13.5px;}
 .rules-doc-link:hover{background:rgba(212,175,55,.24); border-color:var(--vna-gold);}
+/* static route drawing on guide page 2 */
+.rules-map{border-radius:16px; padding:8px 4px; background:linear-gradient(160deg,rgba(0,58,107,.55),rgba(11,95,160,.35)); border:1px solid var(--glass-brd);}
+.rules-map svg{width:100%; height:auto; display:block;}
+.rules-map text{font-family:var(--font-mono); fill:#fff;}
+.rules-map .rm-code{font-size:24px; opacity:.8;}
+.rules-map .rm-cp{font-size:28px; font-weight:700; fill:var(--vna-gold-light);}
+/* the prize list earns a highlighted box — it's the reason people play hard */
+.prize-box{padding:14px 16px; border-radius:14px; background:rgba(212,175,55,.1); border:1px solid rgba(212,175,55,.32);}
+.prize-box h4{margin-top:0;}
+.prize-box p{margin-bottom:0 !important;}
 .rules-help-card .circ{width:46px; height:46px; flex-shrink:0; border-radius:50%; border:2px solid var(--glass-brd); background:rgba(255,255,255,.07); display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff;}
 .rules-help-card .circ svg{width:1em; height:1em; display:block;}
 /* the same glyphs, small, in the admin players table */
@@ -786,7 +821,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
         <button class="btn btn-ghost btn-sm" onclick="closeRulesModal()" data-i18n="rules.close"></button>
       </div>
 
-      <!-- page 1 — the race + route map -->
+      <!-- page 1 — the race, winning, prizes -->
       <div class="rules-page active" data-page="1">
         <div class="rules-section">
           <h4 data-i18n="rules.h.race"></h4>
@@ -794,23 +829,30 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
           <p data-i18n-html="rules.p.race2"></p>
         </div>
         <div class="rules-section">
-          <h4 data-i18n="rules.h.map"></h4>
-          <div class="rules-routemap">
-            <span class="cp">START</span><span>CDG</span><span>AMS</span><span class="cp">HAN</span><span>MUC</span><span>MOW</span><span class="cp">SPC</span><span>LHR</span><span>MXP</span><span>CPH</span><span class="cp">SGN</span><span>FRA</span><span class="cp">FINISH</span>
-          </div>
-        </div>
-        <div class="rules-section">
-          <h4 data-i18n="rules.h.cp"></h4>
-          <p data-i18n-html="rules.p.cp"></p>
-        </div>
-        <div class="rules-section">
           <h4 data-i18n="rules.h.win"></h4>
           <p data-i18n-html="rules.p.win"></p>
         </div>
+        <div class="rules-section prize-box">
+          <h4 data-i18n="rules.h.prizes"></h4>
+          <p data-i18n-html="rules.p.prizes"></p>
+        </div>
       </div>
 
-      <!-- page 2 — weather -->
+      <!-- page 2 — the route drawn out, so players can picture the whole race -->
       <div class="rules-page" data-page="2">
+        <div class="rules-section">
+          <h4 data-i18n="rules.h.map"></h4>
+          <p data-i18n-html="rules.p.mapPage"></p>
+        </div>
+        <div class="rules-map" id="rulesMapWrap"></div>
+        <div class="rules-section" style="margin-top:14px;">
+          <h4 data-i18n="rules.h.cp"></h4>
+          <p data-i18n-html="rules.p.cp"></p>
+        </div>
+      </div>
+
+      <!-- page 3 — weather -->
+      <div class="rules-page" data-page="3">
         <div class="rules-section">
           <h4 data-i18n="rules.h.clear"></h4>
           <p data-i18n-html="rules.p.clear"></p>
@@ -829,8 +871,8 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
         </div>
       </div>
 
-      <!-- page 3 — the three helps -->
-      <div class="rules-page" data-page="3">
+      <!-- page 4 — the three helps -->
+      <div class="rules-page" data-page="4">
         <div class="rules-section">
           <h4 data-i18n="rules.h.helps"></h4>
           <p data-i18n-html="rules.p.helps"></p>
@@ -858,13 +900,14 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
         </div>
       </div>
 
-      <!-- page 4 — programme documents -->
-      <div class="rules-page" data-page="4">
+      <!-- page 5 — programme documents -->
+      <div class="rules-page" data-page="5">
         <div class="rules-section">
           <h4 data-i18n="rules.h.docs"></h4>
           <p data-i18n="rules.p.docs"></p>
         </div>
         <div class="rules-section" id="rulesDocLinks">
+          <p><a class="rules-doc-link" href="https://drive.google.com/file/d/1ZZJ9LvxETVIvqfpECi_8u5FKV55VV3gF/view?usp=drive_link" target="_blank" rel="noopener noreferrer" data-i18n="rules.docs.salesKitVi"></a></p>
           <p><a class="rules-doc-link" href="https://drive.google.com/file/d/1bf9BnmqIJFhusaYeGRvdomtSk2y83oEI/view?usp=sharing" target="_blank" rel="noopener noreferrer" data-i18n="rules.docs.salesKit"></a></p>
           <p style="color:rgba(255,255,255,.5); font-style:italic; font-size:12.5px;" data-i18n="rules.docs.more"></p>
         </div>
@@ -1119,7 +1162,7 @@ if(LANGS.indexOf(LANG) < 0) LANG = 'vi';
 const STR = {
 vi: {
   /* --- landing --- */
-  'landing.sub':'Hội nghị Vietnam Airlines dành cho các Đại lý Du lịch Việt Nam phục vụ Cộng đồng người Việt<br><br>📍 Milan, Ý<br>📅 23 tháng 9, 2026<br><br>Cảm ơn quý vị đã tham dự buổi gặp gỡ đặc biệt này của Vietnam Airlines và các đối tác du lịch thân thiết.<br><br>Chúc quý vị một hội nghị đầy cảm hứng, những kết nối ý nghĩa và một trải nghiệm thật trọn vẹn trong suốt sự kiện hôm nay.',
+  'landing.sub':'Hội nghị Vietnam Airlines dành cho các Đại lý phục vụ Cộng đồng người Việt tại Châu Âu<br><br>📍 Milan, Ý<br>📅 23 tháng 9, 2026<br><br>Cảm ơn quý vị đã tham dự buổi gặp gỡ đặc biệt này của Vietnam Airlines và các đối tác thân thiết.<br><br>Chúc quý vị một hội nghị đầy cảm hứng, những kết nối ý nghĩa và một trải nghiệm thật trọn vẹn trong suốt sự kiện hôm nay.',
   'landing.player':'Người chơi',
   'landing.playerDesc':'Nhập tên, chọn máy bay và trả lời câu hỏi ngay trên điện thoại của bạn.',
   'landing.playerGo':'Tham gia →',
@@ -1129,11 +1172,11 @@ vi: {
   'landing.admin':'Bảng điều phối',
   'landing.adminDesc':'Điều hành trò chơi: mở câu hỏi, công bố đáp án, quản lý người chơi và kết quả.',
   'landing.adminGo':'Nhập mật khẩu →',
-  'landing.howto':'📖 Cách chơi',
+  'landing.howto':'📖 Hướng dẫn',
   'lang.label':'Ngôn ngữ',
 
   /* --- how to play --- */
-  'rules.title':'✈️ Cách chơi — Sky Race',
+  'rules.title':'✈️ Hướng dẫn — Sky Race',
   'rules.close':'Đóng',
   'rules.back':'← Quay lại',
   'rules.next':'Tiếp →',
@@ -1141,29 +1184,33 @@ vi: {
   'rules.p.race1':'12 chặng từ START tới FINISH dọc theo tuyến đường hình chữ S. Mỗi chặng, tất cả cùng trả lời một câu hỏi trong <strong>20 giây</strong>. Đáp án được <strong>công bố tự động ngay khi hết giờ</strong>.',
   'rules.p.race2':'Cuộc đua tiếp diễn cho tới khi có <strong>4 máy bay về tới FINISH</strong>. Về tới đích là bạn thấy ngay thứ hạng của mình, kể cả khi cuộc đua vẫn đang tiếp tục với những người khác.',
   'rules.h.map':'🗺 Bản đồ hành trình',
+  'rules.p.mapPage':'Toàn bộ 12 chặng, từ <strong>START</strong> ở dưới lên <strong>FINISH</strong> ở trên. Năm điểm vàng là các chặng mốc.',
   'rules.h.cp':'📍 Các chặng mốc',
   'rules.p.cp':'Năm điểm vàng phía trên là các chặng mốc. Ai <strong>đầu tiên</strong> tới HAN, SPC hoặc SGN sẽ được gắn dấu mốc bên cạnh tên mình trong suốt phần còn lại của cuộc đua.',
   'rules.h.win':'🏆 Chiến thắng',
   'rules.p.win':'Ai về FINISH trước sẽ thắng. Nếu nhiều máy bay cùng hạ cánh trong một lượt công bố, thứ tự xét theo <strong>số câu đúng</strong>, rồi tới <strong>tổng thời gian trả lời</strong> — nên trả lời nhanh rất quan trọng.',
+  'rules.h.prizes':'🎁 Giải thưởng',
+  'rules.p.prizes':'<strong>🏆 Vô địch:</strong> 1 vé máy bay hạng Thương gia<br><strong>🥇 Hạng 2:</strong> 1 vé máy bay hạng Phổ thông Đặc biệt<br><strong>🥈 Hạng 3:</strong> 1 voucher nâng hạng lên Thương gia<br><strong>🥉 Hạng 4:</strong> 1 vé máy bay hạng Phổ thông<br><br>Cùng rất nhiều phần quà nhỏ hấp dẫn khác.',
   'rules.h.clear':'🌈 Trời quang',
   'rules.p.clear':'Mặc định. Trả lời đúng tiến <strong>1 chặng</strong>; trả lời sai thì đứng nguyên — không bị phạt.',
   'rules.h.turb':'🌪 Nhiễu động',
   'rules.p.turb':'Trả lời đúng thì <strong>đứng nguyên</strong>. Còn lại — sai, hoặc không trả lời — bị <strong>lùi 1 chặng</strong>. 50:50 và Turbo Boost bị khoá; đây là lúc duy nhất Thắt dây an toàn phát huy tác dụng.',
   'rules.h.storm':'⛈ Bão',
-  'rules.p.storm':'Chỉ <strong>10 người trả lời đúng nhanh nhất</strong> được ATC cấp phép bay tiếp 1 chặng. Những người còn lại đứng nguyên, kể cả trả lời đúng nhưng ngoài top 10 — nhưng không ai bị lùi. Cả ba trợ giúp và Câu hỏi Quyền lực đều bị khoá.',
-  'rules.h.power':'☀️ Câu hỏi Quyền lực',
+  'rules.p.storm':'Chỉ <strong>10 người trả lời đúng nhanh nhất</strong> được ATC cấp phép bay tiếp 1 chặng. Những người còn lại đứng nguyên, kể cả trả lời đúng nhưng ngoài top 10 — nhưng không ai bị lùi. Cả ba trợ giúp và Trời nắng đẹp đều bị khoá.',
+  'rules.h.power':'☀️ Trời nắng đẹp',
   'rules.p.power':'Lượt thưởng duy nhất cả ván của người điều phối, kích hoạt trước khi mở câu hỏi. Người <strong>trả lời đúng nhanh nhất</strong> được <strong>+2 chặng</strong>, những người đúng khác <strong>+1</strong>, trả lời sai đứng nguyên. Không kích hoạt được trên chặng Nhiễu động hay Bão, và cả ba trợ giúp đều bị khoá.',
   'rules.h.helps':'Ba trợ giúp của bạn',
   'rules.p.helps':'Cả ba mở khoá ngay khi <strong>máy bay của chính bạn tới MUC</strong> — không phải khi cuộc đua tới MUC. Mỗi trợ giúp dùng được <strong>một lần cả ván</strong>.',
   'rules.help.fifty':'50:50',
-  'rules.help.fiftyDesc':'Loại bỏ hai đáp án sai, chỉ còn đáp án đúng và một đáp án nhiễu. Bị khoá trong Nhiễu động, Bão và Câu hỏi Quyền lực.',
+  'rules.help.fiftyDesc':'Loại bỏ hai đáp án sai, chỉ còn đáp án đúng và một đáp án nhiễu. Bị khoá trong Nhiễu động, Bão và Trời nắng đẹp.',
   'rules.help.turbo':'Turbo Boost',
-  'rules.help.turboDesc':'Được ăn cả ngã về không. Đúng → <strong>+2 chặng</strong>. Sai → <strong>−1 chặng</strong>. Bật lên chưa mất gì cho tới khi bạn bấm Gửi, nên vẫn đổi ý được. Bị khoá trong Nhiễu động, Bão và Câu hỏi Quyền lực.',
+  'rules.help.turboDesc':'Được ăn cả ngã về không. Đúng → <strong>+2 chặng</strong>. Sai → <strong>−1 chặng</strong>. Bật lên chưa mất gì cho tới khi bạn bấm Gửi, nên vẫn đổi ý được. Bị khoá trong Nhiễu động, Bão và Trời nắng đẹp.',
   'rules.help.belt':'Thắt dây an toàn',
   'rules.help.beltDesc':'Lá chắn nhiễu động của bạn — và <strong>chỉ dùng được trong Nhiễu động</strong>. Vượt qua một câu trả lời sai mà không bị đẩy lùi một chặng. Vô dụng ở mọi lúc khác, nên hãy để dành tới khi nhiễu động ập đến.',
   'rules.h.docs':'📎 Tài liệu chương trình',
   'rules.p.docs':'Tài liệu hội nghị, Sales Kit và chương trình sẽ được liên kết tại đây.',
-  'rules.docs.salesKit':'📘 Vietnam Airlines Sales Kit',
+  'rules.docs.salesKitVi':'📗 Sales Kit Vietnam Airlines (Tiếng Việt)',
+  'rules.docs.salesKit':'📘 Vietnam Airlines Sales Kit (English)',
   'rules.docs.more':'Các tài liệu khác sẽ được bổ sung trước sự kiện.',
 
   /* --- admin gate --- */
@@ -1200,7 +1247,7 @@ vi: {
   'p.total':'Tổng thời gian',
   'p.aircraft':'Máy bay',
   'p.of':'trên {n}',
-  'p.powerNote':'☀️ Câu hỏi Quyền lực — trả lời đúng để được <strong>+2 chặng</strong>!',
+  'p.powerNote':'☀️ Trời nắng đẹp — trả lời đúng để được <strong>+2 chặng</strong>!',
   'p.stormNote':'⛈ Bão — chỉ <strong>10 người trả lời đúng nhanh nhất</strong> được ATC cấp phép bay tiếp. Những người còn lại đứng nguyên.',
   'p.waitStart':'ĐANG CHỜ BẮT ĐẦU',
   'p.waitStartMsg':'Câu hỏi sẽ mở ngay thôi. Sẵn sàng cất cánh!',
@@ -1242,8 +1289,8 @@ vi: {
   'p.rv.stormOk':'⛈ Được ATC cấp phép — bay tiếp sang chặng kế tiếp!',
   'p.rv.stormSlow':'⛈ Đúng rồi, nhưng ATC chỉ cấp phép cho 10 người nhanh nhất — bạn đứng nguyên.',
   'p.rv.stormBad':'⛈ Bão — máy bay nằm sân, đứng nguyên vị trí.',
-  'p.rv.powerOk':'⚡ Chính xác! Thưởng Câu hỏi Quyền lực đã được áp dụng cho người nhanh nhất.',
-  'p.rv.powerBad':'⚡ Câu hỏi Quyền lực — lần này chưa đúng, bạn đứng nguyên vị trí.',
+  'p.rv.powerOk':'☀️ Chính xác! Thưởng Trời nắng đẹp đã được áp dụng cho người nhanh nhất.',
+  'p.rv.powerBad':'☀️ Trời nắng đẹp — lần này chưa đúng, bạn đứng nguyên vị trí.',
   'p.rv.turboOk':'Turbo Boost thành công — tiến 2 điểm đến!',
   'p.rv.turboBad':'Turbo Boost phản tác dụng — lùi 1 điểm đến.',
   'p.rv.ok':'✅ Chính xác! Máy bay của bạn tiến thêm một điểm đến.',
@@ -1265,11 +1312,11 @@ vi: {
   'h.armedBelt':'Đã thắt dây an toàn — trả lời sai sẽ không bị đẩy lùi',
   'h.turbOnly':'🌪 Nhiễu động — lúc này chỉ Thắt dây an toàn có tác dụng',
   'h.stormAll':'⛈ Bão — cả ba trợ giúp đều bị khoá',
-  'h.powerAll':'⚡ Câu hỏi Quyền lực — cả ba trợ giúp đều bị khoá',
+  'h.powerAll':'☀️ Trời nắng đẹp — cả ba trợ giúp đều bị khoá',
   'h.fiftyDone':'Đã loại bỏ hai đáp án sai',
   'h.blockTurb':'🌪 {what} bị khoá trong nhiễu động',
   'h.blockStorm':'⛈ {what} bị khoá trong bão — chỉ ATC cấp phép',
-  'h.blockPower':'⚡ {what} bị khoá trong Câu hỏi Quyền lực',
+  'h.blockPower':'☀️ {what} bị khoá trong Trời nắng đẹp',
   'h.blockLocked':'{what} mở khoá khi máy bay của bạn tới MUC',
   'h.beltOnlyTurb':'Thắt dây an toàn chỉ dùng được trong nhiễu động',
   'h.beltNeedMuc':'Thắt dây an toàn mở khoá khi máy bay của bạn tới MUC',
@@ -1278,6 +1325,7 @@ vi: {
 
   /* --- business class ribbon --- */
   'biz.title':'Hạng Thương gia · Hạng {n}',
+  'prem.title':'Hạng Phổ thông Đặc biệt · Hạng {n}',
   'biz.place1':'nhất', 'biz.place2':'nhì', 'biz.place3':'ba',
   'biz.chasing':'{name} đang bám sát bạn — {gap}',
   'biz.level':'ngang bằng bạn',
@@ -1290,13 +1338,14 @@ vi: {
   'wx.turb.rule':'Trả lời đúng chỉ giữ nguyên vị trí. Sai — hoặc không trả lời — bị lùi 1 chặng. 50:50 và Turbo Boost bị khoá; Thắt dây an toàn là lá chắn duy nhất của bạn.',
   'wx.storm.title':'BÃO PHÍA TRƯỚC',
   'wx.storm.rule':'Chỉ 10 người trả lời đúng nhanh nhất được ATC cấp phép tiến 1 chặng. Những người còn lại đứng nguyên — không ai bị lùi. Cả ba trợ giúp đều bị khoá.',
-  'wx.power.title':'CÂU HỎI QUYỀN LỰC',
+  'wx.power.title':'TRỜI NẮNG ĐẸP',
   'wx.power.rule':'Người trả lời đúng nhanh nhất được +2 chặng. Những người đúng khác được +1. Trả lời sai đứng nguyên. Cả ba trợ giúp đều bị khoá.',
   'wx.clear':'🌈 Trời quang',
   'wx.turbulence':'🌪 Nhiễu động',
   'wx.storm':'⛈ Bão',
-  'wx.power':'☀️ Câu hỏi Quyền lực',
+  'wx.power':'☀️ Trời nắng đẹp',
   'wx.finalRound':'☀️ CHẶNG QUYẾT ĐỊNH',
+  'wx.turbTag':'NHIỄU ĐỘNG','wx.stormTag':'BÃO','wx.powerTag':'TRỜI NẮNG ĐẸP',
 
   /* --- presenter --- */
   'pres.fullscreen':'⛶ Toàn màn hình',
@@ -1379,11 +1428,11 @@ vi: {
   'a.next':'Câu tiếp theo →',
   'a.resetProgress':'🔄 Đặt lại tiến trình',
   'a.resetProgressTip':'Đặt lại tiến trình — về chặng 1, mọi máy bay về START',
-  'a.powerQ':'⚡ Câu hỏi Quyền lực',
-  'a.powerQBlocked':'⚡ Câu hỏi Quyền lực (bị khoá: thời tiết)',
-  'a.powerQUsed':'⚡ Câu hỏi Quyền lực (đã dùng)',
+  'a.powerQ':'☀️ Trời nắng đẹp',
+  'a.powerQBlocked':'☀️ Trời nắng đẹp (bị khoá: thời tiết)',
+  'a.powerQUsed':'☀️ Trời nắng đẹp (đã dùng)',
   'a.powerQTip':'Buộc câu hỏi chặng này thành lượt thưởng, người đúng nhanh nhất được +2 chặng',
-  'a.controlNote':'Đáp án tự động công bố khi hết giờ · Cả ba trợ giúp (50:50, Turbo, Thắt dây an toàn) mở khoá riêng cho từng người khi máy bay của họ tới MUC · Nhiễu động tự áp dụng ở chặng 6 và 10, Bão ở chặng 8 · Câu hỏi Quyền lực không kích hoạt được trên chặng nhiễu động hay bão.',
+  'a.controlNote':'Đáp án tự động công bố khi hết giờ · Cả ba trợ giúp (50:50, Turbo, Thắt dây an toàn) mở khoá riêng cho từng người khi máy bay của họ tới MUC · Nhiễu động tự áp dụng ở chặng 6 và 10, Bão ở chặng 8 · Trời nắng đẹp không kích hoạt được trên chặng nhiễu động hay bão.',
   'a.answerKey':'📖 Đáp án',
   'a.answerKeyNote':'— dành cho bạn, không hiện cho người chơi',
   'a.presenterNotes':'🎤 Ghi chú người dẫn',
@@ -1441,12 +1490,12 @@ vi: {
   'a.t.atFirst':'Đang ở Chặng 1 rồi',
   'a.t.confirmPrev':'Quay lại Chặng {n}? Chặng đó sẽ mở lại đúng câu hỏi cũ (vị trí máy bay giữ nguyên).',
   'a.t.wentBack':'Đã quay lại {leg}',
-  'a.t.powerOnlyLobby':'Câu hỏi Quyền lực chỉ bật/tắt được trước khi mở câu hỏi',
-  'a.t.powerTurb':'🌪 Chặng {n} là chặng nhiễu động — không kích hoạt Câu hỏi Quyền lực được',
-  'a.t.powerStorm':'⛈ Chặng {n} là chặng bão — không kích hoạt Câu hỏi Quyền lực được',
-  'a.t.powerUsed':'Câu hỏi Quyền lực đã dùng trong ván này rồi',
-  'a.t.powerOn':'⚡ Đã kích hoạt Câu hỏi Quyền lực cho chặng này',
-  'a.t.powerOff':'Đã huỷ Câu hỏi Quyền lực — trả lại lượt dùng',
+  'a.t.powerOnlyLobby':'Trời nắng đẹp chỉ bật/tắt được trước khi mở câu hỏi',
+  'a.t.powerTurb':'🌪 Chặng {n} là chặng nhiễu động — không kích hoạt Trời nắng đẹp được',
+  'a.t.powerStorm':'⛈ Chặng {n} là chặng bão — không kích hoạt Trời nắng đẹp được',
+  'a.t.powerUsed':'Trời nắng đẹp đã dùng trong ván này rồi',
+  'a.t.powerOn':'☀️ Đã kích hoạt Trời nắng đẹp cho chặng này',
+  'a.t.powerOff':'Đã huỷ Trời nắng đẹp — trả lại lượt dùng',
   'a.t.resetConfirm':'Thao tác này xoá TẤT CẢ {n} người chơi và toàn bộ cuộc đua.\n\nGõ  RESET  để xác nhận:',
   'a.t.resetCancel':'Đã huỷ đặt lại',
   'a.t.resetAll':'Đặt lại toàn bộ ván đấu?',
@@ -1493,29 +1542,33 @@ en: {
   'rules.p.race1':'12 legs from START to FINISH along an S-shaped route. Each leg, everyone answers one question within <strong>20 seconds</strong>. The answer is revealed <strong>automatically the moment the countdown ends</strong>.',
   'rules.p.race2':'The race keeps going until at least <strong>4 aircraft land on FINISH</strong>. Reaching FINISH shows you your own placing right away, even while the race continues for everyone else.',
   'rules.h.map':'🗺 Route map',
+  'rules.p.mapPage':'All 12 legs, from <strong>START</strong> at the bottom up to <strong>FINISH</strong> at the top. The five gold stops are the checkpoints.',
   'rules.h.cp':'📍 Checkpoints',
   'rules.p.cp':'The five gold stops above are checkpoints. Whoever is <strong>first</strong> to reach HAN, SPC or SGN earns a milestone marker next to their name for the rest of the race.',
   'rules.h.win':'🏆 Winning',
   'rules.p.win':'First to FINISH wins. If several aircraft land on the same reveal, they\'re ranked by <strong>correct answers</strong>, then by <strong>total answer time</strong> — so answering fast matters.',
+  'rules.h.prizes':'🎁 Prizes',
+  'rules.p.prizes':'<strong>🏆 Champion:</strong> one Business Class ticket<br><strong>🥇 2nd:</strong> one Premium Economy ticket<br><strong>🥈 3rd:</strong> one upgrade voucher to Business Class<br><strong>🥉 4th:</strong> one Economy Class ticket<br><br>Plus plenty of other great smaller prizes.',
   'rules.h.clear':'🌈 Clear Skies',
   'rules.p.clear':'The default. Correct answer advances you <strong>1 leg</strong>; a wrong answer holds your position — no penalty.',
   'rules.h.turb':'🌪 Turbulence',
   'rules.p.turb':'Correct answer <strong>holds</strong> your position. Anything else — wrong, or no answer at all — sends you <strong>back 1 leg</strong>. 50:50 and Turbo Boost are disabled; this is the only time Fasten Seatbelt works.',
   'rules.h.storm':'⛈ Storm',
-  'rules.p.storm':'Only the <strong>10 fastest correct answers</strong> get ATC clearance to advance 1 leg. Everyone else holds position, including correct answers outside the top 10 — but nobody goes backwards. All three helps and the Power Question are disabled.',
-  'rules.h.power':'☀️ Power Question',
+  'rules.p.storm':'Only the <strong>10 fastest correct answers</strong> get ATC clearance to advance 1 leg. Everyone else holds position, including correct answers outside the top 10 — but nobody goes backwards. All three helps and Sunshine are disabled.',
+  'rules.h.power':'☀️ Sunshine',
   'rules.p.power':'The host\'s one-time bonus round for the whole game, armed before the question opens. The <strong>fastest correct</strong> answer gets <strong>+2 legs</strong>, every other correct answer <strong>+1</strong>, wrong answers hold. Can\'t be armed on a Turbulence or Storm leg, and all three helps are disabled.',
   'rules.h.helps':'Your three helps',
   'rules.p.helps':'All three unlock the moment <strong>your own aircraft reaches MUC</strong> — not when the race reaches MUC. Each one can be used <strong>once per game</strong>.',
   'rules.help.fifty':'50:50',
-  'rules.help.fiftyDesc':'Removes two wrong answers, leaving the correct one and a single decoy. Disabled during Turbulence, Storm and the Power Question.',
+  'rules.help.fiftyDesc':'Removes two wrong answers, leaving the correct one and a single decoy. Disabled during Turbulence, Storm and Sunshine.',
   'rules.help.turbo':'Turbo Boost',
-  'rules.help.turboDesc':'Double or nothing. Correct → <strong>+2 legs</strong>. Wrong → <strong>−1 leg</strong>. Arming it costs nothing until you press Submit, so you can change your mind. Disabled during Turbulence, Storm and the Power Question.',
+  'rules.help.turboDesc':'Double or nothing. Correct → <strong>+2 legs</strong>. Wrong → <strong>−1 leg</strong>. Arming it costs nothing until you press Submit, so you can change your mind. Disabled during Turbulence, Storm and Sunshine.',
   'rules.help.belt':'Fasten Seatbelt',
   'rules.help.beltDesc':'Your turbulence shield — and it <strong>only works during Turbulence</strong>. Ride out a wrong answer without being pushed back a leg. Useless otherwise, so hold on to it until turbulence hits.',
   'rules.h.docs':'📎 Programme documents',
   'rules.p.docs':'Conference materials, the Sales Kit and the agenda will be linked here.',
-  'rules.docs.salesKit':'📘 Vietnam Airlines Sales Kit',
+  'rules.docs.salesKitVi':'📗 Vietnam Airlines Sales Kit (Vietnamese)',
+  'rules.docs.salesKit':'📘 Vietnam Airlines Sales Kit (English)',
   'rules.docs.more':'More documents will be added here before the event.',
 
   'gate.title':'Admin access',
@@ -1549,7 +1602,7 @@ en: {
   'p.total':'Total time',
   'p.aircraft':'Aircraft',
   'p.of':'of {n}',
-  'p.powerNote':'☀️ Power Question — answer correctly for <strong>+2 legs</strong>!',
+  'p.powerNote':'☀️ Sunshine — answer correctly for <strong>+2 legs</strong>!',
   'p.stormNote':'⛈ Storm — only the <strong>10 fastest correct answers</strong> get ATC clearance to continue. Everyone else holds position.',
   'p.waitStart':'WAITING FOR GAME TO START',
   'p.waitStartMsg':'Question will be open shortly. Get ready for takeoff!',
@@ -1590,8 +1643,8 @@ en: {
   'p.rv.stormOk':'⛈ ATC clearance granted — cleared to continue to the next leg!',
   'p.rv.stormSlow':'⛈ Correct, but ATC only cleared the 10 fastest — you hold position.',
   'p.rv.stormBad':'⛈ Storm — aircraft grounded, hold position.',
-  'p.rv.powerOk':'⚡ Correct! Power Question bonus applied for the fastest answer.',
-  'p.rv.powerBad':'⚡ Power Question — not correct this time, you hold position.',
+  'p.rv.powerOk':'☀️ Correct! Sunshine bonus applied for the fastest answer.',
+  'p.rv.powerBad':'☀️ Sunshine — not correct this time, you hold position.',
   'p.rv.turboOk':'Turbo Boost paid off — 2 destinations forward!',
   'p.rv.turboBad':'Turbo Boost backfired — 1 destination back.',
   'p.rv.ok':'✅ Correct! Your aircraft advances one destination.',
@@ -1612,11 +1665,11 @@ en: {
   'h.armedBelt':'Seatbelt fastened — a wrong answer will not push you back',
   'h.turbOnly':'🌪 Turbulence — only Fasten Seatbelt works right now',
   'h.stormAll':'⛈ Storm — all three helps are locked',
-  'h.powerAll':'⚡ Power Question — all three helps are locked',
+  'h.powerAll':'☀️ Sunshine — all three helps are locked',
   'h.fiftyDone':'Two wrong answers removed',
   'h.blockTurb':'🌪 {what} is locked during turbulence',
   'h.blockStorm':'⛈ {what} is locked during the storm — ATC clearance only',
-  'h.blockPower':'⚡ {what} is locked on a Power Question',
+  'h.blockPower':'☀️ {what} is locked during Sunshine',
   'h.blockLocked':'{what} unlocks when your aircraft reaches MUC',
   'h.beltOnlyTurb':'Fasten Seatbelt only works during turbulence',
   'h.beltNeedMuc':'Fasten Seatbelt unlocks when your aircraft reaches MUC',
@@ -1624,6 +1677,7 @@ en: {
   'h.nameFifty':'50:50',
 
   'biz.title':'Business Class · {n} place',
+  'prem.title':'Premium Economy · {n} place',
   'biz.place1':'1st','biz.place2':'2nd','biz.place3':'3rd',
   'biz.chasing':'{name} is chasing you — {gap}',
   'biz.level':'level with you',
@@ -1635,13 +1689,14 @@ en: {
   'wx.turb.rule':'A correct answer only holds your position. Wrong — or no answer at all — sends you back 1 leg. 50:50 and Turbo Boost are locked; Fasten Seatbelt is your only protection.',
   'wx.storm.title':'STORM AHEAD',
   'wx.storm.rule':'Only the 10 fastest correct answers get ATC clearance to advance 1 leg. Everyone else holds position — nobody goes backwards. All three helps are locked.',
-  'wx.power.title':'POWER QUESTION',
+  'wx.power.title':'SUNSHINE',
   'wx.power.rule':'The fastest correct answer takes +2 legs. Every other correct answer takes +1. Wrong answers hold position. All three helps are locked.',
   'wx.clear':'🌈 Clear Skies',
   'wx.turbulence':'🌪 Turbulence',
   'wx.storm':'⛈ Storm',
-  'wx.power':'☀️ Power Question',
+  'wx.power':'☀️ Sunshine',
   'wx.finalRound':'☀️ FINAL ROUND',
+  'wx.turbTag':'TURBULENCE','wx.stormTag':'STORM','wx.powerTag':'SUNSHINE',
 
   'pres.fullscreen':'⛶ Fullscreen',
   'pres.exitFullscreen':'⛶ Exit fullscreen',
@@ -1721,11 +1776,11 @@ en: {
   'a.next':'Next question →',
   'a.resetProgress':'🔄 Reset progress',
   'a.resetProgressTip':'Reset progress — back to Leg 1, all aircraft to start',
-  'a.powerQ':'⚡ Power Question',
-  'a.powerQBlocked':'⚡ Power Q (blocked: weather)',
-  'a.powerQUsed':'⚡ Power Q (already played)',
+  'a.powerQ':'☀️ Sunshine',
+  'a.powerQBlocked':'☀️ Sunshine (blocked: weather)',
+  'a.powerQUsed':'☀️ Sunshine (already played)',
   'a.powerQTip':'Force this leg into a bonus round where the fastest correct answer gets +2 legs',
-  'a.controlNote':'The answer reveals itself automatically when the countdown ends · All three helps (50:50, Turbo, Fasten Seatbelt) unlock per player once their own aircraft reaches MUC · Turbulence auto-applies on legs 6 &amp; 10, Storm on leg 8 · Power Question cannot be armed on a turbulence or storm leg.',
+  'a.controlNote':'The answer reveals itself automatically when the countdown ends · All three helps (50:50, Turbo, Fasten Seatbelt) unlock per player once their own aircraft reaches MUC · Turbulence auto-applies on legs 6 &amp; 10, Storm on leg 8 · Sunshine cannot be armed on a turbulence or storm leg.',
   'a.answerKey':'📖 Answer key',
   'a.answerKeyNote':'— for you, not shown to players',
   'a.presenterNotes':'🎤 Presenter Notes',
@@ -1782,12 +1837,12 @@ en: {
   'a.t.atFirst':'Already at Leg 1',
   'a.t.confirmPrev':'Go back to Leg {n}? It reopens with the same question it had before (aircraft positions stay as they are).',
   'a.t.wentBack':'Went back to {leg}',
-  'a.t.powerOnlyLobby':'Power Question can only be toggled before opening the question',
-  'a.t.powerTurb':'🌪 Leg {n} is a turbulence leg — Power Question cannot be armed here',
-  'a.t.powerStorm':'⛈ Leg {n} is a storm leg — Power Question cannot be armed here',
-  'a.t.powerUsed':'Power Question has already been played this game',
-  'a.t.powerOn':'⚡ Power Question armed for this leg',
-  'a.t.powerOff':'Power Question cancelled — charge returned',
+  'a.t.powerOnlyLobby':'Sunshine can only be toggled before opening the question',
+  'a.t.powerTurb':'🌪 Leg {n} is a turbulence leg — Sunshine cannot be armed here',
+  'a.t.powerStorm':'⛈ Leg {n} is a storm leg — Sunshine cannot be armed here',
+  'a.t.powerUsed':'Sunshine has already been played this game',
+  'a.t.powerOn':'☀️ Sunshine armed for this leg',
+  'a.t.powerOff':'Sunshine cancelled — charge returned',
   'a.t.resetConfirm':'This clears ALL {n} players and the whole race.\n\nType  RESET  to confirm:',
   'a.t.resetCancel':'Reset cancelled',
   'a.t.resetAll':'Reset the entire game?',
@@ -2567,7 +2622,7 @@ function closeAdminGate(){
   document.getElementById('adminGateModal').classList.add('hidden');
 }
 /* ---------- how to play: 4 paged slides ---------- */
-const RULES_PAGES = 4;
+const RULES_PAGES = 5;
 let rulesPage = 1;
 function rulesGoPage(n){
   rulesPage = Math.max(1, Math.min(RULES_PAGES, n));
@@ -2585,12 +2640,43 @@ function rulesGoPage(n){
   }
   document.getElementById('rulesPrevBtn').style.visibility = rulesPage===1 ? 'hidden' : 'visible';
   const nextBtn = document.getElementById('rulesNextBtn');
-  if(rulesPage===RULES_PAGES){ nextBtn.textContent = 'Close'; nextBtn.onclick = closeRulesModal; }
-  else { nextBtn.textContent = 'Next →'; nextBtn.onclick = ()=>rulesGoPage(rulesPage+1); }
+  if(rulesPage===RULES_PAGES){ nextBtn.textContent = t('rules.close'); nextBtn.onclick = closeRulesModal; }
+  else { nextBtn.textContent = t('rules.next'); nextBtn.onclick = ()=>rulesGoPage(rulesPage+1); }
   document.querySelector('.rules-modal-card').scrollTop = 0;
 }
+/* A static drawing of the whole route for the guide — same S-curve and the same ROUTE
+   coordinates the presenter map uses, so what players study here is exactly the board
+   they'll race on. Purely illustrative: no aircraft, no live state. */
+function buildRulesRouteMap(){
+  const wrap = document.getElementById('rulesMapWrap');
+  if(!wrap) return;
+  const pts = ROUTE.map(a=>`${a.x},${a.y}`).join(' ');
+  const nodes = ROUTE.map((a,i)=>{
+    const r = a.checkpoint ? 19 : 12;
+    const fill = a.checkpoint ? 'var(--vna-gold)' : 'rgba(11,113,199,.95)';
+    const stroke = a.checkpoint ? '#F0D678' : 'rgba(255,255,255,.75)';
+    // labels alternate above/below the node so neighbouring codes never collide
+    const labelY = a.y + (i % 2 ? -(r + 12) : (r + 26));
+    return `<circle cx="${a.x}" cy="${a.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="3"/>
+      <text x="${a.x}" y="${labelY}" text-anchor="middle" class="${a.checkpoint?'rm-cp':'rm-code'}">${a.code}</text>`;
+  }).join('');
+  // Fit the viewBox to the points themselves. The S-curve only occupies the middle ~60% of
+  // the presenter's 1000-wide canvas, so reusing that canvas here left big empty margins
+  // and shrank the drawing to an unreadable strip inside the narrow guide modal.
+  const xs = ROUTE.map(a=>a.x), ys = ROUTE.map(a=>a.y);
+  const padX = 52, padTop = 46, padBottom = 62; // room for the node rings and the code labels
+  const x0 = Math.min(...xs) - padX, x1 = Math.max(...xs) + padX;
+  const y0 = Math.min(...ys) - padTop, y1 = Math.max(...ys) + padBottom;
+  wrap.innerHTML = `<svg viewBox="${x0} ${y0} ${x1-x0} ${y1-y0}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Sky Race route">
+    <polyline points="${pts}" fill="none" stroke="#D4AF37" stroke-width="4" stroke-dasharray="4 14"
+      stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
+    ${nodes}
+  </svg>`;
+}
+
 function openRulesModal(){
-  // page 3's three circles use the same glyphs as the in-game help buttons
+  buildRulesRouteMap();
+  // the help circles use the same glyphs as the in-game help buttons
   document.getElementById('rulesIconFifty').innerHTML = HELP_ICONS.fifty;
   document.getElementById('rulesIconTurbo').innerHTML = HELP_ICONS.turbo;
   document.getElementById('rulesIconSeatbelt').innerHTML = HELP_ICONS.seatbelt;
@@ -2963,9 +3049,13 @@ function renderBizRibbon(me){
   const view = document.getElementById('view-player');
   const ranked = rankedPlayers();
   const idx = ranked.findIndex(p=>p.id===myPlayerId);
-  const isTop3 = idx>=0 && idx<3 && ranked.length>=2;
-  view.classList.toggle('biz-gold', isTop3);
-  if(!isTop3){ wrap.innerHTML = ''; return; }
+  // Cabin upgrade by standing: the leader flies Business (gold), 2nd flies Premium Economy
+  // (the jade green of that cabin), everyone from 3rd down sits in the normal skin.
+  const enoughPlayers = ranked.length >= 2;
+  const tier = !enoughPlayers ? null : (idx===0 ? 'biz' : (idx===1 ? 'prem' : null));
+  view.classList.toggle('biz-gold', tier==='biz');
+  view.classList.toggle('cabin-premium', tier==='prem');
+  if(!tier){ wrap.innerHTML = ''; return; }
   const medal = RANK_TROPHY[idx];
   const place = t('biz.place'+(idx+1));
   const chaser = ranked[idx+1];
@@ -2977,9 +3067,9 @@ function renderBizRibbon(me){
   } else {
     sub = t('biz.alone');
   }
-  wrap.innerHTML = `<div class="biz-ribbon">
+  wrap.innerHTML = `<div class="biz-ribbon ${tier==='prem'?'prem-ribbon':''}">
     <div class="medal">${medal}</div>
-    <div><div class="tt">${t('biz.title',{n:place})}</div><div class="sb">${sub}</div></div>
+    <div><div class="tt">${t(tier==='prem'?'prem.title':'biz.title',{n:place})}</div><div class="sb">${sub}</div></div>
   </div>`;
 }
 
@@ -3025,7 +3115,7 @@ function renderPlayer(){
     document.getElementById('pGame').classList.add('hidden');
     // drop any skin left over from a previous session, otherwise a reset or a removed
     // player leaves the join screen wearing the gold business-class background
-    document.getElementById('view-player').classList.remove('biz-gold','wx-turbulence','wx-storm','wx-power','final-round-theme');
+    document.getElementById('view-player').classList.remove('biz-gold','cabin-premium','wx-turbulence','wx-storm','wx-power','final-round-theme');
     const fx = document.getElementById('playerFx'); if(fx) fx.remove();
     return;
   }
@@ -3142,7 +3232,7 @@ function renderPlayer(){
   const qData = QUESTIONS_BY_ID[state.currentQuestionIndex];
   const powerNow = !!state.powerQuestionActive;
   const stormNow = isStormLeg(state.currentQ);
-  eyebrow.innerHTML = legLabel(state.currentQ) + (powerNow ? ' &nbsp;⚡ POWER QUESTION' : '') + (stormNow ? ' &nbsp;⛈ STORM' : '');
+  eyebrow.innerHTML = legLabel(state.currentQ) + (powerNow ? ' &nbsp;☀️ '+t('wx.powerTag')+'' : '') + (stormNow ? ' &nbsp;⛈ '+t('wx.stormTag') : '');
   qText.textContent = qData.q;
   if(powerNoteEl) powerNoteEl.classList.toggle('hidden', !powerNow);
   if(stormNoteEl) stormNoteEl.classList.toggle('hidden', !stormNow);
@@ -3577,9 +3667,10 @@ function renderPresenterBrief(){
   const correct = answers.filter(x=>x.a.choice===qd.correct);
   // everyone who didn't answer counts against the rate — sitting it out is not a pass
   const rate = players.length ? Math.round(correct.length/players.length*100) : 0;
-  const podium = correct.slice()
-    .sort((a,b)=>(a.a.timeTaken||Infinity)-(b.a.timeTaken||Infinity))
-    .slice(0,3);
+  // just the single quickest correct answer — three names pushed the panel past its height
+  // in Vietnamese (the longer labels wrap) and silently scrolled the last stat out of view
+  const fastest = correct.slice()
+    .sort((a,b)=>(a.a.timeTaken||Infinity)-(b.a.timeTaken||Infinity))[0];
 
   const leader = rankedPlayers()[0];
   // busiest stop on the board right now
@@ -3597,17 +3688,15 @@ function renderPresenterBrief(){
   else if(avg < 14000){ pace=t('brief.paceSteady'); paceCls='pace-med'; paceIcon='🧭'; }
   else { pace=t('brief.paceSlow'); paceCls='pace-slow'; paceIcon='🐢'; }
 
-  // flows inline rather than one name per line — three stacked lines pushed the bulletin
-  // past the bottom of a 800px-tall presenter screen
-  const podiumHtml = podium.length
-    ? podium.map((x,i)=>`<span class="bnm">${['🥇','🥈','🥉'][i]} ${escapeHtml(x.p.name)} <span class="sub">${formatTime(x.a.timeTaken)}</span></span>`).join('')
+  const fastestHtml = fastest
+    ? `🥇 ${escapeHtml(fastest.p.name)} <span class="sub">${formatTime(fastest.a.timeTaken)}</span>`
     : ('<span class="sub">'+t('brief.noneCorrect')+'</span>');
 
   const item = (icon, label, value, wide)=>
     `<div class="brief-item${wide?' wide':''}"><span class="bi">${icon}</span><div><div class="bl">${label}</div><div class="bv">${value}</div></div></div>`;
 
   body.innerHTML =
-    item('⚡',t('brief.fastest'), podiumHtml, true) +
+    item('⚡',t('brief.fastest'), fastestHtml, true) +
     item('✅',t('brief.correct'), `${correct.length} <span class="sub">${t('brief.ofN',{n:players.length})}</span>`) +
     item('📊',t('brief.rate'), `${rate}%`) +
     item('👑',t('brief.leaderAt'), leader ? `${ROUTE[leader.position].code} <span class="sub">${escapeHtml(ROUTE[leader.position].city)}</span>` : '—') +
@@ -3794,7 +3883,7 @@ function renderPresenter(){
     const remain = secondsRemaining();
     const revealed = state.gameState==='reveal';
     const correctIdx = state.currentCorrectIndex;
-    const wxTag = turbulent ? ' · 🌪 TURBULENCE' : (thunderOn ? ' · ⛈ STORM' : (powerOn ? ' · ⚡ POWER QUESTION' : ''));
+    const wxTag = turbulent ? ' · 🌪 '+t('wx.turbTag') : (thunderOn ? ' · ⛈ '+t('wx.stormTag') : (powerOn ? ' · ☀️ '+t('wx.powerTag') : ''));
     pqEl.innerHTML = `
       <div class="pq-head">
         <div class="pq-eyebrow">${legLabel(state.currentQ)}${wxTag}</div>
@@ -4268,7 +4357,7 @@ function adminTogglePowerQuestion(){
   // burn the single Power Question for the whole game.
   state.powerQuestionUsed = state.powerQuestionActive;
   saveState();
-  toast(state.powerQuestionActive ? '⚡ Power Question armed for this leg' : 'Power Question cancelled — charge returned');
+  toast(state.powerQuestionActive ? t('a.t.powerOn') : t('a.t.powerOff'));
 }
 function resetGame(){
   // Hard gate while a race is live: this button wipes every registered player, and

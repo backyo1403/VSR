@@ -23,7 +23,8 @@ const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 const SCRIPTS = [
   ['https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.2/confetti.browser.min.js', 'confetti.min.js'],
 ];
-const FONT_CSS = 'https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap';
+// keep in sync with the <link> in public/index.html — Be Vietnam Pro is the Vietnamese display face
+const FONT_CSS = 'https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap';
 
 async function get(url, asText = false) {
   const res = await fetch(url, { headers: { 'User-Agent': UA } });
