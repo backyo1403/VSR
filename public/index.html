@@ -1162,7 +1162,7 @@ if(LANGS.indexOf(LANG) < 0) LANG = 'vi';
 const STR = {
 vi: {
   /* --- landing --- */
-  'landing.sub':'Hội nghị Vietnam Airlines dành cho các Đại lý phục vụ Cộng đồng người Việt tại Châu Âu<br><br>📍 Milan, Ý<br>📅 23 tháng 9, 2026<br><br>Cảm ơn quý vị đã tham dự buổi gặp gỡ đặc biệt này của Vietnam Airlines và các đối tác thân thiết.<br><br>Chúc quý vị một hội nghị đầy cảm hứng, những kết nối ý nghĩa và một trải nghiệm thật trọn vẹn trong suốt sự kiện hôm nay.',
+  'landing.sub':'Hội nghị Vietnam Airlines dành cho các đại lý người Việt tại Châu Âu<br><br>📍 Milan, Ý<br>📅 23 tháng 9, 2026<br><br>Cảm ơn quý vị đã tham dự buổi gặp gỡ đặc biệt này của Vietnam Airlines và các đối tác thân thiết.<br><br>Chúc quý vị một hội nghị đầy cảm hứng, những kết nối ý nghĩa và một trải nghiệm thật trọn vẹn trong suốt sự kiện hôm nay.',
   'landing.player':'Người chơi',
   'landing.playerDesc':'Nhập tên, chọn máy bay và trả lời câu hỏi ngay trên điện thoại của bạn.',
   'landing.playerGo':'Tham gia →',
@@ -1522,7 +1522,7 @@ vi: {
   'common.roundN':'Lượt chơi {n}',
 },
 en: {
-  'landing.sub':'Vietnam Airlines Conference for Vietnamese Travel Agents Serving the Vietnamese Community<br><br>📍 Milan, Italy<br>📅 23 September 2026<br><br>Thank you for joining us at this special gathering of Vietnam Airlines and our valued travel partners.<br><br>We wish you an inspiring conference, meaningful connections, and an enjoyable experience throughout today\'s event.',
+  'landing.sub':'Vietnam Airlines Conference for Vietnamese Travel Agents in Europe<br><br>📍 Milan, Italy<br>📅 23 September 2026<br><br>Thank you for joining us at this special gathering of Vietnam Airlines and our valued travel partners.<br><br>We wish you an inspiring conference, meaningful connections, and an enjoyable experience throughout today\'s event.',
   'landing.player':'Player',
   'landing.playerDesc':'Join with your name, pick your aircraft, and answer questions from your phone.',
   'landing.playerGo':'Join as player →',
@@ -1949,9 +1949,11 @@ const ROUTE = [
     node.y = Math.round(curveY(t)*10)/10;
   });
 })();
-// Question bank — the 25 questions from "Question Viet.docx", asked in this exact order,
-// one per round, never repeating (see pickQuestionIndex). `explain` is the 🎤 Presenter
-// Note the host reads aloud after the answer is revealed.
+// Question bank — 23 questions from "Question Viet.docx", asked in this exact order, one
+// per round, never repeating (see pickQuestionIndex). `explain` is the 🎤 Presenter Note
+// the host reads aloud after the answer is revealed. The source deck's items 20 and 22
+// duplicated items 6 and 13 (same question, just written in the other language) and were
+// dropped; ids are NOT renumbered, because the answer shuffle is seeded from the id.
 //
 // Each entry carries both languages: the source deck mixes Vietnamese and English items,
 // so every question was completed in the missing language rather than left to fall back.
@@ -2048,17 +2050,9 @@ const QUESTION_BANK = [
  vi:{q:"Theo chiến lược Tầm nhìn 2030, Vietnam Airlines đặt mục tiêu trở thành một trong ___ hãng hàng không dịch vụ đầy đủ hàng đầu Đông Nam Á.",opts:["10","5","3","2"],explain:"Vietnam Airlines không chỉ đơn thuần mở rộng mạng bay. Tham vọng của chúng tôi là trở thành một trong ba hãng hàng không dịch vụ đầy đủ hàng đầu Đông Nam Á, thông qua sản phẩm cao cấp, vận hành xuất sắc và trải nghiệm khách hàng nổi bật."},
  en:{q:"According to the Vision 2030 strategy, Vietnam Airlines aims to become one of the top ___ full-service airlines in Southeast Asia.",opts:["10","5","3","2"],explain:"Vietnam Airlines isn't simply expanding its network. Our ambition is to become one of Southeast Asia's top three full-service airlines by delivering premium products, operational excellence, and outstanding customer experience."}},
 
-{id:20,correct:1,
- vi:{q:"Một khách hàng muốn hành trình thoải mái hơn hạng Phổ thông nhưng chưa sẵn sàng chi trả cho hạng Thương gia. Bạn sẽ tư vấn hạng ghế nào?",opts:["Hạng Phổ thông (Economy)","Hạng Phổ thông Đặc biệt (Premium Economy)","Hạng Thương gia (Business)","Transit Tour"],explain:"Premium Economy là một trong những lợi thế mạnh nhất của Vietnam Airlines trên các chặng bay dài. Hạng ghế này mang lại sự thoải mái vượt trội so với Economy — ghế rộng hơn, chỗ để chân thoáng hơn, dịch vụ ưu tiên và suất ăn nâng cấp — mà không phải trả mức giá của Business Class. Khi khách tìm kiếm thêm sự thoải mái với chi phí hợp lý, đây thường là gợi ý lý tưởng."},
- en:{q:"A customer wants a more comfortable journey than Economy Class but is not ready to pay for Business Class. Which cabin would you recommend?",opts:["Economy Class","Premium Economy Class","Business Class","Transit Tour"],explain:"Premium Economy is one of Vietnam Airlines' strongest value propositions for long-haul travel. It offers significantly more comfort than Economy — including wider seats, greater legroom, priority services, and enhanced meals — without the premium price of Business Class. When customers are looking for extra comfort at a reasonable cost, this is often the ideal recommendation."}},
-
 {id:21,correct:1,
  vi:{q:"Vietnam Airlines đánh giá incentive bán hàng chủ yếu dựa trên yếu tố nào?",opts:["Số lượng nhân sự","Kết quả doanh thu và mức độ hoàn thành KPI","Vị trí văn phòng","Chỉ số năm hợp tác"],explain:"Vietnam Airlines tưởng thưởng các đại lý liên tục đạt mục tiêu bán hàng. Các chương trình incentive dựa trên kết quả doanh thu, mức độ hoàn thành KPI và cam kết thị trường, bảo đảm những đối tác xuất sắc nhận được sự ghi nhận và hỗ trợ xứng đáng."},
  en:{q:"Vietnam Airlines evaluates sales incentives primarily based on...",opts:["Number of employees.","Revenue performance and KPI achievement.","Office location.","Years of partnership only."],explain:"Vietnam Airlines rewards agencies that consistently achieve their sales targets. Incentive programs are based on revenue performance, KPI achievement, and market commitments, ensuring that outstanding partners receive meaningful recognition and support."}},
-
-{id:22,correct:1,
- vi:{q:"Một khách hàng có thời gian nối chuyến dài tại Hà Nội hoặc TP. Hồ Chí Minh. Dịch vụ nào của Vietnam Airlines có thể nâng cao trải nghiệm của hành khách?",opts:["Vé Business FOC","Transit Tour","Chương trình Gold Agent","Tour Series"],explain:"Thời gian nối chuyến dài có thể trở thành một trải nghiệm du lịch đáng nhớ. Vietnam Airlines cung cấp Transit Tour tại Hà Nội và TP. Hồ Chí Minh, giúp hành khách nối chuyến có cách thú vị để khám phá Việt Nam trong lúc chờ chuyến bay tiếp theo, nâng cao trải nghiệm của cả hành trình."},
- en:{q:"A customer has a long connection in Hanoi or Ho Chi Minh City. Which Vietnam Airlines service could enhance the passenger's experience?",opts:["Business FOC Ticket","Transit Tour","Gold Agent Program","Tour Series"],explain:"Long layovers can become memorable travel experiences. Vietnam Airlines offers Transit Tours in Hanoi and Ho Chi Minh City to provide transit passengers with an enjoyable way to explore Vietnam while waiting for their connecting flight, enhancing the overall travel experience."}},
 
 {id:23,correct:2,
  vi:{q:"Nếu so với cách bán truyền thống “Europe → Hanoi/Saigon”, Vietnam Airlines muốn đại lý khai thác thêm cách bán nào?",opts:["Chỉ bán one-way","Chỉ tập trung vào giá","Bán toàn bộ journey: Europe → Vietnam gateway → domestic destination","Không cần quan tâm điểm đến cuối cùng"],explain:"Đây là một trong những thông điệp quan trọng nhất: Sell the journey, not just the sector. Ví dụ AMS–HAN–DAD có giá trị bán hàng lớn hơn việc chỉ nhìn vào AMS–HAN."},

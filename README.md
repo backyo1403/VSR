@@ -25,7 +25,9 @@ Lựa chọn ngôn ngữ lưu **theo từng thiết bị** (`localStorage`), kh�
 
 > ⚠️ File gốc `Question Viet.docx` trộn cả câu tiếng Việt lẫn câu tiếng Anh. Câu nào thiếu ngôn ngữ nào thì **đã được dịch bổ sung** để nút VI/EN đổi được toàn bộ. Bản dịch **nên được người của Vietnam Airlines rà lại trước sự kiện** — MC sẽ đọc trước các đại lý du lịch và nội dung có nhiều thuật ngữ ngành. Các tên riêng sản phẩm (LotusMiles, Transit Tour, Tour Series, Business FOC, Gold Agent, Premium Economy…) được giữ nguyên tiếng Anh theo cách gọi thông dụng trong ngành.
 
-**Ngân hàng câu hỏi:** 25 câu thường (từ `Question Viet.docx`), hỏi **lần lượt theo đúng thứ tự** trong file, mỗi lượt một câu, **câu đã dùng không bao giờ lặp lại**. Hết 25 câu thì admin không mở thêm được câu mới.
+**Ngân hàng câu hỏi:** 23 câu thường (từ `Question Viet.docx`), hỏi **lần lượt theo đúng thứ tự** trong file, mỗi lượt một câu, **câu đã dùng không bao giờ lặp lại**. Hết 23 câu thì admin không mở thêm được câu mới.
+
+> Câu 20 và câu 22 của file gốc đã được **bỏ** vì trùng nội dung với câu 6 (Premium Economy) và câu 13 (Transit Tour) — chỉ khác ngôn ngữ gốc.
 
 **Câu hỏi Sunshine** nằm riêng, **không bao giờ ra ở lượt thường**: nó chỉ hiện khi admin bấm ☀️ Trời nắng đẹp. Bấm lần nữa để huỷ thì câu thường đang chờ được trả lại nguyên vẹn vào kho.
 
