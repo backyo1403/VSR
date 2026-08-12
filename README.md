@@ -23,11 +23,13 @@ VNA_Race/
 
 Lựa chọn ngôn ngữ lưu **theo từng thiết bị** (`localStorage`), không đồng bộ: MC có thể chạy màn LED tiếng Việt trong khi một khách nước ngoài đọc điện thoại tiếng Anh. Hai bên vẫn thấy **cùng một chữ cái ứng với cùng một đáp án**, vì thứ tự xáo đáp án chỉ phụ thuộc id câu hỏi chứ không phụ thuộc ngôn ngữ.
 
-> ⚠️ Bản dịch tiếng Việt của 31 câu hỏi và ghi chú người dẫn **nên được người của Vietnam Airlines rà lại trước sự kiện** — MC sẽ đọc trước các đại lý du lịch và nội dung có nhiều thuật ngữ ngành. Các tên riêng sản phẩm (LotusMiles, Transit Tour, Tour Series, Business FOC, Gold Agent, Premium Economy…) được giữ nguyên tiếng Anh theo cách gọi thông dụng trong ngành.
+> ⚠️ File gốc `Question Viet.docx` trộn cả câu tiếng Việt lẫn câu tiếng Anh. Câu nào thiếu ngôn ngữ nào thì **đã được dịch bổ sung** để nút VI/EN đổi được toàn bộ. Bản dịch **nên được người của Vietnam Airlines rà lại trước sự kiện** — MC sẽ đọc trước các đại lý du lịch và nội dung có nhiều thuật ngữ ngành. Các tên riêng sản phẩm (LotusMiles, Transit Tour, Tour Series, Business FOC, Gold Agent, Premium Economy…) được giữ nguyên tiếng Anh theo cách gọi thông dụng trong ngành.
 
-**Ngân hàng câu hỏi:** 31 câu (từ `Question.docx`), hỏi **lần lượt theo đúng thứ tự** trong file, mỗi chặng một câu, **câu đã dùng không bao giờ lặp lại**. Hết 31 câu thì admin không mở thêm được câu mới.
+**Ngân hàng câu hỏi:** 25 câu thường (từ `Question Viet.docx`), hỏi **lần lượt theo đúng thứ tự** trong file, mỗi lượt một câu, **câu đã dùng không bao giờ lặp lại**. Hết 25 câu thì admin không mở thêm được câu mới.
 
-> Vị trí A/B/C/D của mỗi câu được **xáo tự động** khi vào game. File gốc có 29/31 câu đáp án đúng nằm ở B — nếu giữ nguyên, người chơi chỉ cần luôn bấm B là thắng. Nội dung câu hỏi và đáp án đúng giữ nguyên 100%, chỉ đổi vị trí chữ cái. Thuật toán xáo là tất định (seed theo id câu hỏi) nên mọi điện thoại, màn LED và dashboard admin đều thấy **cùng một thứ tự** mà không cần đồng bộ gì thêm.
+**Câu hỏi Sunshine** nằm riêng, **không bao giờ ra ở lượt thường**: nó chỉ hiện khi admin bấm ☀️ Trời nắng đẹp. Bấm lần nữa để huỷ thì câu thường đang chờ được trả lại nguyên vẹn vào kho.
+
+> Vị trí A/B/C/D của mỗi câu được **xáo tự động** khi vào game. File gốc để đáp án đúng ở B hoặc C gần như mọi câu — nếu giữ nguyên, người chơi chỉ cần luôn bấm B/C là thắng. Nội dung câu hỏi và đáp án đúng giữ nguyên 100%, chỉ đổi vị trí chữ cái. Thuật toán xáo là tất định (seed theo id câu hỏi) nên mọi điện thoại, màn LED và dashboard admin đều thấy **cùng một thứ tự** mà không cần đồng bộ gì thêm.
 
 **Nhịp một chặng — admin bấm 2 lần:**
 
@@ -42,7 +44,7 @@ Lựa chọn ngôn ngữ lưu **theo từng thiết bị** (`localStorage`), kh�
 
 ### Ba sự trợ giúp
 
-Mỗi thứ dùng **một lần cả ván**, hiển thị là 3 nút tròn dưới ô "Select an answer above". **50:50 dùng được ngay từ chặng đầu, không phân biệt xếp thứ mấy**; Turbo Boost và Fasten Seatbelt **mở khoá riêng cho từng người khi máy bay của họ tới MUC**.
+Mỗi thứ dùng **một lần cả ván**, hiển thị là 3 nút tròn dưới ô "Select an answer above". Cả ba — 50:50, Turbo Boost và Fasten Seatbelt — **mở khoá riêng cho từng người khi máy bay của chính họ tới MUC**, không phải khi cuộc đua tới MUC.
 
 | Trợ giúp | Tác dụng | Bị khoá khi |
 |---|---|---|
@@ -52,7 +54,7 @@ Mỗi thứ dùng **một lần cả ván**, hiển thị là 3 nút tròn dư�
 
 Bật Turbo/Seatbelt mà không bấm Nộp thì không bị phạt và không mất lượt.
 
-**☀️ Trời nắng đẹp / Sunshine** — nút của admin, **một lần duy nhất cả ván**, bấm trước khi mở câu hỏi. Màn LED hiện ☀️ TRỜI NẮNG ĐẸP. Người **trả lời đúng nhanh nhất** được **+2 chặng**, người đúng khác +1, người sai đứng nguyên. Không bật được trên chặng turbulence/storm. Huỷ trước khi mở câu thì được trả lại lượt. Cả ba trợ giúp bị khoá.
+**☀️ Trời nắng đẹp / Sunshine** — nút của admin, **một lần duy nhất cả ván**, bấm trước khi mở câu hỏi. Màn LED hiện ☀️ TRỜI NẮNG ĐẸP và **câu hỏi Sunshine riêng** được đưa ra thay cho câu thường. Người **trả lời đúng nhanh nhất** được **+2 chặng**, người đúng khác +1, người sai đứng nguyên. Không bật được trên chặng turbulence/storm. Huỷ trước khi mở câu thì được trả lại lượt. Cả ba trợ giúp bị khoá.
 
 **Turbulence** — tự động ở **chặng 6 và chặng 10**. Màn LED chuyển theme mưa sấm chớp, badge đổi từ 🌈 Clear Skies sang 🌪 Turbulence. Trả lời đúng **đứng nguyên**, **không đúng thì lùi 1 chặng** (kể cả người không trả lời) — trừ khi bật 🔒 Fasten Seatbelt. 50:50 và Turbo bị khoá.
 

@@ -1200,7 +1200,7 @@ vi: {
   'rules.h.power':'☀️ Trời nắng đẹp',
   'rules.p.power':'Lượt thưởng duy nhất cả ván của người điều phối, kích hoạt trước khi mở câu hỏi. Người <strong>trả lời đúng nhanh nhất</strong> được <strong>+2 chặng</strong>, những người đúng khác <strong>+1</strong>, trả lời sai đứng nguyên. Không kích hoạt được trên chặng Nhiễu động hay Bão, và cả ba trợ giúp đều bị khoá.',
   'rules.h.helps':'Ba trợ giúp của bạn',
-  'rules.p.helps':'Mỗi trợ giúp dùng được <strong>một lần cả ván</strong>. <strong>50:50</strong> dùng được ngay từ chặng đầu, dù bạn đang xếp thứ mấy. <strong>Turbo Boost</strong> và <strong>Thắt dây an toàn</strong> mở khoá khi <strong>máy bay của chính bạn tới MUC</strong> — không phải khi cuộc đua tới MUC.',
+  'rules.p.helps':'Mỗi trợ giúp dùng được <strong>một lần cả ván</strong>. Cả ba — <strong>50:50</strong>, <strong>Turbo Boost</strong> và <strong>Thắt dây an toàn</strong> — mở khoá khi <strong>máy bay của chính bạn tới MUC</strong>, không phải khi cuộc đua tới MUC.',
   'rules.help.fifty':'50:50',
   'rules.help.fiftyDesc':'Loại bỏ hai đáp án sai, chỉ còn đáp án đúng và một đáp án nhiễu. Bị khoá trong Nhiễu động, Bão và Trời nắng đẹp.',
   'rules.help.turbo':'Turbo Boost',
@@ -1301,7 +1301,7 @@ vi: {
   'h.fifty':'50:50',
   'h.turbo':'Turbo',
   'h.belt':'Dây an toàn',
-  'h.locked':'Turbo Boost · Thắt dây an toàn mở khoá khi máy bay của bạn tới {code}',
+  'h.locked':'Cả ba trợ giúp mở khoá khi máy bay của bạn tới {code}',
   'h.fiftyTip':'Loại bỏ hai đáp án sai',
   'h.fiftyUsed':'Đã dùng 50:50 rồi',
   'h.turboTip':'Đúng +2 chặng · sai −1 chặng',
@@ -1519,6 +1519,7 @@ vi: {
   'st.lobby':'CHỜ','st.question':'ĐANG HỎI','st.locked':'ĐÃ KHOÁ','st.reveal':'ĐÃ CÔNG BỐ','st.finished':'KẾT THÚC',
   'common.legOf':'Chặng {n} / {total}',
   'common.overtime':'Hiệp phụ {n}',
+  'common.roundN':'Lượt chơi {n}',
 },
 en: {
   'landing.sub':'Vietnam Airlines Conference for Vietnamese Travel Agents Serving the Vietnamese Community<br><br>📍 Milan, Italy<br>📅 23 September 2026<br><br>Thank you for joining us at this special gathering of Vietnam Airlines and our valued travel partners.<br><br>We wish you an inspiring conference, meaningful connections, and an enjoyable experience throughout today\'s event.',
@@ -1558,7 +1559,7 @@ en: {
   'rules.h.power':'☀️ Sunshine',
   'rules.p.power':'The host\'s one-time bonus round for the whole game, armed before the question opens. The <strong>fastest correct</strong> answer gets <strong>+2 legs</strong>, every other correct answer <strong>+1</strong>, wrong answers hold. Can\'t be armed on a Turbulence or Storm leg, and all three helps are disabled.',
   'rules.h.helps':'Your three helps',
-  'rules.p.helps':'Each one can be used <strong>once per game</strong>. <strong>50:50</strong> is available from the very first leg, whatever position you are in. <strong>Turbo Boost</strong> and <strong>Fasten Seatbelt</strong> unlock the moment <strong>your own aircraft reaches MUC</strong> — not when the race reaches MUC.',
+  'rules.p.helps':'Each one can be used <strong>once per game</strong>. All three — <strong>50:50</strong>, <strong>Turbo Boost</strong> and <strong>Fasten Seatbelt</strong> — unlock the moment <strong>your own aircraft reaches MUC</strong>, not when the race reaches MUC.',
   'rules.help.fifty':'50:50',
   'rules.help.fiftyDesc':'Removes two wrong answers, leaving the correct one and a single decoy. Disabled during Turbulence, Storm and Sunshine.',
   'rules.help.turbo':'Turbo Boost',
@@ -1654,7 +1655,7 @@ en: {
   'h.fifty':'50:50',
   'h.turbo':'Turbo',
   'h.belt':'Seatbelt',
-  'h.locked':'Turbo Boost · Fasten Seatbelt unlock once your aircraft reaches {code}',
+  'h.locked':'All three helps unlock once your aircraft reaches {code}',
   'h.fiftyTip':'Remove two wrong answers',
   'h.fiftyUsed':'50:50 already used',
   'h.turboTip':'Correct +2 legs · wrong −1 leg',
@@ -1866,6 +1867,7 @@ en: {
   'st.lobby':'LOBBY','st.question':'QUESTION','st.locked':'LOCKED','st.reveal':'REVEAL','st.finished':'FINISHED',
   'common.legOf':'Leg {n} of {total}',
   'common.overtime':'Overtime round {n}',
+  'common.roundN':'Round {n}',
 }
 };
 
@@ -1947,21 +1949,18 @@ const ROUTE = [
     node.y = Math.round(curveY(t)*10)/10;
   });
 })();
-// Question bank — the 31 questions from the event's Sales Kit deck, asked in this exact
-// order, one per leg, never repeating (see pickQuestionIndex). `explain` is the 🎤 Presenter
-// Notes line the host reads aloud after the answer is revealed.
+// Question bank — the 25 questions from "Question Viet.docx", asked in this exact order,
+// one per round, never repeating (see pickQuestionIndex). `explain` is the 🎤 Presenter
+// Note the host reads aloud after the answer is revealed.
 //
-// Realtime Database has no server-side view to hide the answer key from players the way a
-// Postgres RLS view could, so the bank is just a plain client-side array — the same tradeoff
-// the original pre-Supabase Firebase version made. QUESTIONS_BY_ID is the id-keyed lookup
-// every render/reveal call site uses; QUESTIONS itself is only iterated.
-// Question bank — the 31 questions from the event's Sales Kit deck, asked in this exact
-// order, one per leg, never repeating (see pickQuestionIndex). `explain` is the 🎤 Presenter
-// Notes line the host reads aloud after the answer is revealed.
+// Each entry carries both languages: the source deck mixes Vietnamese and English items,
+// so every question was completed in the missing language rather than left to fall back.
+// `correct` is an index into the ORIGINAL option order and is shared by both languages,
+// because the shuffle below is seeded from the question id alone — so a Vietnamese phone
+// and an English presenter screen always agree on which letter is right.
 //
-// Each entry carries both languages. `correct` is an index into the ORIGINAL option order
-// and is shared by both, because the shuffle below is seeded from the question id alone —
-// so a Vietnamese phone and an English presenter screen always agree on which letter is right.
+// SUNSHINE_QUESTION_ID is held out of the normal rotation: it is the question the host
+// puts up when they arm ☀️ Sunshine, and it is never served as an ordinary round.
 //
 // Realtime Database has no server-side view to hide the answer key from players the way a
 // Postgres RLS view could, so the bank is just a plain client-side array — the same tradeoff
@@ -1970,134 +1969,117 @@ const ROUTE = [
 let QUESTIONS = [];
 let QUESTIONS_BY_ID = {};
 
+const SUNSHINE_QUESTION_ID = 99;
+
 const QUESTION_BANK = [
 {id:1,correct:1,
- en:{q:"What is Vietnam Airlines' target for customer experience by 2030?",opts:["Become Asia's largest airline","Achieve official Skytrax 5-Star certification","Operate 500 aircraft","Launch flights to every continent"],explain:"Vietnam Airlines is continuously investing in service quality with the ambition of officially achieving Skytrax 5-Star certification by 2030. Every interaction with our customers—including those through our travel agent partners—contributes to this journey."},
- vi:{q:"Mục tiêu về trải nghiệm khách hàng của Vietnam Airlines đến năm 2030 là gì?",opts:["Trở thành hãng hàng không lớn nhất châu Á","Đạt chứng nhận 5 sao Skytrax chính thức","Khai thác 500 tàu bay","Mở đường bay tới tất cả các châu lục"],explain:"Vietnam Airlines liên tục đầu tư vào chất lượng dịch vụ với khát vọng chính thức đạt chứng nhận 5 sao Skytrax vào năm 2030. Mỗi tương tác với khách hàng — bao gồm cả những tương tác thông qua các đại lý du lịch đối tác — đều góp phần vào hành trình này."}},
+ vi:{q:"Theo định hướng đến năm 2030, mục tiêu nào sau đây phản ánh rõ nhất tham vọng của Vietnam Airlines về chất lượng dịch vụ?",opts:["Trở thành hãng hàng không giá rẻ lớn nhất Đông Nam Á","Đạt chứng nhận Skytrax 5-Star Airline","Trở thành hãng hàng không có nhiều máy bay nhất châu Á","Chỉ tập trung mở rộng mạng bay nội địa"],explain:"Vietnam Airlines không chỉ đặt mục tiêu tăng trưởng về quy mô mà còn đặc biệt chú trọng nâng cao chất lượng dịch vụ. Mục tiêu Skytrax 5-Star là một trong những định hướng quan trọng đến năm 2030. Để đạt được mục tiêu này, trải nghiệm của khách hàng phải được xây dựng xuyên suốt hành trình, từ khi khách bắt đầu tìm hiểu và đặt vé cho đến sau chuyến bay."},
+ en:{q:"Under the Vision 2030 strategy, which goal best reflects Vietnam Airlines' ambition on service quality?",opts:["To become the largest low-cost carrier in Southeast Asia","To achieve Skytrax 5-Star Airline certification","To operate the largest fleet in Asia","To focus solely on expanding the domestic network"],explain:"Vietnam Airlines is not only targeting growth in scale but also placing particular emphasis on raising service quality. Skytrax 5-Star certification is one of the key goals for 2030. Reaching it means the customer experience has to be built across the whole journey — from the moment a customer starts researching and books, all the way through to after the flight."}},
 
 {id:2,correct:2,
- en:{q:"In 2025, Vietnam Airlines celebrated which important milestone?",opts:["20th Anniversary","25th Anniversary","30th Anniversary","35th Anniversary"],explain:"For 30 years, Vietnam Airlines has connected Vietnam with the world. Today, we continue expanding our network, upgrading our fleet, and strengthening partnerships with travel agents worldwide."},
- vi:{q:"Năm 2025, Vietnam Airlines kỷ niệm cột mốc quan trọng nào?",opts:["Kỷ niệm 20 năm","Kỷ niệm 25 năm","Kỷ niệm 30 năm","Kỷ niệm 35 năm"],explain:"Trong 30 năm, Vietnam Airlines đã kết nối Việt Nam với thế giới. Hôm nay, chúng tôi tiếp tục mở rộng mạng bay, nâng cấp đội tàu bay và củng cố quan hệ đối tác với các đại lý du lịch trên toàn cầu."}},
+ vi:{q:"Năm 2025 đánh dấu cột mốc quan trọng nào của Vietnam Airlines?",opts:["20 năm thành lập","25 năm thành lập","30 năm thành lập","35 năm thành lập"],explain:"Năm 2025, Vietnam Airlines kỷ niệm 30 năm hình thành và phát triển. Trong 30 năm đó, Vietnam Airlines đã từng bước mở rộng mạng bay, nâng cấp đội tàu bay, sản phẩm và dịch vụ, trở thành cầu nối quan trọng giữa Việt Nam và thế giới."},
+ en:{q:"Which important milestone did Vietnam Airlines mark in 2025?",opts:["20 years since its founding","25 years since its founding","30 years since its founding","35 years since its founding"],explain:"In 2025 Vietnam Airlines celebrated 30 years of growth. Over those 30 years the airline has steadily expanded its network and upgraded its fleet, products and services, becoming an important bridge between Vietnam and the world."}},
 
 {id:3,correct:1,
- en:{q:"How many domestic destinations are currently served by Vietnam Airlines?",opts:["18","20","22","25"],explain:"With 20 domestic destinations, Vietnam Airlines offers one of the most comprehensive networks in Vietnam, making it easier for agents to build complete travel itineraries."},
- vi:{q:"Hiện nay Vietnam Airlines khai thác bao nhiêu điểm đến nội địa?",opts:["18","20","22","25"],explain:"Với 20 điểm đến nội địa, Vietnam Airlines sở hữu một trong những mạng bay toàn diện nhất tại Việt Nam, giúp các đại lý dễ dàng xây dựng hành trình trọn vẹn cho khách."}},
+ vi:{q:"Vietnam Airlines đang khai thác mạng bay nội địa tới bao nhiêu điểm đến?",opts:["18","20","22","25"],explain:"Mạng bay nội địa rộng giúp Vietnam Airlines không chỉ phục vụ nhu cầu đi lại giữa các thành phố lớn mà còn tạo điều kiện để khách quốc tế tiếp tục hành trình tới nhiều điểm đến trong nước. Đây là một lợi thế quan trọng khi đại lý xây dựng các hành trình inbound vào Việt Nam."},
+ en:{q:"How many domestic destinations does Vietnam Airlines currently serve?",opts:["18","20","22","25"],explain:"A broad domestic network lets Vietnam Airlines serve travel between the major cities and also lets international customers continue on to many destinations inside Vietnam. That is a significant advantage when agents build inbound itineraries into Vietnam."}},
 
 {id:4,correct:2,
- en:{q:"How many nations and territories are included in Vietnam Airlines' international network?",opts:["18","20","22","25"],explain:"Vietnam Airlines currently flies across six geographic regions, serving 22 nations and territories while continuously expanding its global footprint."},
- vi:{q:"Mạng bay quốc tế của Vietnam Airlines bao phủ bao nhiêu quốc gia và vùng lãnh thổ?",opts:["18","20","22","25"],explain:"Vietnam Airlines hiện khai thác trên sáu khu vực địa lý, phục vụ 22 quốc gia và vùng lãnh thổ, đồng thời không ngừng mở rộng dấu ấn toàn cầu."}},
+ vi:{q:"Vietnam Airlines hiện kết nối Việt Nam với bao nhiêu quốc gia và vùng lãnh thổ?",opts:["18","20","22","25"],explain:"Mạng bay quốc tế của Vietnam Airlines đã mở rộng tới 22 quốc gia và vùng lãnh thổ trên nhiều khu vực. Mạng bay quốc tế kết hợp với mạng bay nội địa tạo ra khả năng xây dựng nhiều hành trình khác nhau cho khách hàng."},
+ en:{q:"How many countries and territories does Vietnam Airlines currently connect Vietnam with?",opts:["18","20","22","25"],explain:"Vietnam Airlines' international network now reaches 22 countries and territories across several regions. The international network combined with the domestic network makes it possible to build a wide range of itineraries for customers."}},
 
-{id:5,correct:2,
- en:{q:"Which of the following European cities is currently served by Vietnam Airlines?",opts:["Madrid","Vienna","Amsterdam","Zurich"],explain:"Amsterdam is one of Vietnam Airlines' important European gateways, together with Paris, Frankfurt, Munich, London, Milan, Copenhagen, and Moscow."},
- vi:{q:"Thành phố châu Âu nào sau đây hiện đang được Vietnam Airlines khai thác?",opts:["Madrid","Vienna","Amsterdam","Zurich"],explain:"Amsterdam là một trong những cửa ngõ châu Âu quan trọng của Vietnam Airlines, cùng với Paris, Frankfurt, Munich, London, Milan, Copenhagen và Moscow."}},
+{id:5,correct:0,
+ vi:{q:"Đâu không phải là thành phố thuộc mạng bay châu Âu của Vietnam Airlines?",opts:["Madrid","Milan","Amsterdam","Copenhagen"],explain:"Mạng bay châu Âu gồm Paris, Frankfurt, Munich, London, Milan, Copenhagen, Amsterdam và Moscow. Việc hiểu rõ các gateway giúp đại lý tư vấn routing phù hợp hơn cho từng thị trường."},
+ en:{q:"Which of these cities is NOT part of Vietnam Airlines' European network?",opts:["Madrid","Milan","Amsterdam","Copenhagen"],explain:"The European network covers Paris, Frankfurt, Munich, London, Milan, Copenhagen, Amsterdam and Moscow. Knowing the gateways helps agents advise on the right routing for each market."}},
 
 {id:6,correct:1,
- en:{q:"How many new routes of VNA are opened for 2026?",opts:["2","3","4","5"],explain:"Vietnam Airlines launched three new routes in 2026, further strengthening connectivity between Vietnam and international markets: AMS, HKT, CMB."},
- vi:{q:"Vietnam Airlines mở bao nhiêu đường bay mới trong năm 2026?",opts:["2","3","4","5"],explain:"Vietnam Airlines đã mở ba đường bay mới trong năm 2026, tăng cường kết nối giữa Việt Nam và các thị trường quốc tế: AMS, HKT, CMB."}},
+ vi:{q:"Một khách hàng đi chặng bay dài, muốn thoải mái hơn Economy nhưng ngân sách chưa phù hợp với Business Class. Đại lý nên tư vấn sản phẩm nào?",opts:["Economy Class","Premium Economy Class","Business Class","Transit Tour"],explain:"Premium Economy nằm giữa Economy và Business, mang đến trải nghiệm thoải mái hơn nhưng vẫn phù hợp với nhóm khách chưa muốn chi trả cho Business Class. Đây là một cơ hội rất tốt để đại lý thực hiện upselling dựa trên nhu cầu thực tế của khách."},
+ en:{q:"A customer on a long-haul route wants more comfort than Economy but their budget does not stretch to Business Class. Which product should the agent recommend?",opts:["Economy Class","Premium Economy Class","Business Class","Transit Tour"],explain:"Premium Economy sits between Economy and Business, offering a more comfortable experience while still suiting customers who are not ready to pay for Business Class. It is an excellent upselling opportunity based on what the customer actually needs."}},
 
-{id:7,correct:1,
- en:{q:"Which cabin class is described as the best option for long-haul flights?",opts:["Economy Class","Premium Economy Class","Business Class","Lotus Class"],explain:"Premium Economy offers passengers greater comfort, extra legroom, priority services, affordable price and enhanced onboard amenities—making it an excellent value for long-haul travel."},
- vi:{q:"Hạng ghế nào được xem là lựa chọn tốt nhất cho các chuyến bay đường dài?",opts:["Hạng Phổ thông (Economy)","Hạng Phổ thông Đặc biệt (Premium Economy)","Hạng Thương gia (Business)","Hạng Lotus"],explain:"Phổ thông Đặc biệt mang đến cho hành khách sự thoải mái hơn, chỗ để chân rộng rãi hơn, dịch vụ ưu tiên, mức giá hợp lý và tiện ích trên chuyến bay được nâng cấp — một lựa chọn rất đáng giá cho hành trình đường dài."}},
+{id:7,correct:2,
+ vi:{q:"Dịch vụ nào sau đây không thuộc nhóm ancillary services của Vietnam Airlines?",opts:["Chọn ghế trước","Mua thêm hành lý","Check-in nhanh tại sân bay","Suất ăn đặc biệt"],explain:"Các dịch vụ bổ trợ như chọn ghế trước, mua thêm hành lý, nâng hạng hay suất ăn đặc biệt giúp hành khách cá nhân hóa chuyến đi. Đồng thời, đây cũng là cơ hội để đại lý tăng giá trị trên mỗi booking."},
+ en:{q:"Which of the following is NOT part of Vietnam Airlines' ancillary services?",opts:["Advance seat selection","Extra baggage purchase","Fast-track check-in at the airport","Special meals"],explain:"Ancillary services such as advance seat selection, extra baggage, upgrades or special meals let passengers personalise their trip. They are also an opportunity for agents to add value to every booking."}},
 
-{id:8,correct:2,
- en:{q:"Which benefit is available to Business Class passengers?",opts:["Free hotel stay","Unlimited Wi-Fi","Access to the Lotus Lounge","Free city tour"],explain:"Business Class customers enjoy premium services including priority check-in, fast-track security where available, Lotus Lounge access, and fully flat seats on wide-body aircraft."},
- vi:{q:"Quyền lợi nào dành cho hành khách Hạng Thương gia?",opts:["Nghỉ khách sạn miễn phí","Wi-Fi không giới hạn","Sử dụng phòng chờ Lotus Lounge","Tour thành phố miễn phí"],explain:"Khách Hạng Thương gia được hưởng các dịch vụ cao cấp gồm làm thủ tục ưu tiên, luồng an ninh nhanh tại những sân bay có áp dụng, sử dụng phòng chờ Lotus Lounge và ghế ngả phẳng hoàn toàn trên tàu bay thân rộng."}},
+{id:8,correct:1,
+ vi:{q:"Vì sao việc giới thiệu LotusMiles cho khách hàng thường xuyên đi lại có thể tạo giá trị dài hạn cho đại lý?",opts:["Giúp khách luôn mua vé rẻ nhất","Tăng khả năng khách quay lại và tiếp tục lựa chọn Vietnam Airlines","Giúp đại lý không cần chăm sóc khách hàng","Thay thế hoàn toàn các chương trình khuyến mại"],explain:"Một khách hàng trung thành có giá trị cao hơn một giao dịch đơn lẻ. Khi khách hiểu và sử dụng LotusMiles, họ có thêm động lực quay lại Vietnam Airlines trong những chuyến đi tiếp theo."},
+ en:{q:"Why can introducing LotusMiles to frequent travellers create long-term value for an agent?",opts:["It guarantees the customer always gets the cheapest fare","It increases the chance the customer returns and keeps choosing Vietnam Airlines","It removes the need for the agent to look after the customer","It completely replaces promotional campaigns"],explain:"A loyal customer is worth more than a single transaction. Once customers understand and use LotusMiles, they have a further reason to come back to Vietnam Airlines on their next trips."}},
 
-{id:9,correct:2,
- en:{q:"Which of the following is NOT listed as an ancillary service offered by Vietnam Airlines?",opts:["Advance Seat Selection","Excess Prepaid Baggage","Airport Hotel Booking","Special Meals"],explain:"Ancillary services allow passengers to personalize their journey while generating additional revenue opportunities for travel agents. Whether it's selecting a preferred seat, purchasing extra baggage, upgrading a cabin, or requesting a special meal, these services improve the customer experience before the journey even begins."},
- vi:{q:"Dịch vụ nào sau đây KHÔNG nằm trong danh mục dịch vụ bổ trợ của Vietnam Airlines?",opts:["Chọn chỗ ngồi trước","Mua thêm hành lý trả trước","Đặt khách sạn tại sân bay","Suất ăn đặc biệt"],explain:"Dịch vụ bổ trợ cho phép hành khách cá nhân hoá hành trình, đồng thời tạo thêm nguồn doanh thu cho đại lý du lịch. Dù là chọn chỗ ngồi yêu thích, mua thêm hành lý, nâng hạng ghế hay đặt suất ăn đặc biệt, những dịch vụ này đều nâng cao trải nghiệm khách hàng ngay từ trước chuyến bay."}},
+{id:9,correct:1,
+ vi:{q:"Một đại lý muốn xây dựng các tour nhóm/premium tour với Vietnam Airlines. Chính sách nào nên được tìm hiểu đầu tiên?",opts:["Chính sách nâng hạng","Chính sách Tour Series","Chính sách LotusMiles","Chính sách Transit Tour"],explain:"Chính sách Tour Series là một trong những công cụ thương mại quan trọng dành cho các đại lý phát triển sản phẩm tour. Việc hiểu rõ chính sách giúp đại lý chủ động hơn trong việc xây dựng package, lập kế hoạch bán và quản lý chỗ."},
+ en:{q:"An agent wants to build group or premium tours with Vietnam Airlines. Which policy should they look into first?",opts:["The upgrade policy","The Tour Series policy","The LotusMiles policy","The Transit Tour policy"],explain:"The Tour Series policy is one of the key commercial tools for agents developing tour products. Understanding it lets the agent take the initiative on building packages, planning sales and managing inventory."}},
 
 {id:10,correct:1,
- en:{q:"A leisure traveler is planning a multi-city trip across Vietnam after arriving from Europe. Which Vietnam Airlines strength provides the GREATEST value to this customer?",opts:["Low-cost pricing","Extensive domestic network with seamless connections","Airport shopping discounts","Free hotel accommodation"],explain:"Vietnam Airlines' extensive domestic network allows international travellers to continue their journey seamlessly throughout Vietnam. Whether visiting famous cities or emerging destinations, customers benefit from convenient connections under one trusted airline. This creates more itinerary options and greater selling opportunities for travel agents."},
- vi:{q:"Một khách du lịch dự định đi nhiều thành phố tại Việt Nam sau khi bay từ châu Âu sang. Thế mạnh nào của Vietnam Airlines mang lại giá trị LỚN NHẤT cho khách này?",opts:["Giá vé rẻ","Mạng bay nội địa rộng khắp với kết nối liền mạch","Ưu đãi mua sắm tại sân bay","Chỗ ở khách sạn miễn phí"],explain:"Mạng bay nội địa rộng khắp của Vietnam Airlines giúp khách quốc tế tiếp tục hành trình một cách liền mạch trong lãnh thổ Việt Nam. Dù là tới các thành phố nổi tiếng hay điểm đến mới nổi, khách đều được kết nối thuận tiện trong cùng một hãng hàng không đáng tin cậy. Điều này mở ra nhiều lựa chọn hành trình và cơ hội bán hàng lớn hơn cho đại lý."}},
+ vi:{q:"Trong các giải pháp bán hàng của Vietnam Airlines, phát biểu nào mô tả CHÍNH XÁC nhất về TAP?",opts:["TAP là hệ thống toàn cầu của IATA dùng để xử lý giao dịch tài chính giữa đại lý và hãng hàng không.","TAP là một nền tảng bán vé trực tuyến kết nối trực tiếp với hệ thống chủ (PSS) của Vietnam Airlines, dành cho đại lý, GSA và CA theo mô hình self-service.","TAP là một nền tảng GDS cho phép đại lý tìm kiếm và bán vé của nhiều hãng hàng không trên toàn thế giới.","TAP là API dành riêng cho các OTA để tích hợp trực tiếp dữ liệu giá và chỗ của Vietnam Airlines."],explain:"TAP là một trong những giải pháp bán hàng trực tuyến của Vietnam Airlines, cho phép đại lý, GSA và CA self-service kết nối trực tiếp với hệ thống PSS của Vietnam Airlines. Điểm quan trọng cần phân biệt là TAP không phải BSP: BSP tập trung vào quy trình giao dịch tài chính giữa đại lý và hãng hàng không trong hệ thống BSP của IATA. TAP cũng không phải GDS hay XML API. Với đại lý, việc hiểu đúng TAP giúp lựa chọn đúng công cụ bán hàng và phương thức kết nối phù hợp với mô hình kinh doanh của mình."},
+ en:{q:"Among Vietnam Airlines' sales solutions, which statement describes TAP MOST accurately?",opts:["TAP is IATA's global system for handling financial settlement between agents and airlines.","TAP is an online booking platform connected directly to Vietnam Airlines' host system (PSS), built for agents, GSAs and CAs on a self-service model.","TAP is a GDS platform that lets agents search and sell tickets for airlines worldwide.","TAP is an API reserved for OTAs to integrate Vietnam Airlines fare and inventory data directly."],explain:"TAP is one of Vietnam Airlines' online sales solutions, letting agents, GSAs and CAs self-serve through a direct connection to Vietnam Airlines' PSS. The key distinction is that TAP is not BSP: BSP handles financial settlement between agents and airlines inside IATA's BSP system. TAP is not a GDS or an XML API either. For an agent, understanding TAP correctly means choosing the right selling tool and the right connection method for their business model."}},
 
 {id:11,correct:1,
- en:{q:"Which statement BEST summarizes Vietnam Airlines' message to our travel agent partners?",opts:["Focus on selling the lowest fares.","Build long-term success through premium products, excellent customer service, commercial collaboration, and mutual business growth.","Sell international routes only.","Prioritize online sales over agency partnerships."],explain:"Throughout today's Sales Kit, one message has remained consistent: Vietnam Airlines is committed to building lasting partnerships with our travel agents. Together, we combine premium products, outstanding service, commercial collaboration, and customer loyalty to create sustainable business growth. Your success is our success, and we look forward to growing together for many years to come."},
- vi:{q:"Thông điệp nào TÓM TẮT ĐÚNG NHẤT những gì Vietnam Airlines muốn gửi tới các đại lý đối tác?",opts:["Tập trung bán vé giá thấp nhất.","Xây dựng thành công dài hạn thông qua sản phẩm cao cấp, dịch vụ khách hàng xuất sắc, hợp tác thương mại và cùng nhau tăng trưởng.","Chỉ bán các đường bay quốc tế.","Ưu tiên bán trực tuyến hơn hợp tác với đại lý."],explain:"Xuyên suốt Sales Kit hôm nay, một thông điệp luôn nhất quán: Vietnam Airlines cam kết xây dựng quan hệ đối tác bền vững với các đại lý du lịch. Cùng nhau, chúng ta kết hợp sản phẩm cao cấp, dịch vụ xuất sắc, hợp tác thương mại và lòng trung thành của khách hàng để tạo nên tăng trưởng kinh doanh bền vững. Thành công của quý vị là thành công của chúng tôi, và chúng tôi mong được cùng phát triển trong nhiều năm tới."}},
+ vi:{q:"Vietnam Airlines phối hợp marketing với đại lý thông qua roadshow, workshop và các hoạt động co-branding chủ yếu nhằm mục tiêu nào?",opts:["Giảm chi phí vận hành máy bay","Tăng nhận diện thương hiệu và kích thích nhu cầu thị trường","Thay thế hoàn toàn hoạt động marketing của đại lý","Chỉ quảng bá vé Business Class"],explain:"Vietnam Airlines xem marketing là hoạt động hợp tác với đối tác. Thông qua roadshow, workshop, campaign và co-branding, cả hai bên có thể cùng tiếp cận khách hàng và tạo nhu cầu cho thị trường hiệu quả hơn."},
+ en:{q:"Vietnam Airlines runs joint marketing with agents through roadshows, workshops and co-branding mainly to achieve which goal?",opts:["To cut aircraft operating costs","To raise brand awareness and stimulate market demand","To completely replace the agent's own marketing","To promote Business Class tickets only"],explain:"Vietnam Airlines treats marketing as something done together with partners. Through roadshows, workshops, campaigns and co-branding, both sides can reach customers and create market demand more effectively."}},
 
 {id:12,correct:1,
- en:{q:"Why does Vietnam Airlines continue expanding its international network instead of focusing only on existing routes?",opts:["To reduce domestic operations","To strengthen global connectivity and create new travel opportunities","To compete only on ticket prices","To operate fewer connecting flights"],explain:"Every new destination increases connectivity, supports tourism and business travel, and provides travel agents with more itinerary options to serve their customers. A stronger network means more opportunities to grow together."},
- vi:{q:"Vì sao Vietnam Airlines tiếp tục mở rộng mạng bay quốc tế thay vì chỉ tập trung vào các đường bay hiện có?",opts:["Để giảm khai thác nội địa","Để tăng cường kết nối toàn cầu và tạo ra cơ hội du lịch mới","Để chỉ cạnh tranh về giá vé","Để giảm số chuyến bay nối chuyến"],explain:"Mỗi điểm đến mới đều làm tăng khả năng kết nối, hỗ trợ du lịch và công tác, đồng thời mang lại cho đại lý nhiều lựa chọn hành trình hơn để phục vụ khách. Mạng bay mạnh hơn đồng nghĩa với nhiều cơ hội cùng phát triển hơn."}},
+ vi:{q:"Mục tiêu chính của các chương trình incentive dành cho đại lý là gì?",opts:["Chỉ thưởng cho số lượng booking","Khuyến khích hiệu quả bán hàng và tăng trưởng kinh doanh bền vững","Thay thế hoàn toàn commission","Chỉ áp dụng cho đại lý mới"],explain:"Các chương trình incentive được xây dựng để ghi nhận hiệu quả kinh doanh và khuyến khích đại lý phát triển doanh số. Điều quan trọng là đại lý cần hiểu rõ KPI, điều kiện và cách thức đạt incentive để chủ động xây dựng kế hoạch bán hàng."},
+ en:{q:"What is the main objective of the incentive programmes for agents?",opts:["To reward booking volume only","To encourage sales performance and sustainable business growth","To completely replace commission","To apply to new agents only"],explain:"Incentive programmes are designed to recognise business performance and encourage agents to grow their sales. What matters is that agents understand the KPIs, the conditions and how the incentive is earned, so they can plan their selling proactively."}},
 
 {id:13,correct:1,
- en:{q:"A customer wants extra comfort without paying for Business Class. Which Vietnam Airlines product should you recommend?",opts:["Economy Class","Premium Economy Class","Sky Sofa","Transit Tour"],explain:"Premium Economy bridges the gap between Economy and Business by offering greater comfort at a more affordable price, making it an attractive option for many travelers. Understanding customer needs helps agents recommend the right product."},
- vi:{q:"Khách muốn thoải mái hơn nhưng không phải trả tiền cho Hạng Thương gia. Bạn nên tư vấn sản phẩm nào của Vietnam Airlines?",opts:["Hạng Phổ thông (Economy)","Hạng Phổ thông Đặc biệt (Premium Economy)","Sky Sofa","Transit Tour"],explain:"Phổ thông Đặc biệt là cầu nối giữa Phổ thông và Thương gia, mang lại sự thoải mái hơn với mức giá dễ chịu hơn, là lựa chọn hấp dẫn với nhiều khách hàng. Hiểu nhu cầu khách giúp đại lý tư vấn đúng sản phẩm."}},
+ vi:{q:"Một hành khách quốc tế có thời gian transit dài tại Việt Nam. Dịch vụ nào của Vietnam Airlines có thể biến thời gian chờ thành một trải nghiệm du lịch?",opts:["Nâng hạng","Transit Tour","Chọn trước ghế","Phòng chờ Lotus Lounge"],explain:"Transit không nhất thiết phải là thời gian chờ đợi nhàm chán. Transit Tour tạo cơ hội để hành khách khám phá Hà Nội hoặc TP.HCM trong thời gian nối chuyến, từ đó biến một điểm trung chuyển thành một phần của trải nghiệm Việt Nam."},
+ en:{q:"An international passenger has a long transit in Vietnam. Which Vietnam Airlines service can turn that waiting time into a travel experience?",opts:["Upgrade","Transit Tour","Advance seat selection","Lotus Lounge"],explain:"A transit does not have to be dull waiting time. The Transit Tour gives passengers a chance to explore Hanoi or Ho Chi Minh City during their connection, turning a transfer point into part of the Vietnam experience."}},
 
-{id:14,correct:1,
- en:{q:"VNA marketing support for agents may include which of the following?",opts:["Aircraft leasing support","Shared marketing campaigns and promotional materials","Airport construction funding","Free office rental"],explain:"Marketing is a shared responsibility. Vietnam Airlines supports travel agents by co-funding marketing campaigns, destination promotions, roadshows, and providing promotional materials. Together, we can reach more customers while maximizing marketing efficiency."},
- vi:{q:"Hỗ trợ marketing của Vietnam Airlines dành cho đại lý có thể bao gồm nội dung nào sau đây?",opts:["Hỗ trợ thuê tàu bay","Chiến dịch marketing chung và ấn phẩm quảng bá","Tài trợ xây dựng sân bay","Cho thuê văn phòng miễn phí"],explain:"Marketing là trách nhiệm chung. Vietnam Airlines hỗ trợ đại lý du lịch bằng cách đồng tài trợ các chiến dịch marketing, chương trình quảng bá điểm đến, roadshow và cung cấp ấn phẩm quảng bá. Cùng nhau, chúng ta tiếp cận được nhiều khách hàng hơn với hiệu quả marketing tối ưu."}},
+{id:14,correct:2,
+ vi:{q:"Một khách hàng chỉ tập trung so sánh giá vé giữa các hãng. Cách tư vấn nào phù hợp nhất với định hướng của Vietnam Airlines?",opts:["Luôn đưa ra mức giá thấp nhất","Chỉ nói về hành lý","Tư vấn tổng thể về network, sản phẩm, dịch vụ, loyalty và trải nghiệm","Khuyên khách chọn hãng khác nếu giá thấp hơn"],explain:"Giá là một yếu tố quan trọng nhưng không phải yếu tố duy nhất. Vietnam Airlines có lợi thế về network, sản phẩm full-service, dịch vụ premium và hệ sinh thái LotusMiles. Đại lý cần chuyển cuộc trò chuyện từ \"giá bao nhiêu\" sang \"khách nhận được giá trị gì\"."},
+ en:{q:"A customer is focused purely on comparing fares between airlines. Which advisory approach best fits Vietnam Airlines' direction?",opts:["Always quote the lowest fare","Talk only about baggage","Advise holistically on network, product, service, loyalty and experience","Suggest another airline if its fare is lower"],explain:"Price matters, but it is not the only factor. Vietnam Airlines has advantages in network, full-service product, premium service and the LotusMiles ecosystem. Agents need to move the conversation from \"how much is it\" to \"what value does the customer get\"."}},
 
 {id:15,correct:1,
- en:{q:"Which action demonstrates the role of an excellent Vietnam Airlines travel agent?",opts:["Selling the cheapest ticket as quickly as possible.","Understanding customer needs and recommending the most suitable Vietnam Airlines products and services.","Selling only Economy Class.","Avoiding ancillary products."],explain:"An excellent travel agent does much more than process reservations. By understanding each customer's needs and recommending the right products, services, and benefits, agents become trusted travel advisors. This consultative approach creates happier customers and stronger long-term business relationships."},
- vi:{q:"Hành động nào thể hiện đúng vai trò của một đại lý xuất sắc của Vietnam Airlines?",opts:["Bán tấm vé rẻ nhất càng nhanh càng tốt.","Hiểu nhu cầu khách hàng và tư vấn sản phẩm, dịch vụ Vietnam Airlines phù hợp nhất.","Chỉ bán Hạng Phổ thông.","Tránh bán các sản phẩm bổ trợ."],explain:"Một đại lý xuất sắc làm nhiều hơn việc xử lý đặt chỗ. Bằng cách hiểu nhu cầu của từng khách và tư vấn đúng sản phẩm, dịch vụ, quyền lợi, đại lý trở thành nhà tư vấn du lịch đáng tin cậy. Cách tiếp cận tư vấn này tạo ra khách hàng hài lòng hơn và quan hệ kinh doanh dài hạn bền chặt hơn."}},
+ vi:{q:"Một khách từ châu Âu muốn đến Hà Nội, sau đó tiếp tục đi nhiều điểm tại Việt Nam. Lợi thế nào của Vietnam Airlines nên được đại lý nhấn mạnh?",opts:["Chỉ có giá vé quốc tế","Mạng bay quốc tế kết hợp với mạng bay nội địa","Chỉ có Business Class","Chỉ có dịch vụ Lotus Lounge"],explain:"Đây chính là lúc đại lý có thể tận dụng sức mạnh của network. Vietnam Airlines không chỉ đưa khách từ châu Âu đến Việt Nam mà còn có thể hỗ trợ khách tiếp tục hành trình tới nhiều điểm đến trong nước."},
+ en:{q:"A customer from Europe wants to fly to Hanoi and then continue on to several points within Vietnam. Which Vietnam Airlines advantage should the agent emphasise?",opts:["International fares only","The international network combined with the domestic network","Business Class only","The Lotus Lounge service only"],explain:"This is exactly where an agent can use the strength of the network. Vietnam Airlines does not only bring customers from Europe to Vietnam — it can also carry them onward to many destinations inside the country."}},
 
 {id:16,correct:1,
- en:{q:"A customer wants a more comfortable journey than Economy Class but is not ready to pay for Business Class. Which cabin would you recommend?",opts:["Economy Class","Premium Economy Class","Business Class","Transit Tour"],explain:"Premium Economy is one of Vietnam Airlines' strongest value propositions for long-haul travel. It offers significantly more comfort than Economy—including wider seats, greater legroom, priority services, and enhanced meals—without the premium price of Business Class. When customers are looking for extra comfort at a reasonable cost, this is often the ideal recommendation."},
- vi:{q:"Khách muốn hành trình thoải mái hơn Hạng Phổ thông nhưng chưa sẵn sàng chi trả cho Hạng Thương gia. Bạn tư vấn hạng ghế nào?",opts:["Hạng Phổ thông (Economy)","Hạng Phổ thông Đặc biệt (Premium Economy)","Hạng Thương gia (Business)","Transit Tour"],explain:"Phổ thông Đặc biệt là một trong những lợi thế giá trị nhất của Vietnam Airlines cho hành trình đường dài. Hạng ghế này thoải mái hơn hẳn Phổ thông — ghế rộng hơn, chỗ để chân nhiều hơn, dịch vụ ưu tiên và suất ăn nâng cấp — mà không phải trả mức giá của Hạng Thương gia. Khi khách tìm kiếm sự thoải mái hơn với chi phí hợp lý, đây thường là gợi ý lý tưởng."}},
+ vi:{q:"Thông điệp nào phản ánh đúng nhất cách Vietnam Airlines nhìn nhận vai trò của đại lý?",opts:["Đại lý chủ yếu là kênh phân phối vé","Đại lý là đối tác chiến lược cùng Vietnam Airlines phát triển kinh doanh","Đại lý chịu trách nhiệm bán vé","Đại lý có vai trò trong thị trường nội địa"],explain:"Trong chiến lược của Vietnam Airlines, đại lý không chỉ là nơi phát hành vé. Đại lý là đối tác có vai trò quan trọng trong việc tiếp cận khách hàng, phát triển thị trường, quảng bá sản phẩm và xây dựng trải nghiệm khách hàng."},
+ en:{q:"Which message best reflects how Vietnam Airlines sees the role of its agents?",opts:["Agents are mainly a ticket distribution channel","Agents are strategic partners growing the business together with Vietnam Airlines","Agents are responsible for selling tickets","Agents have a role in the domestic market"],explain:"In Vietnam Airlines' strategy, an agent is not just a place that issues tickets. Agents are partners with an important role in reaching customers, developing the market, promoting products and building the customer experience."}},
 
-{id:17,correct:1,
- en:{q:"Which commercial program is specifically designed to support travel agents developing premium tour packages?",opts:["Transit Tour","Tour Series Policy","Business FOC Ticket","Agent Care Policy"],explain:"The Tour Series Policy is designed to support travel agents developing premium tour packages. It offers preferential pricing, booking allotments, guaranteed fares, and flexible seat release conditions, making it easier to build attractive travel products for customers."},
- vi:{q:"Chương trình thương mại nào được thiết kế riêng để hỗ trợ đại lý xây dựng các gói tour cao cấp?",opts:["Transit Tour","Chính sách Tour Series","Vé Business FOC","Chính sách Agent Care"],explain:"Chính sách Tour Series được thiết kế để hỗ trợ đại lý phát triển các gói tour cao cấp, với giá ưu đãi, hạn mức chỗ, mức giá được đảm bảo và điều kiện hoàn chỗ linh hoạt, giúp xây dựng sản phẩm du lịch hấp dẫn dễ dàng hơn."}},
+{id:17,correct:2,
+ vi:{q:"Đường bay thẳng mới nhất của Vietnam Airlines vừa khai thác kết nối châu Âu và Việt Nam là đường bay nào?",opts:["MXP-HAN","CPH-SGN","AMS-HAN","MUC-SGN"],explain:"Vietnam Airlines vừa khai thác đường bay thẳng Amsterdam – Hà Nội từ tháng 6/2026. Đây là đường bay mới nhất của Vietnam Airlines, kết nối châu Âu và Việt Nam."},
+ en:{q:"Which is Vietnam Airlines' newest direct route connecting Europe and Vietnam?",opts:["MXP-HAN","CPH-SGN","AMS-HAN","MUC-SGN"],explain:"Vietnam Airlines has just launched the direct Amsterdam – Hanoi route from June 2026. It is the airline's newest route connecting Europe and Vietnam."}},
 
 {id:18,correct:1,
- en:{q:"Vietnam Airlines evaluates sales incentives primarily based on...",opts:["Number of employees.","Revenue performance and KPI achievement.","Office location.","Years of partnership only."],explain:"Vietnam Airlines rewards agencies that consistently achieve their sales targets. Incentive programs are based on revenue performance, KPI achievement, and market commitments, ensuring that outstanding partners receive meaningful recognition and support."},
- vi:{q:"Vietnam Airlines đánh giá chương trình thưởng bán hàng chủ yếu dựa trên...",opts:["Số lượng nhân viên.","Kết quả doanh thu và mức độ hoàn thành KPI.","Vị trí văn phòng.","Chỉ dựa trên số năm hợp tác."],explain:"Vietnam Airlines tưởng thưởng những đại lý liên tục đạt mục tiêu bán hàng. Các chương trình thưởng dựa trên kết quả doanh thu, mức độ hoàn thành KPI và cam kết thị trường, đảm bảo những đối tác xuất sắc nhận được sự ghi nhận và hỗ trợ xứng đáng."}},
+ vi:{q:"Vì sao Vietnam Airlines liên tục mở rộng mạng bay quốc tế?",opts:["Để giảm số chuyến bay nội địa","Để mang lại kết nối toàn cầu liền mạch hơn và hỗ trợ tăng trưởng dài hạn","Để chỉ cạnh tranh bằng giá vé","Để chỉ tập trung vào khách du lịch nghỉ dưỡng"],explain:"Mở rộng mạng bay không chỉ là thêm điểm đến. Mỗi đường bay mới đều củng cố khả năng kết nối, thu hút thêm phân khúc khách hàng mới, hỗ trợ du lịch và tạo thêm cơ hội bán hàng cho đại lý trên khắp thế giới."},
+ en:{q:"Why is Vietnam Airlines continuously expanding its international network?",opts:["To reduce domestic flights","To provide more seamless global connectivity and support long-term growth","To compete only on ticket prices","To focus exclusively on leisure travel"],explain:"Expanding the network is not just about adding destinations. Every new route strengthens connectivity, attracts new customer segments, supports tourism, and creates additional selling opportunities for travel agents around the world."}},
 
-{id:19,correct:1,
- en:{q:"Why does Vietnam Airlines invest in co-branding events, roadshows and workshops with travel agents?",opts:["To reduce ticket prices.","To strengthen brand exposure while sharing marketing costs.","To replace online marketing.","To promote only domestic destinations."],explain:"Successful partnerships go beyond ticket sales. By organizing roadshows, workshops, and co-branding campaigns, Vietnam Airlines and travel agents can increase brand visibility, strengthen customer relationships, and share marketing resources more efficiently."},
- vi:{q:"Vì sao Vietnam Airlines đầu tư vào các sự kiện đồng thương hiệu, roadshow và workshop cùng đại lý?",opts:["Để giảm giá vé.","Để tăng độ nhận diện thương hiệu đồng thời chia sẻ chi phí marketing.","Để thay thế marketing trực tuyến.","Để chỉ quảng bá điểm đến nội địa."],explain:"Quan hệ đối tác thành công không dừng lại ở việc bán vé. Thông qua roadshow, workshop và các chiến dịch đồng thương hiệu, Vietnam Airlines và đại lý cùng tăng độ nhận diện, củng cố quan hệ khách hàng và chia sẻ nguồn lực marketing hiệu quả hơn."}},
+{id:19,correct:2,
+ vi:{q:"Theo chiến lược Tầm nhìn 2030, Vietnam Airlines đặt mục tiêu trở thành một trong ___ hãng hàng không dịch vụ đầy đủ hàng đầu Đông Nam Á.",opts:["10","5","3","2"],explain:"Vietnam Airlines không chỉ đơn thuần mở rộng mạng bay. Tham vọng của chúng tôi là trở thành một trong ba hãng hàng không dịch vụ đầy đủ hàng đầu Đông Nam Á, thông qua sản phẩm cao cấp, vận hành xuất sắc và trải nghiệm khách hàng nổi bật."},
+ en:{q:"According to the Vision 2030 strategy, Vietnam Airlines aims to become one of the top ___ full-service airlines in Southeast Asia.",opts:["10","5","3","2"],explain:"Vietnam Airlines isn't simply expanding its network. Our ambition is to become one of Southeast Asia's top three full-service airlines by delivering premium products, operational excellence, and outstanding customer experience."}},
 
 {id:20,correct:1,
- en:{q:"Which combination best reflects Vietnam Airlines' partnership strategy?",opts:["Lowest fares + limited services","Premium products + loyalty ecosystem + commercial collaboration","Fleet expansion only","Airport infrastructure investment only"],explain:"Vietnam Airlines' partnership strategy is built on four pillars: premium products, a strong loyalty ecosystem, commercial collaboration, and joint marketing initiatives. Together, these create sustainable value for customers, travel agents, and the airline."},
- vi:{q:"Tổ hợp nào phản ánh đúng nhất chiến lược đối tác của Vietnam Airlines?",opts:["Giá thấp nhất + dịch vụ hạn chế","Sản phẩm cao cấp + hệ sinh thái khách hàng thân thiết + hợp tác thương mại","Chỉ mở rộng đội tàu bay","Chỉ đầu tư hạ tầng sân bay"],explain:"Chiến lược đối tác của Vietnam Airlines dựa trên bốn trụ cột: sản phẩm cao cấp, hệ sinh thái khách hàng thân thiết vững mạnh, hợp tác thương mại và các sáng kiến marketing chung. Cùng nhau, chúng tạo ra giá trị bền vững cho khách hàng, đại lý và hãng."}},
+ vi:{q:"Một khách hàng muốn hành trình thoải mái hơn hạng Phổ thông nhưng chưa sẵn sàng chi trả cho hạng Thương gia. Bạn sẽ tư vấn hạng ghế nào?",opts:["Hạng Phổ thông (Economy)","Hạng Phổ thông Đặc biệt (Premium Economy)","Hạng Thương gia (Business)","Transit Tour"],explain:"Premium Economy là một trong những lợi thế mạnh nhất của Vietnam Airlines trên các chặng bay dài. Hạng ghế này mang lại sự thoải mái vượt trội so với Economy — ghế rộng hơn, chỗ để chân thoáng hơn, dịch vụ ưu tiên và suất ăn nâng cấp — mà không phải trả mức giá của Business Class. Khi khách tìm kiếm thêm sự thoải mái với chi phí hợp lý, đây thường là gợi ý lý tưởng."},
+ en:{q:"A customer wants a more comfortable journey than Economy Class but is not ready to pay for Business Class. Which cabin would you recommend?",opts:["Economy Class","Premium Economy Class","Business Class","Transit Tour"],explain:"Premium Economy is one of Vietnam Airlines' strongest value propositions for long-haul travel. It offers significantly more comfort than Economy — including wider seats, greater legroom, priority services, and enhanced meals — without the premium price of Business Class. When customers are looking for extra comfort at a reasonable cost, this is often the ideal recommendation."}},
 
 {id:21,correct:1,
- en:{q:"A corporate client frequently travels between Europe and Vietnam and wants long-term travel benefits. Besides flight tickets, what additional value should an agent promote?",opts:["Car rental","LotusMiles Membership","Airport parking","Charter flights"],explain:"Corporate travelers value convenience, recognition, and long-term rewards. Recommending LotusMiles allows them to earn miles, enjoy exclusive benefits, and strengthen their relationship with Vietnam Airlines over time."},
- vi:{q:"Một khách hàng doanh nghiệp thường xuyên bay giữa châu Âu và Việt Nam, mong muốn quyền lợi dài hạn. Ngoài vé máy bay, đại lý nên giới thiệu thêm giá trị nào?",opts:["Thuê xe","Thẻ hội viên LotusMiles","Đỗ xe sân bay","Chuyến bay thuê chuyến"],explain:"Khách hàng doanh nghiệp coi trọng sự tiện lợi, sự ghi nhận và quyền lợi dài hạn. Giới thiệu LotusMiles giúp họ tích luỹ dặm, hưởng ưu đãi độc quyền và gắn bó lâu dài hơn với Vietnam Airlines."}},
+ vi:{q:"Vietnam Airlines đánh giá incentive bán hàng chủ yếu dựa trên yếu tố nào?",opts:["Số lượng nhân sự","Kết quả doanh thu và mức độ hoàn thành KPI","Vị trí văn phòng","Chỉ số năm hợp tác"],explain:"Vietnam Airlines tưởng thưởng các đại lý liên tục đạt mục tiêu bán hàng. Các chương trình incentive dựa trên kết quả doanh thu, mức độ hoàn thành KPI và cam kết thị trường, bảo đảm những đối tác xuất sắc nhận được sự ghi nhận và hỗ trợ xứng đáng."},
+ en:{q:"Vietnam Airlines evaluates sales incentives primarily based on...",opts:["Number of employees.","Revenue performance and KPI achievement.","Office location.","Years of partnership only."],explain:"Vietnam Airlines rewards agencies that consistently achieve their sales targets. Incentive programs are based on revenue performance, KPI achievement, and market commitments, ensuring that outstanding partners receive meaningful recognition and support."}},
 
 {id:22,correct:1,
- en:{q:"Why does Vietnam Airlines provide marketing budgets and promotional materials to travel agents?",opts:["To reduce airline operating costs.","To help agents promote Vietnam Airlines and stimulate local market demand.","To replace travel agency advertising.","To increase airport retail sales."],explain:"Vietnam Airlines believes successful partnerships require continuous support. By sharing marketing budgets, promotional materials, and destination campaigns, we help our partners increase visibility, attract more customers, and drive sustainable sales growth."},
- vi:{q:"Vì sao Vietnam Airlines cung cấp ngân sách marketing và ấn phẩm quảng bá cho đại lý?",opts:["Để giảm chi phí khai thác của hãng.","Để giúp đại lý quảng bá Vietnam Airlines và kích cầu thị trường địa phương.","Để thay thế hoạt động quảng cáo của đại lý.","Để tăng doanh thu bán lẻ tại sân bay."],explain:"Vietnam Airlines tin rằng quan hệ đối tác thành công cần sự hỗ trợ liên tục. Bằng việc chia sẻ ngân sách marketing, ấn phẩm quảng bá và các chiến dịch điểm đến, chúng tôi giúp đối tác tăng độ hiện diện, thu hút thêm khách hàng và thúc đẩy tăng trưởng doanh số bền vững."}},
+ vi:{q:"Một khách hàng có thời gian nối chuyến dài tại Hà Nội hoặc TP. Hồ Chí Minh. Dịch vụ nào của Vietnam Airlines có thể nâng cao trải nghiệm của hành khách?",opts:["Vé Business FOC","Transit Tour","Chương trình Gold Agent","Tour Series"],explain:"Thời gian nối chuyến dài có thể trở thành một trải nghiệm du lịch đáng nhớ. Vietnam Airlines cung cấp Transit Tour tại Hà Nội và TP. Hồ Chí Minh, giúp hành khách nối chuyến có cách thú vị để khám phá Việt Nam trong lúc chờ chuyến bay tiếp theo, nâng cao trải nghiệm của cả hành trình."},
+ en:{q:"A customer has a long connection in Hanoi or Ho Chi Minh City. Which Vietnam Airlines service could enhance the passenger's experience?",opts:["Business FOC Ticket","Transit Tour","Gold Agent Program","Tour Series"],explain:"Long layovers can become memorable travel experiences. Vietnam Airlines offers Transit Tours in Hanoi and Ho Chi Minh City to provide transit passengers with an enjoyable way to explore Vietnam while waiting for their connecting flight, enhancing the overall travel experience."}},
 
-{id:23,correct:1,
- en:{q:"A customer has a long connection in Hanoi or Ho Chi Minh City. Which Vietnam Airlines service could enhance the passenger's experience?",opts:["Business FOC Ticket","Transit Tour","Gold Agent Program","Tour Series"],explain:"Long layovers can become memorable travel experiences. Vietnam Airlines offers Transit Tours in Hanoi and Ho Chi Minh City to provide transit passengers with an enjoyable way to explore Vietnam while waiting for their connecting flight, enhancing the overall travel experience."},
- vi:{q:"Khách có thời gian nối chuyến dài tại Hà Nội hoặc TP. Hồ Chí Minh. Dịch vụ nào của Vietnam Airlines có thể nâng cao trải nghiệm của khách?",opts:["Vé Business FOC","Transit Tour","Chương trình Gold Agent","Tour Series"],explain:"Thời gian nối chuyến dài có thể trở thành trải nghiệm đáng nhớ. Vietnam Airlines cung cấp Transit Tour tại Hà Nội và TP. Hồ Chí Minh, giúp khách nối chuyến khám phá Việt Nam trong lúc chờ chuyến bay tiếp theo, nâng cao trải nghiệm tổng thể."}},
+{id:23,correct:2,
+ vi:{q:"Nếu so với cách bán truyền thống “Europe → Hanoi/Saigon”, Vietnam Airlines muốn đại lý khai thác thêm cách bán nào?",opts:["Chỉ bán one-way","Chỉ tập trung vào giá","Bán toàn bộ journey: Europe → Vietnam gateway → domestic destination","Không cần quan tâm điểm đến cuối cùng"],explain:"Đây là một trong những thông điệp quan trọng nhất: Sell the journey, not just the sector. Ví dụ AMS–HAN–DAD có giá trị bán hàng lớn hơn việc chỉ nhìn vào AMS–HAN."},
+ en:{q:"Compared with the traditional “Europe → Hanoi/Saigon” way of selling, what additional approach does Vietnam Airlines want agents to take?",opts:["Sell one-way only","Focus on price only","Sell the whole journey: Europe → Vietnam gateway → domestic destination","Ignore the final destination"],explain:"This is one of the most important messages: sell the journey, not just the sector. AMS–HAN–DAD, for example, is worth far more commercially than looking at AMS–HAN alone."}},
 
-{id:24,correct:1,
- en:{q:"Which customer profile would benefit the MOST from recommending LotusMiles?",opts:["A traveler taking only one domestic flight in their lifetime","A frequent business traveler between Europe and Vietnam","A passenger only interested in the lowest fare","A passenger travelling without checked baggage"],explain:"Frequent business travellers are looking for more than just a flight—they value recognition, convenience, and long-term rewards. LotusMiles allows them to earn and redeem miles across flights and a wide range of lifestyle partners, creating value on every journey. As travel agents, introducing LotusMiles is an excellent way to build customer loyalty beyond a single booking."},
- vi:{q:"Nhóm khách hàng nào hưởng lợi NHIỀU NHẤT khi được giới thiệu LotusMiles?",opts:["Khách chỉ bay nội địa một lần trong đời","Khách công tác thường xuyên giữa châu Âu và Việt Nam","Khách chỉ quan tâm tới giá vé thấp nhất","Khách bay không ký gửi hành lý"],explain:"Khách công tác thường xuyên tìm kiếm nhiều hơn một chuyến bay — họ coi trọng sự ghi nhận, tiện lợi và quyền lợi dài hạn. LotusMiles cho phép họ tích luỹ và sử dụng dặm trên các chuyến bay cũng như với nhiều đối tác trong đời sống, tạo giá trị trên mọi hành trình. Với đại lý, giới thiệu LotusMiles là cách tuyệt vời để xây dựng lòng trung thành vượt ra ngoài một lần đặt chỗ."}},
+{id:24,correct:2,
+ vi:{q:"Khi booking trong các tháng thấp điểm có dấu hiệu yếu, Sales Kit nên giúp đại lý nhìn nhận cơ hội như thế nào?",opts:["Không bán Vietnam Airlines trong low season","Chỉ chờ đến peak season","Sử dụng promotional fare và các chương trình kích cầu để tạo demand mới","Chỉ giảm giá cho Corporate"],explain:"Điểm mới ở đây là chuyển từ reactive selling sang tactical selling. Đại lý có thể sử dụng fare/product phù hợp để chủ động kích thích demand trong những tháng thấp điểm."},
+ en:{q:"When bookings look weak in the low-season months, how should the Sales Kit help agents see the opportunity?",opts:["Stop selling Vietnam Airlines in low season","Just wait for the peak season","Use promotional fares and demand-stimulation programmes to create new demand","Discount for corporate accounts only"],explain:"The shift here is from reactive selling to tactical selling. Agents can use the right fare or product to actively stimulate demand during the quieter months."}},
 
-{id:25,correct:1,
- en:{q:"Vietnam Airlines invests in joint marketing campaigns with travel agents primarily to...",opts:["Reduce aircraft operating costs","Increase brand awareness and stimulate customer demand together","Replace travel agencies with direct sales","Reduce ticket prices"],explain:"Successful marketing is never a one-way effort. Vietnam Airlines actively works with travel agents through co-branding campaigns, roadshows, destination promotions, and joint events to inspire more people to travel. By combining resources and market expertise, both Vietnam Airlines and our partners can grow together more effectively."},
- vi:{q:"Vietnam Airlines đầu tư vào các chiến dịch marketing chung với đại lý chủ yếu nhằm...",opts:["Giảm chi phí khai thác tàu bay","Cùng tăng độ nhận diện thương hiệu và kích cầu khách hàng","Thay thế đại lý bằng bán hàng trực tiếp","Giảm giá vé"],explain:"Marketing thành công không bao giờ là nỗ lực một chiều. Vietnam Airlines chủ động hợp tác với đại lý qua các chiến dịch đồng thương hiệu, roadshow, chương trình quảng bá điểm đến và sự kiện chung để truyền cảm hứng du lịch cho nhiều người hơn. Bằng cách kết hợp nguồn lực và hiểu biết thị trường, cả hai bên cùng phát triển hiệu quả hơn."}},
+{id:25,correct:2,
+ vi:{q:"Đâu là cách hiểu đầy đủ nhất về định hướng của Vietnam Airlines tại thị trường châu Âu?",opts:["Tăng số lượng chuyến bay là mục tiêu duy nhất","Tập trung vào việc bán vé giá thấp nhất","Kết hợp network, product/fare mới, digital distribution, agent partnership và các giải pháp sales để tăng khả năng cạnh tranh","Chỉ tập trung vào khách người Việt"],explain:"Đây là câu tổng hợp. Các “điểm mới” không nên được nhìn riêng lẻ. Network + Product + Fare + Distribution + Agent Partnership phải cùng tạo ra một proposition cạnh tranh hơn cho Vietnam Airlines tại châu Âu."},
+ en:{q:"Which is the most complete understanding of Vietnam Airlines' direction in the European market?",opts:["Increasing flight numbers is the only goal","Focusing on selling the lowest fares","Combining network, new product/fare, digital distribution, agent partnership and sales solutions to compete more strongly","Focusing on Vietnamese passengers only"],explain:"This is the synthesis question. The “what's new” items should not be looked at in isolation. Network + Product + Fare + Distribution + Agent Partnership together have to create a more competitive proposition for Vietnam Airlines in Europe."}},
 
-{id:26,correct:1,
- en:{q:"A customer is comparing airlines based only on price. As a Vietnam Airlines agent, which selling approach best reflects the Sales Kit?",opts:["Immediately offer the lowest possible fare.","Highlight Vietnam Airlines' premium service, network, loyalty program, and overall travel value.","Recommend another airline.","Focus only on baggage allowance."],explain:"Customers often compare prices first, but experienced travel consultants know that value goes far beyond the fare. Vietnam Airlines offers a premium travel experience, an extensive route network, loyalty rewards, and reliable service. By focusing on overall value rather than price alone, agents can build greater customer trust and satisfaction."},
- vi:{q:"Khách đang so sánh các hãng chỉ dựa trên giá. Là đại lý của Vietnam Airlines, cách bán hàng nào phản ánh đúng tinh thần Sales Kit?",opts:["Đưa ngay mức giá thấp nhất có thể.","Nhấn mạnh dịch vụ cao cấp, mạng bay, chương trình khách hàng thân thiết và giá trị tổng thể của Vietnam Airlines.","Giới thiệu khách sang hãng khác.","Chỉ tập trung vào tiêu chuẩn hành lý."],explain:"Khách thường so sánh giá trước tiên, nhưng nhà tư vấn du lịch giàu kinh nghiệm hiểu rằng giá trị vượt xa con số trên vé. Vietnam Airlines mang đến trải nghiệm cao cấp, mạng bay rộng, quyền lợi khách hàng thân thiết và dịch vụ tin cậy. Khi tập trung vào giá trị tổng thể thay vì chỉ giá vé, đại lý xây dựng được niềm tin và sự hài lòng lớn hơn."}},
-
-{id:27,correct:1,
- en:{q:"Why does Vietnam Airlines continuously expand partnerships with banks, hotels and retailers through LotusMiles?",opts:["To replace flight revenue.","To create a complete travel and lifestyle ecosystem that increases customer loyalty.","To reduce airport taxes.","To simplify ticket refunds."],explain:"LotusMiles is designed as a lifestyle ecosystem, not simply a frequent flyer program. Through partnerships with banks, hotels, retailers, and many other brands, members can continue earning and redeeming miles in their everyday lives. This keeps customers engaged with Vietnam Airlines even when they are not travelling."},
- vi:{q:"Vì sao Vietnam Airlines liên tục mở rộng hợp tác với ngân hàng, khách sạn và nhà bán lẻ thông qua LotusMiles?",opts:["Để thay thế doanh thu từ vận chuyển hàng không.","Để tạo hệ sinh thái du lịch và phong cách sống trọn vẹn, gia tăng lòng trung thành của khách hàng.","Để giảm thuế sân bay.","Để đơn giản hoá việc hoàn vé."],explain:"LotusMiles được thiết kế như một hệ sinh thái phong cách sống, không đơn thuần là chương trình khách hàng thường xuyên. Thông qua hợp tác với ngân hàng, khách sạn, nhà bán lẻ và nhiều thương hiệu khác, hội viên có thể tiếp tục tích luỹ và sử dụng dặm trong đời sống hằng ngày. Điều này giữ khách hàng gắn kết với Vietnam Airlines ngay cả khi họ không bay."}},
-
-{id:28,correct:1,
- en:{q:"A passenger has an eight-hour connection in Vietnam. Besides the flight itself, which service can create additional value?",opts:["Business FOC Ticket","Transit Tour","Tour Series","Gold Agent Award"],explain:"A long layover doesn't have to be wasted time. Vietnam Airlines' Transit Tour allows eligible passengers to discover Vietnam during their connection, transforming waiting time into a memorable travel experience. It's another example of how we continue adding value beyond the flight itself."},
- vi:{q:"Khách có thời gian nối chuyến tám tiếng tại Việt Nam. Ngoài chuyến bay, dịch vụ nào có thể tạo thêm giá trị?",opts:["Vé Business FOC","Transit Tour","Tour Series","Giải thưởng Gold Agent"],explain:"Thời gian chờ dài không nhất thiết là thời gian lãng phí. Transit Tour của Vietnam Airlines cho phép hành khách đủ điều kiện khám phá Việt Nam ngay trong thời gian nối chuyến, biến thời gian chờ thành trải nghiệm đáng nhớ. Đây là một ví dụ nữa cho thấy chúng tôi liên tục gia tăng giá trị vượt ra ngoài chuyến bay."}},
-
-{id:29,correct:0,
- en:{q:"According to Vietnam Airlines' commercial strategy, why are incentive programs offered to travel agents?",opts:["To reward performance and encourage sustainable business growth.","To replace commission.","To reduce ticket prices.","To encourage one-time sales only."],explain:"Incentive programs exist to recognise and reward genuine performance. By tying rewards to revenue and KPI achievement, Vietnam Airlines encourages partners to build sustainable, long-term business rather than chasing one-off sales."},
- vi:{q:"Theo chiến lược thương mại của Vietnam Airlines, vì sao các chương trình thưởng được dành cho đại lý?",opts:["Để tưởng thưởng kết quả và khuyến khích tăng trưởng kinh doanh bền vững.","Để thay thế hoa hồng.","Để giảm giá vé.","Để chỉ khuyến khích bán hàng một lần."],explain:"Các chương trình thưởng tồn tại để ghi nhận và tưởng thưởng kết quả thực chất. Bằng cách gắn phần thưởng với doanh thu và mức độ hoàn thành KPI, Vietnam Airlines khuyến khích đối tác xây dựng kinh doanh bền vững, dài hạn thay vì chạy theo những thương vụ nhất thời."}},
-
-{id:30,correct:1,
- en:{q:"Which combination creates the STRONGEST long-term customer loyalty?",opts:["Lowest airfare only","Comfortable flight + LotusMiles + quality service","Promotional baggage only","Airport shopping discounts only"],explain:"Customer loyalty is created through consistent positive experiences—not just competitive pricing. Comfortable flights, excellent service, and meaningful rewards through LotusMiles encourage passengers to choose Vietnam Airlines again and again. Loyal customers are also more likely to recommend the airline to others."},
- vi:{q:"Tổ hợp nào tạo ra lòng trung thành khách hàng dài hạn MẠNH NHẤT?",opts:["Chỉ giá vé thấp nhất","Chuyến bay thoải mái + LotusMiles + dịch vụ chất lượng","Chỉ ưu đãi hành lý","Chỉ ưu đãi mua sắm tại sân bay"],explain:"Lòng trung thành được tạo nên từ những trải nghiệm tích cực nhất quán — không chỉ từ giá cạnh tranh. Chuyến bay thoải mái, dịch vụ xuất sắc và phần thưởng thiết thực qua LotusMiles khiến hành khách chọn Vietnam Airlines lần này qua lần khác. Khách hàng trung thành cũng sẵn sàng giới thiệu hãng cho người khác hơn."}},
-
-{id:31,correct:1,
- en:{q:"A corporate client asks why they should choose Vietnam Airlines instead of another full-service airline. Which answer best reflects the Sales Kit?",opts:["Because Vietnam Airlines always has the cheapest tickets.","Because Vietnam Airlines combines a premium onboard experience, an expanding global network, and a comprehensive loyalty ecosystem.","Because Vietnam Airlines only operates direct flights.","Because Vietnam Airlines guarantees free upgrades."],explain:"When customers ask why they should choose Vietnam Airlines, the answer goes far beyond the destination. Our expanding international network, modern fleet, premium onboard experience, and comprehensive loyalty ecosystem together deliver a reliable and rewarding travel experience. These strengths help differentiate Vietnam Airlines in a competitive market."},
- vi:{q:"Khách hàng doanh nghiệp hỏi vì sao nên chọn Vietnam Airlines thay vì một hãng dịch vụ đầy đủ khác. Câu trả lời nào phản ánh đúng nhất Sales Kit?",opts:["Vì Vietnam Airlines luôn có vé rẻ nhất.","Vì Vietnam Airlines kết hợp trải nghiệm cao cấp trên chuyến bay, mạng bay toàn cầu đang mở rộng và hệ sinh thái khách hàng thân thiết toàn diện.","Vì Vietnam Airlines chỉ khai thác các chuyến bay thẳng.","Vì Vietnam Airlines đảm bảo nâng hạng miễn phí."],explain:"Khi khách hỏi vì sao nên chọn Vietnam Airlines, câu trả lời vượt xa điểm đến. Mạng bay quốc tế đang mở rộng, đội tàu bay hiện đại, trải nghiệm cao cấp trên chuyến bay và hệ sinh thái khách hàng thân thiết toàn diện cùng mang lại một hành trình đáng tin cậy và xứng đáng. Những thế mạnh này giúp Vietnam Airlines khác biệt trong một thị trường cạnh tranh."}},
+// ☀️ Sunshine — held back for the host to arm; never served as an ordinary round.
+{id:SUNSHINE_QUESTION_ID,correct:2,
+ vi:{q:"Lựa chọn thông điệp quan trọng nhất mà Vietnam Airlines muốn truyền tải tới các quý đại lý?",opts:["Vietnam Airlines cần cạnh tranh chủ yếu bằng giá thấp","Đại lý nên tập trung bán Economy Class","Vietnam Airlines và đại lý cùng tạo giá trị thông qua sản phẩm premium, network, loyalty, dịch vụ và hợp tác thương mại","Trong tương lai Vietnam Airlines sẽ tập trung hoàn toàn vào bán trực tiếp"],explain:"Vietnam Airlines không chỉ muốn đại lý bán nhiều vé hơn. Chúng tôi muốn cùng các đại lý xây dựng một hệ sinh thái kinh doanh bền vững: từ network, sản phẩm premium, dịch vụ bổ trợ, LotusMiles cho đến marketing và chính sách thương mại. Khi đại lý hiểu sản phẩm và biết cách bán giá trị, cả hai bên đều có thể phát triển mạnh hơn."},
+ en:{q:"Which is the most important message Vietnam Airlines wants to convey to its agents?",opts:["Vietnam Airlines must compete mainly on low fares","Agents should focus on selling Economy Class","Vietnam Airlines and its agents create value together through premium products, network, loyalty, service and commercial partnership","In future Vietnam Airlines will focus entirely on direct sales"],explain:"Vietnam Airlines does not simply want agents to sell more tickets. We want to build a sustainable business ecosystem together with our agents: from network, premium products, ancillary services and LotusMiles through to marketing and commercial policy. When agents understand the product and know how to sell value, both sides can grow more strongly."}},
 ];
 
-/* The source deck has the correct answer at position B for 29 of the 31 questions, which
-   players would spot within a few legs and then simply always pick B. So each question's
+/* The source deck puts the correct answer at position B or C for almost every question,
+   which players would spot within a few rounds and then simply always pick. So each question's
    four options get shuffled — but by a PRNG seeded purely from the question id, so every
    phone, the presenter screen and the admin dashboard independently derive the identical
    order with nothing to sync, AND the Vietnamese and English copies of a question end up
@@ -2168,21 +2150,36 @@ function randInt(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
 function usedQuestionIds(){
   return new Set(Object.values(state.questionIndexByLeg || {}).filter(v=>v!==null && v!==undefined));
 }
+// The Sunshine question is the host's, not the rotation's: it sits in the bank so every
+// screen can look it up by id, but the ordinary round never serves it.
+function isOrdinaryQuestion(q){ return q.id !== SUNSHINE_QUESTION_ID; }
 function pickQuestionIndex(){
   const used = usedQuestionIds();
-  const next = QUESTIONS.find(q=>!used.has(q.id));
+  const next = QUESTIONS.filter(isOrdinaryQuestion).find(q=>!used.has(q.id));
   return next ? next.id : null;
 }
 function questionsRemaining(){
   const used = usedQuestionIds();
-  return QUESTIONS.filter(q=>!used.has(q.id)).length;
+  return QUESTIONS.filter(isOrdinaryQuestion).filter(q=>!used.has(q.id)).length;
 }
 function ensureQuestionPicked(){
+  // ☀️ Sunshine is armed: this round asks the one question held back for it, whatever was
+  // staged before. Swapping currentQuestionIndex is enough to hand the ordinary question
+  // back to the pool, because questionIndexByLeg[currentQ] is what marks a question "used".
+  if(state.powerQuestionActive){
+    if(state.currentQuestionIndex !== SUNSHINE_QUESTION_ID){
+      state.currentQuestionIndex = SUNSHINE_QUESTION_ID;
+      state.questionIndexByLeg[state.currentQ] = SUNSHINE_QUESTION_ID;
+      state.currentCorrectIndex = null;
+    }
+    return true;
+  }
   if(state.currentQuestionIndex===null || state.currentQuestionIndex===undefined){
     // Stepping back to a leg that already had a question reuses that same question
     // rather than burning a fresh one out of the bank.
     const already = state.questionIndexByLeg ? state.questionIndexByLeg[state.currentQ] : null;
-    const idx = (already!==null && already!==undefined && QUESTIONS_BY_ID[already]) ? already : pickQuestionIndex();
+    const reusable = (already!==null && already!==undefined && QUESTIONS_BY_ID[already] && already!==SUNSHINE_QUESTION_ID);
+    const idx = reusable ? already : pickQuestionIndex();
     if(idx===null) return false;
     state.currentQuestionIndex = idx;
     state.questionIndexByLeg[state.currentQ] = idx;
@@ -2248,6 +2245,14 @@ function questionPreviewReady(){
 function legLabel(legIndex){
   const totalLegs = ROUTE.length - 1;
   return legIndex < totalLegs ? t('common.legOf',{n:legIndex+1,total:totalLegs}) : t('common.overtime',{n:legIndex+1-totalLegs});
+}
+/* What the PLAYER's phone calls the current question. The bank holds more questions than
+   the route has legs and the host can run overtime, so "Leg 9 of 12" was both wrong and
+   confusing on the handset — the player only needs to know which turn is being played.
+   The presenter wall and the admin dashboard keep legLabel(): they are steering the
+   aircraft along the route and do need the leg number. */
+function roundLabel(legIndex){
+  return t('common.roundN',{n:legIndex+1});
 }
 function planeSvg(color){
   return '<svg class="plane-ico" viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.18em;"><path fill="'+color+'" d="M21 16v-1.9l-8-4.95V4.5a1.5 1.5 0 0 0-3 0v4.65l-8 4.95V16l8-2.5v4.9l-2.2 1.6V22l3.7-1.1 3.7 1.1v-1.5L13.5 18v-4.9z"/></svg>';
@@ -2881,11 +2886,6 @@ function helpsUnlocked(){
   const me = state.players[myPlayerId];
   return !!me && me.position >= TURBO_MIN_LEG;
 }
-/* 50:50 is the one help that is not rank-gated: every player gets exactly one, from Leg 1,
-   whatever position they are in. Turbo and Fasten Seatbelt still unlock at MUC. */
-function fiftyUnlocked(){
-  return !!state.players[myPlayerId];
-}
 function boostsBlocked(){
   return me_turbulenceActive() || me_stormActive() || !!state.powerQuestionActive;
 }
@@ -2927,7 +2927,7 @@ function playerUseFifty(){
   if(!me) return;
   if(me.fiftyUsed){ toast(t('h.fiftyUsed')); return; }
   if(myTimeUp()){ toast(t('p.timeUpToast')); return; }
-  if(!fiftyUnlocked() || boostsBlocked()){ toast(boostBlockedReason(t('h.nameFifty'))); return; }
+  if(!helpsUnlocked() || boostsBlocked()){ toast(boostBlockedReason(t('h.nameFifty'))); return; }
   const existing = myAnswerDraft();
   if(existing.submitted || existing.fifty) return;
   existing.fifty = true;
@@ -3097,7 +3097,7 @@ function renderHelps(me, myAns){
   const btn = (ic, lb, spent, armed, disabled, title, fn)=>
     `<button class="help-btn${spent?' spent':(armed?' armed':'')}" ${disabled?'disabled':''} title="${title}" onclick="${fn}"><span class="ic">${ic}</span><span class="lb">${lb}</span></button>`;
   wrap.innerHTML = `<div class="help-row">
-    ${btn(HELP_ICONS.fifty,t('h.fifty'), fiftyGone, false, fiftyGone || !boostOk,
+    ${btn(HELP_ICONS.fifty,t('h.fifty'), fiftyGone, false, fiftyGone || !rankHelps || !boostOk,
         fiftyGone?t('h.fiftyUsed'):t('h.fiftyTip'), 'playerUseFifty()')}
     ${btn(HELP_ICONS.turbo,t('h.turbo'), !!me.turboUsed, armedTurbo, !!me.turboUsed || !rankHelps || !boostOk,
         me.turboUsed?t('h.turboUsed'):t('h.turboTip'), 'playerToggleTurbo()')}
@@ -3211,12 +3211,12 @@ function renderPlayer(){
     const staged = state.currentQuestionIndex!==null && state.currentQuestionIndex!==undefined
                    && QUESTIONS_BY_ID[state.currentQuestionIndex] && questionPreviewReady();
     if(staged){
-      eyebrow.textContent = legLabel(state.currentQ);
+      eyebrow.textContent = roundLabel(state.currentQ);
       qText.textContent = QUESTIONS_BY_ID[state.currentQuestionIndex].q;
       optsEl.innerHTML = `<div class="p-await">${t('p.awaitAnswers')}</div>`;
     } else {
       const waiting = !!state.legAnnouncedAt;
-      eyebrow.textContent = waiting ? legLabel(state.currentQ) : t('p.waitStart');
+      eyebrow.textContent = waiting ? roundLabel(state.currentQ) : t('p.waitStart');
       qText.textContent = wxAnnounceActive()
         ? t('p.readWarning')
         : (waiting ? t('p.waitNext') : t('p.waitStartMsg'));
@@ -3229,7 +3229,7 @@ function renderPlayer(){
     return;
   }
   if(state.currentQuestionIndex===null || state.currentQuestionIndex===undefined){
-    eyebrow.textContent = legLabel(state.currentQ);
+    eyebrow.textContent = roundLabel(state.currentQ);
     qText.textContent = t('p.waitOpen');
     optsEl.innerHTML=''; bannerEl.classList.add('hidden'); clearTimer();
     if(powerNoteEl) powerNoteEl.classList.add('hidden');
@@ -3240,7 +3240,7 @@ function renderPlayer(){
   const qData = QUESTIONS_BY_ID[state.currentQuestionIndex];
   const powerNow = !!state.powerQuestionActive;
   const stormNow = isStormLeg(state.currentQ);
-  eyebrow.innerHTML = legLabel(state.currentQ) + (powerNow ? ' &nbsp;☀️ '+t('wx.powerTag')+'' : '') + (stormNow ? ' &nbsp;⛈ '+t('wx.stormTag') : '');
+  eyebrow.innerHTML = roundLabel(state.currentQ) + (powerNow ? ' &nbsp;☀️ '+t('wx.powerTag')+'' : '') + (stormNow ? ' &nbsp;⛈ '+t('wx.stormTag') : '');
   qText.textContent = qData.q;
   if(powerNoteEl) powerNoteEl.classList.toggle('hidden', !powerNow);
   if(stormNoteEl) stormNoteEl.classList.toggle('hidden', !stormNow);
@@ -4104,7 +4104,7 @@ function adminTab(tab){
    of the two it is about to do. */
 function adminStageQuestion(){
   if(state.gameState==='finished'){ toast(t('a.t.finished')); return false; }
-  if(!ensureQuestionPicked()){ toast(t('a.t.noQuestions',{n:QUESTIONS.length})); return false; }
+  if(!ensureQuestionPicked()){ toast(t('a.t.noQuestions',{n:QUESTIONS.filter(isOrdinaryQuestion).length})); return false; }
   state.legAnnouncedAt = Date.now();
   return true;
 }
@@ -4117,7 +4117,7 @@ function adminOpenQuestion(){
     toast(wxKindForLeg() ? 'Weather warning up — question follows in 10s' : 'Question appears in 2s (answers still hidden)');
     return;
   }
-  if(!ensureQuestionPicked()){ toast(t('a.t.noQuestions',{n:QUESTIONS.length})); return; }
+  if(!ensureQuestionPicked()){ toast(t('a.t.noQuestions',{n:QUESTIONS.filter(isOrdinaryQuestion).length})); return; }
   state.gameState = 'question';
   state.questionOpenedAt = Date.now();
   // Hard deadline enforced by the database rules against Firebase server time, so a late
@@ -4377,6 +4377,13 @@ function adminTogglePowerQuestion(){
   // Cancelling before the question opens gives the charge back, so a mis-click does not
   // burn the single Power Question for the whole game.
   state.powerQuestionUsed = state.powerQuestionActive;
+  // Arming swaps in the held-back Sunshine question; cancelling drops it and re-stages an
+  // ordinary one. Clearing currentQuestionIndex first lets ensureQuestionPicked() do both.
+  if(!state.powerQuestionActive && state.currentQuestionIndex===SUNSHINE_QUESTION_ID){
+    state.currentQuestionIndex = null;
+    state.questionIndexByLeg[state.currentQ] = null;
+  }
+  ensureQuestionPicked();
   saveState();
   toast(state.powerQuestionActive ? t('a.t.powerOn') : t('a.t.powerOff'));
 }
@@ -4533,7 +4540,7 @@ function renderQuestionEditor(){
         </div>
       </div>
     </div>
-  `).join('') + `<p style="margin-top:16px; font-size:12.5px; color:rgba(255,255,255,.5);">${t('a.qbankFoot',{total:QUESTIONS.length, left:questionsRemaining()})}</p>`;
+  `).join('') + `<p style="margin-top:16px; font-size:12.5px; color:rgba(255,255,255,.5);">${t('a.qbankFoot',{total:QUESTIONS.filter(isOrdinaryQuestion).length, left:questionsRemaining()})}</p>`;
 }
 
 function renderAdminAnswerFeed(){
