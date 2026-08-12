@@ -42,7 +42,7 @@ Lựa chọn ngôn ngữ lưu **theo từng thiết bị** (`localStorage`), kh�
 
 ### Ba sự trợ giúp
 
-Cả ba **mở khoá riêng cho từng người khi máy bay của họ tới MUC**, mỗi thứ dùng **một lần cả ván**, hiển thị là 3 nút tròn dưới ô "Select an answer above".
+Mỗi thứ dùng **một lần cả ván**, hiển thị là 3 nút tròn dưới ô "Select an answer above". **50:50 dùng được ngay từ chặng đầu, không phân biệt xếp thứ mấy**; Turbo Boost và Fasten Seatbelt **mở khoá riêng cho từng người khi máy bay của họ tới MUC**.
 
 | Trợ giúp | Tác dụng | Bị khoá khi |
 |---|---|---|

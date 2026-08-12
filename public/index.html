@@ -460,7 +460,7 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 #view-presenter.final-round-theme{animation:finalRoundGlow .8s ease forwards;}
 @keyframes finalRoundGlow{to{filter:brightness(1.2) saturate(1.35) contrast(1.04);}}
 .final-round-fx .sun-disc{
-  position:absolute; top:-40px; left:50%; transform:translateX(-50%); font-size:150px; line-height:1;
+  position:absolute; top:20px; left:50%; transform:translateX(-50%); font-size:150px; line-height:1;
   opacity:.5; filter:drop-shadow(0 0 50px rgba(255,200,60,.95)); animation:sunBlaze 3s ease-in-out infinite;
 }
 @keyframes sunBlaze{0%,100%{transform:translateX(-50%) scale(1); opacity:.42;} 50%{transform:translateX(-50%) scale(1.09); opacity:.62;}}
@@ -1200,7 +1200,7 @@ vi: {
   'rules.h.power':'☀️ Trời nắng đẹp',
   'rules.p.power':'Lượt thưởng duy nhất cả ván của người điều phối, kích hoạt trước khi mở câu hỏi. Người <strong>trả lời đúng nhanh nhất</strong> được <strong>+2 chặng</strong>, những người đúng khác <strong>+1</strong>, trả lời sai đứng nguyên. Không kích hoạt được trên chặng Nhiễu động hay Bão, và cả ba trợ giúp đều bị khoá.',
   'rules.h.helps':'Ba trợ giúp của bạn',
-  'rules.p.helps':'Cả ba mở khoá ngay khi <strong>máy bay của chính bạn tới MUC</strong> — không phải khi cuộc đua tới MUC. Mỗi trợ giúp dùng được <strong>một lần cả ván</strong>.',
+  'rules.p.helps':'Mỗi trợ giúp dùng được <strong>một lần cả ván</strong>. <strong>50:50</strong> dùng được ngay từ chặng đầu, dù bạn đang xếp thứ mấy. <strong>Turbo Boost</strong> và <strong>Thắt dây an toàn</strong> mở khoá khi <strong>máy bay của chính bạn tới MUC</strong> — không phải khi cuộc đua tới MUC.',
   'rules.help.fifty':'50:50',
   'rules.help.fiftyDesc':'Loại bỏ hai đáp án sai, chỉ còn đáp án đúng và một đáp án nhiễu. Bị khoá trong Nhiễu động, Bão và Trời nắng đẹp.',
   'rules.help.turbo':'Turbo Boost',
@@ -1301,7 +1301,7 @@ vi: {
   'h.fifty':'50:50',
   'h.turbo':'Turbo',
   'h.belt':'Dây an toàn',
-  'h.locked':'50:50 · Turbo Boost · Thắt dây an toàn đều mở khoá khi máy bay của bạn tới {code}',
+  'h.locked':'Turbo Boost · Thắt dây an toàn mở khoá khi máy bay của bạn tới {code}',
   'h.fiftyTip':'Loại bỏ hai đáp án sai',
   'h.fiftyUsed':'Đã dùng 50:50 rồi',
   'h.turboTip':'Đúng +2 chặng · sai −1 chặng',
@@ -1510,7 +1510,7 @@ vi: {
   'a.t.removed':'Đã xoá {name}',
   'a.t.alreadyAt':'{name} đã ở {code} rồi',
   'a.t.nudged':'{name}: {from} → {to} (chỉnh tay)',
-  'sync.live':'🟢 TRỰC TIẾP · phòng {room}',
+  'sync.live':'🟢 TRỰC TIẾP · {count} người chơi',
   'sync.offline':'🟠 NGOẠI TUYẾN · chỉ máy này',
   'sync.connecting':'⚪ đang kết nối…',
   'sync.errAdmin':'⚠️ Lỗi đồng bộ — kiểm tra kết nối',
@@ -1558,7 +1558,7 @@ en: {
   'rules.h.power':'☀️ Sunshine',
   'rules.p.power':'The host\'s one-time bonus round for the whole game, armed before the question opens. The <strong>fastest correct</strong> answer gets <strong>+2 legs</strong>, every other correct answer <strong>+1</strong>, wrong answers hold. Can\'t be armed on a Turbulence or Storm leg, and all three helps are disabled.',
   'rules.h.helps':'Your three helps',
-  'rules.p.helps':'All three unlock the moment <strong>your own aircraft reaches MUC</strong> — not when the race reaches MUC. Each one can be used <strong>once per game</strong>.',
+  'rules.p.helps':'Each one can be used <strong>once per game</strong>. <strong>50:50</strong> is available from the very first leg, whatever position you are in. <strong>Turbo Boost</strong> and <strong>Fasten Seatbelt</strong> unlock the moment <strong>your own aircraft reaches MUC</strong> — not when the race reaches MUC.',
   'rules.help.fifty':'50:50',
   'rules.help.fiftyDesc':'Removes two wrong answers, leaving the correct one and a single decoy. Disabled during Turbulence, Storm and Sunshine.',
   'rules.help.turbo':'Turbo Boost',
@@ -1654,7 +1654,7 @@ en: {
   'h.fifty':'50:50',
   'h.turbo':'Turbo',
   'h.belt':'Seatbelt',
-  'h.locked':'50:50 · Turbo Boost · Fasten Seatbelt all unlock once your aircraft reaches {code}',
+  'h.locked':'Turbo Boost · Fasten Seatbelt unlock once your aircraft reaches {code}',
   'h.fiftyTip':'Remove two wrong answers',
   'h.fiftyUsed':'50:50 already used',
   'h.turboTip':'Correct +2 legs · wrong −1 leg',
@@ -1857,7 +1857,7 @@ en: {
   'a.t.removed':'{name} removed',
   'a.t.alreadyAt':'{name} is already at {code}',
   'a.t.nudged':'{name}: {from} → {to} (manual)',
-  'sync.live':'🟢 LIVE · room {room}',
+  'sync.live':'🟢 LIVE · {count} player{s}',
   'sync.offline':'🟠 OFFLINE · one device only',
   'sync.connecting':'⚪ connecting…',
   'sync.errAdmin':'⚠️ Sync error — check connection',
@@ -2293,6 +2293,10 @@ function defaultState(){
     firstFinishAt: null,   // Date.now() the very first aircraft landed — drives the solo landing cinematic
     firstFinishId: null,   // who that was, so only their aircraft moves during it
     finishSeq: 0, // counter handing out p.finishRank in true arrival order as aircraft land on FINISH
+    // Cabin Bulletin numbers for the last scored leg, computed by the admin at reveal.
+    // The raw answers tree is admin-only (see database.rules.json), so the presenter can
+    // never derive these itself — the admin publishes the finished figures instead.
+    legBrief: null, // {leg,total,correctCount,fastestName,fastestTime,avgTime}
   };
 }
 let state = loadState();
@@ -2328,7 +2332,7 @@ const MAX_PLAYERS_PER_ROOM = 200;
 const ADMIN_KEYS = ['gameState','currentQ','currentQuestionIndex','currentCorrectIndex',
   'questionIndexByLeg','powerQuestionActive','powerQuestionUsed','questionOpenedAt','deadline',
   'revealedLegs','undoSnapshot','paused','winnerId','milestones','awardShown','congratsShown',
-  'stormClearedIds','stormRevealAt','revealAt','legAnnouncedAt','firstFinishAt','firstFinishId','finishSeq'];
+  'stormClearedIds','stormRevealAt','revealAt','legAnnouncedAt','firstFinishAt','firstFinishId','finishSeq','legBrief'];
 
 const FB = { mode:'init', role:'player', uid:null };
 let db = null;            // the Realtime Database handle, created once firebase.initializeApp() runs
@@ -2440,8 +2444,9 @@ function setSyncBadge(){
     el.style.cssText = 'position:fixed;bottom:10px;right:12px;z-index:300;font-family:var(--font-mono);font-size:11px;padding:5px 10px;border-radius:20px;border:1px solid var(--glass-brd);background:rgba(0,20,45,.75);backdrop-filter:blur(8px);';
     document.body.appendChild(el);
   }
+  const playerCount = Object.keys(state.players||{}).length;
   const map = {
-    online:  [t('sync.live',{room:ROOM}), 'rgba(46,204,113,.6)'],
+    online:  [t('sync.live',{count:playerCount, s: playerCount===1?'':'s'}), 'rgba(46,204,113,.6)'],
     offline: [t('sync.offline'), 'rgba(240,180,60,.6)'],
     init:    [t('sync.connecting'), 'var(--glass-brd)'],
   };
@@ -2844,7 +2849,7 @@ function playerSubmitAnswer(choiceIdx){
   if(myTimeUp()){ toast(t('p.timeUpToast')); return; }
   const existing = me.answers[state.currentQ];
   if(existing && existing.submitted) return;
-  me.answers[state.currentQ] = { choice: choiceIdx, submitted:false, turbo: existing ? !!existing.turbo : false };
+  me.answers[state.currentQ] = { choice: choiceIdx, submitted:false, turbo: existing ? !!existing.turbo : false, fifty: existing ? !!existing.fifty : false, seatbelt: existing ? !!existing.seatbelt : false };
   saveState();
   renderPlayer();
 }
@@ -2875,6 +2880,11 @@ function me_stormActive(){ return isStormLeg(state.currentQ); }
 function helpsUnlocked(){
   const me = state.players[myPlayerId];
   return !!me && me.position >= TURBO_MIN_LEG;
+}
+/* 50:50 is the one help that is not rank-gated: every player gets exactly one, from Leg 1,
+   whatever position they are in. Turbo and Fasten Seatbelt still unlock at MUC. */
+function fiftyUnlocked(){
+  return !!state.players[myPlayerId];
 }
 function boostsBlocked(){
   return me_turbulenceActive() || me_stormActive() || !!state.powerQuestionActive;
@@ -2917,7 +2927,7 @@ function playerUseFifty(){
   if(!me) return;
   if(me.fiftyUsed){ toast(t('h.fiftyUsed')); return; }
   if(myTimeUp()){ toast(t('p.timeUpToast')); return; }
-  if(!helpsUnlocked() || boostsBlocked()){ toast(boostBlockedReason(t('h.nameFifty'))); return; }
+  if(!fiftyUnlocked() || boostsBlocked()){ toast(boostBlockedReason(t('h.nameFifty'))); return; }
   const existing = myAnswerDraft();
   if(existing.submitted || existing.fifty) return;
   existing.fifty = true;
@@ -3077,22 +3087,19 @@ function renderBizRibbon(me){
 function renderHelps(me, myAns){
   const wrap = document.getElementById('pHelpsWrap');
   if(!wrap) return;
-  if(!helpsUnlocked()){
-    wrap.innerHTML = `<div class="help-hint">${t('h.locked',{code:ROUTE[TURBO_MIN_LEG].code})}</div>`;
-    return;
-  }
+  const rankHelps = helpsUnlocked();
   const live = canActNow();
   const armedTurbo = !!(myAns && myAns.turbo);
   const armedBelt = !!(myAns && myAns.seatbelt);
   const fiftyGone = !!me.fiftyUsed || !!(myAns && myAns.fifty);
   const boostOk = live && !boostsBlocked();
-  const beltOk = live && me_turbulenceActive();
+  const beltOk = live && rankHelps && me_turbulenceActive();
   const btn = (ic, lb, spent, armed, disabled, title, fn)=>
     `<button class="help-btn${spent?' spent':(armed?' armed':'')}" ${disabled?'disabled':''} title="${title}" onclick="${fn}"><span class="ic">${ic}</span><span class="lb">${lb}</span></button>`;
   wrap.innerHTML = `<div class="help-row">
     ${btn(HELP_ICONS.fifty,t('h.fifty'), fiftyGone, false, fiftyGone || !boostOk,
         fiftyGone?t('h.fiftyUsed'):t('h.fiftyTip'), 'playerUseFifty()')}
-    ${btn(HELP_ICONS.turbo,t('h.turbo'), !!me.turboUsed, armedTurbo, !!me.turboUsed || !boostOk,
+    ${btn(HELP_ICONS.turbo,t('h.turbo'), !!me.turboUsed, armedTurbo, !!me.turboUsed || !rankHelps || !boostOk,
         me.turboUsed?t('h.turboUsed'):t('h.turboTip'), 'playerToggleTurbo()')}
     ${btn(HELP_ICONS.seatbelt,t('h.belt'), !!me.seatbeltUsed, armedBelt, !!me.seatbeltUsed || !beltOk,
         me.seatbeltUsed?t('h.beltUsed'):t('h.beltTip'), 'playerToggleSeatbelt()')}
@@ -3103,6 +3110,7 @@ function renderHelps(me, myAns){
   else if(me_turbulenceActive()) hint = t('h.turbOnly');
   else if(me_stormActive()) hint = t('h.stormAll');
   else if(state.powerQuestionActive) hint = t('h.powerAll');
+  else if(!rankHelps) hint = t('h.locked',{code:ROUTE[TURBO_MIN_LEG].code});
   if(hint) wrap.innerHTML += `<div class="help-hint">${hint}</div>`;
 }
 
@@ -3647,30 +3655,42 @@ function lastScoredLeg(){
   const legs = Object.keys(state.revealedLegs||{}).filter(k=>state.revealedLegs[k]).map(Number);
   return legs.length ? Math.max.apply(null, legs) : null;
 }
+/* Only the admin can read rooms/{ROOM}/answers, so the presenter has no way to work out
+   who was quickest or how many got it right. The admin boils the leg down to these few
+   numbers at reveal and publishes them in the admin slice, which everyone can read. */
+function buildLegBrief(leg, correctIdx){
+  const players = Object.values(state.players);
+  const submitted = players.map(p=>({p, a:p.answers[leg]})).filter(x=>x.a && x.a.submitted);
+  const correct = submitted.filter(x=>x.a.choice===correctIdx);
+  const fastest = correct.slice().sort((a,b)=>(a.a.timeTaken||Infinity)-(b.a.timeTaken||Infinity))[0];
+  const times = submitted.map(x=>x.a.timeTaken).filter(v=>typeof v==='number');
+  return {
+    leg,
+    total: players.length,
+    correctCount: correct.length,
+    fastestName: fastest ? fastest.p.name : null,
+    fastestTime: fastest && typeof fastest.a.timeTaken==='number' ? fastest.a.timeTaken : null,
+    avgTime: times.length ? Math.round(times.reduce((s,v)=>s+v,0)/times.length) : null,
+  };
+}
 function renderPresenterBrief(){
   const legEl = document.getElementById('briefLeg');
   const body = document.getElementById('briefBody');
   if(!body) return;
   const players = Object.values(state.players);
   const leg = lastScoredLeg();
-  const qid = leg!==null ? (state.questionIndexByLeg||{})[leg] : null;
-  const qd = qid!=null ? QUESTIONS_BY_ID[qid] : null;
+  const brief = (state.legBrief && state.legBrief.leg===leg) ? state.legBrief : null;
 
-  if(leg===null || !qd || players.length===0){
+  if(leg===null || !brief || players.length===0){
     if(legEl) legEl.textContent = '—';
     body.innerHTML = `<div class="brief-empty brief-item wide">${t('brief.standby')}</div>`;
     return;
   }
   if(legEl) legEl.textContent = legLabel(leg).toUpperCase();
 
-  const answers = players.map(p=>({p, a:p.answers[leg]})).filter(x=>x.a && x.a.submitted);
-  const correct = answers.filter(x=>x.a.choice===qd.correct);
   // everyone who didn't answer counts against the rate — sitting it out is not a pass
-  const rate = players.length ? Math.round(correct.length/players.length*100) : 0;
-  // just the single quickest correct answer — three names pushed the panel past its height
-  // in Vietnamese (the longer labels wrap) and silently scrolled the last stat out of view
-  const fastest = correct.slice()
-    .sort((a,b)=>(a.a.timeTaken||Infinity)-(b.a.timeTaken||Infinity))[0];
+  const total = brief.total || players.length;
+  const rate = total ? Math.round(brief.correctCount/total*100) : 0;
 
   const leader = rankedPlayers()[0];
   // busiest stop on the board right now
@@ -3680,16 +3700,15 @@ function renderPresenterBrief(){
   Object.keys(tally).forEach(k=>{ if(tally[k] > busyN){ busyN = tally[k]; busyPos = +k; } });
 
   // pace, read off how long the room took to answer this one
-  const times = answers.map(x=>x.a.timeTaken).filter(t=>typeof t==='number');
-  const avg = times.length ? times.reduce((s,t)=>s+t,0)/times.length : null;
+  const avg = (typeof brief.avgTime==='number') ? brief.avgTime : null;
   let pace, paceCls, paceIcon;
   if(avg===null){ pace=t('brief.paceNone'); paceCls=''; paceIcon='📉'; }
   else if(avg < 7000){ pace=t('brief.paceFast'); paceCls='pace-fast'; paceIcon='🚀'; }
   else if(avg < 14000){ pace=t('brief.paceSteady'); paceCls='pace-med'; paceIcon='🧭'; }
   else { pace=t('brief.paceSlow'); paceCls='pace-slow'; paceIcon='🐢'; }
 
-  const fastestHtml = fastest
-    ? `🥇 ${escapeHtml(fastest.p.name)} <span class="sub">${formatTime(fastest.a.timeTaken)}</span>`
+  const fastestHtml = brief.fastestName
+    ? `🥇 ${escapeHtml(brief.fastestName)} <span class="sub">${formatTime(brief.fastestTime)}</span>`
     : ('<span class="sub">'+t('brief.noneCorrect')+'</span>');
 
   const item = (icon, label, value, wide)=>
@@ -3697,7 +3716,7 @@ function renderPresenterBrief(){
 
   body.innerHTML =
     item('⚡',t('brief.fastest'), fastestHtml, true) +
-    item('✅',t('brief.correct'), `${correct.length} <span class="sub">${t('brief.ofN',{n:players.length})}</span>`) +
+    item('✅',t('brief.correct'), `${brief.correctCount} <span class="sub">${t('brief.ofN',{n:total})}</span>`) +
     item('📊',t('brief.rate'), `${rate}%`) +
     item('👑',t('brief.leaderAt'), leader ? `${ROUTE[leader.position].code} <span class="sub">${escapeHtml(ROUTE[leader.position].city)}</span>` : '—') +
     item('🛬',t('brief.busiest'), busyPos!==null ? `${ROUTE[busyPos].code} <span class="sub">${t('brief.aircraftN',{n:busyN})}</span>` : '—') +
@@ -4248,6 +4267,7 @@ function adminRevealAnswer(){
   }
 
   state.revealedLegs[state.currentQ] = true;
+  state.legBrief = buildLegBrief(state.currentQ, correctIdx);
 
   // The race keeps running until FINISHERS_TO_END aircraft have landed on FINISH — hand out
   // finishRank in true arrival order (several can land on the same reveal thanks to
@@ -4293,6 +4313,7 @@ function adminUndoReveal(){
   state.stormClearedIds = null;
   state.stormRevealAt = null;
   state.revealAt = null;
+  state.legBrief = null;
   // if that reveal was the one that produced the first landing, the cinematic is undone too
   if(state.firstFinishId && !(state.players[state.firstFinishId] || {}).finishRank){
     state.firstFinishAt = null;
@@ -4437,6 +4458,7 @@ function resetProgress(){
   state.stormRevealAt = null;
   state.revealAt = null;
   state.finishSeq = 0;
+  state.legBrief = null;
   resetPresenterCinematics();
   saveState();
   toast(t('a.t.resetProgressDone'));
@@ -4699,6 +4721,7 @@ function sanitizeState(){
 }
 function renderAll(){
   sanitizeState();
+  setSyncBadge();
   renderPlayer();
   renderPresenter();
   renderAdmin();
