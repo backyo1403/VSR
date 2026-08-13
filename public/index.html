@@ -78,11 +78,24 @@ body{
 h1,h2,h3,.display{font-family:var(--font-display);}
 .mono{font-family:var(--font-mono); letter-spacing:.04em;}
 
-/* ambient clouds */
+/* ---------- ambient sky: three parallax cloud layers ----------
+   Depth is sold by four things moving together — speed, size, opacity and blur. Far clouds
+   crawl, near clouds sweep past. Because they share one @keyframes and differ only in
+   animation-duration, a single multiplier on the field can speed the whole sky up at once
+   (see .sky-fast / bumpSkySpeed), which is what makes a Turbo Boost feel like speed rather
+   than just a token jumping two stops. */
 .cloud-field{position:fixed; inset:0; overflow:hidden; z-index:0; pointer-events:none;}
-.cloud{position:absolute; opacity:.35; filter:blur(1px); animation:drift linear infinite;}
+.cloud{position:absolute; animation:drift linear infinite; will-change:transform;}
 .cloud svg{display:block;}
-@keyframes drift{ from{transform:translateX(-15vw);} to{transform:translateX(115vw);} }
+/* soft shadow under each cloud, so they read as sitting above the map rather than printed on it */
+.cloud.layer-far {opacity:.18; filter:blur(2.4px) drop-shadow(0 5px 7px rgba(0,18,52,.16));}
+.cloud.layer-mid {opacity:.30; filter:blur(1.3px) drop-shadow(0 7px 10px rgba(0,18,52,.22));}
+.cloud.layer-near{opacity:.42; filter:blur(.4px)  drop-shadow(0 11px 16px rgba(0,18,52,.30));}
+@keyframes drift{ from{transform:translateX(-22vw);} to{transform:translateX(122vw);} }
+/* Turbo Boost: the whole sky accelerates for a few seconds. Transitioning animation-duration
+   is not animatable, so the speed-up rides on a scaled duration applied per layer instead. */
+.cloud-field.sky-fast .cloud{animation-duration:var(--fast-dur);}
+.cloud-field .cloud{animation-duration:var(--dur);}
 .glow-orb{position:fixed; border-radius:50%; filter:blur(60px); opacity:.35; z-index:0; pointer-events:none;}
 
 .glass{
@@ -351,6 +364,60 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .new-leader-banner .tag{font-family:var(--font-display); font-weight:800; font-size:22px; letter-spacing:.05em;}
 .new-leader-banner .who{font-family:var(--font-display); font-weight:800; font-size:36px; margin-top:6px;}
 
+/* ---------- CLEAR SKIES: the map panel's own daylight ----------
+   Only mounted when no weather owns the screen (see updateSkyAmbience). Everything here is
+   deliberately faint — it should read as light in the room, never as another widget. */
+/* z-index:0, not 1 — this layer must paint BEHIND the route SVG and the airport labels.
+   Above them, the sun wash greyed the stop names, which have to stay crisp from the back of
+   the room. The aircraft tokens (z-index:5) still ride above the glow either way. */
+.sky-ambience{position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0; border-radius:26px;}
+/* the sun itself sits just off the top-right corner, so only its glow is on screen */
+.sun-corner{
+  position:absolute; top:-120px; right:-100px; width:420px; height:420px; border-radius:50%;
+  background:radial-gradient(circle, rgba(255,228,150,.36) 0%, rgba(255,205,105,.17) 38%, rgba(255,190,80,0) 70%);
+  filter:blur(6px); animation:sunBreathe 7s ease-in-out infinite;
+}
+@keyframes sunBreathe{0%,100%{opacity:.78; transform:scale(1);} 50%{opacity:1; transform:scale(1.05);}}
+/* a second, wider wash so the top-right of the map is measurably brighter than the bottom-left */
+.sun-wash{
+  position:absolute; inset:0;
+  background:radial-gradient(120% 90% at 88% -8%, rgba(255,222,150,.13) 0%, rgba(255,210,120,.05) 42%, rgba(0,0,0,0) 72%);
+}
+/* Lens flare — spawned for ~1.1s when an aircraft crosses under the sun. One shot, then removed. */
+.lens-flare{position:absolute; transform:translate(-50%,-50%); pointer-events:none; animation:flarePop 1.1s ease-out forwards;}
+.lens-flare .core{
+  position:absolute; left:50%; top:50%; width:58px; height:58px; margin:-29px 0 0 -29px; border-radius:50%;
+  background:radial-gradient(circle, rgba(255,255,240,.85) 0%, rgba(255,225,150,.4) 40%, rgba(255,215,120,0) 70%);
+}
+.lens-flare .streak{
+  position:absolute; left:50%; top:50%; width:150px; height:2.5px; margin:-1.25px 0 0 -75px; border-radius:2px;
+  background:linear-gradient(90deg, rgba(255,225,150,0), rgba(255,240,200,.7), rgba(255,225,150,0));
+}
+.lens-flare .ghost{
+  position:absolute; border-radius:50%; background:rgba(255,228,160,.3);
+}
+@keyframes flarePop{0%{opacity:0; transform:translate(-50%,-50%) scale(.55);} 22%{opacity:1; transform:translate(-50%,-50%) scale(1);} 100%{opacity:0; transform:translate(-50%,-50%) scale(1.3);}}
+/* Aircraft fuselage lighting: --lit runs 0 (shaded, far from the sun) → 1 (lit, under it).
+   Set per token from its map position, so a plane visibly catches the light as it flies east. */
+.plane-token .icon{
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))
+         drop-shadow(0 0 calc(var(--lit, 0) * 9px) rgba(255,226,150, calc(var(--lit, 0) * .85)))
+         brightness(calc(1 + var(--lit, 0) * .22));
+  transition:filter 1.6s ease;
+}
+/* ---------- tiny background life: distant birds, far-off traffic, a stray contrail ----------
+   Rare on purpose (one every 15-25s). The point is that the world looks inhabited, not that
+   anybody watches these. */
+.tiny-obj{position:absolute; pointer-events:none; z-index:1; white-space:nowrap; will-change:transform;}
+.tiny-bird{font-size:9px; opacity:.3; filter:blur(.2px); animation:tinyCross linear forwards;}
+.tiny-jet{font-size:11px; opacity:.24; filter:blur(.3px); animation:tinyCross linear forwards;}
+.tiny-trail{
+  height:1.5px; border-radius:2px; opacity:.2;
+  background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.75), rgba(255,255,255,0));
+  animation:tinyCross linear forwards;
+}
+@keyframes tinyCross{ from{transform:translateX(0);} to{transform:translateX(var(--cross, 120%));} }
+
 /* Location-themed backdrop — tracks whoever is currently in the lead. Stylised
    gradient + floating watermark icon per stop rather than a fully illustrated scene. */
 .map-panel{transition:background 1.6s ease;}
@@ -584,6 +651,73 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
   padding:11px; border-radius:14px; background:rgba(46,204,113,.24); border:2px solid var(--good); color:#d6ffe8;
 }
 .pres-fullscreen-btn{padding:8px 14px; font-size:13px; border-radius:20px;}
+/* ---------- EVENT FEED: the rolling news ticker along the bottom of the wall ----------
+   Two identical copies of the item list sit side by side inside .ticker-track, and the track
+   slides exactly -50% — so the moment copy 1 leaves the screen, copy 2 is pixel-identical in
+   its place and the loop is seamless. New content is swapped in only at that wrap point
+   (see refreshEventFeed), so the text never jumps mid-sentence. */
+.ticker{
+  flex-shrink:0; display:flex; align-items:center; gap:0; overflow:hidden;
+  border-radius:14px; margin-top:10px; height:38px;
+  background:linear-gradient(90deg, rgba(0,25,60,.92), rgba(0,40,90,.82));
+  border:1px solid rgba(120,180,255,.22);
+}
+/* "LIVE" flag pinned at the left edge; the text streams out from behind it. This flag is also
+   the presenter's sync indicator — the floating corner badge is hidden on this screen, since
+   two "we are live" widgets on one wall is one too many (see setSyncBadge). */
+.ticker-flag{
+  flex-shrink:0; align-self:stretch; display:flex; align-items:center; gap:6px; padding:0 13px;
+  background:linear-gradient(135deg,#d92b2b,#a81111); color:#fff;
+  font-family:var(--font-display); font-weight:800; font-size:11.5px; letter-spacing:.12em;
+  text-transform:uppercase; z-index:2; box-shadow:4px 0 14px rgba(0,10,30,.55);
+  transition:background .4s ease;
+  white-space:nowrap;
+}
+.ticker-flag .dot{
+  width:7px; height:7px; border-radius:50%; background:#fff;
+  animation:tickerBlink 1.1s steps(1,end) infinite;
+}
+@keyframes tickerBlink{0%,49%{opacity:1;} 50%,100%{opacity:.25;}}
+/* Offline and connecting must not wear the red LIVE colour — on the wall that would read as
+   "we are broadcasting" when the room is actually running off one laptop. */
+.ticker-flag.st-offline{background:linear-gradient(135deg,#c98a12,#8a5c06);}
+.ticker-flag.st-init{background:linear-gradient(135deg,#3d5773,#26384d);}
+.ticker-flag.st-offline .dot{animation:none; background:#ffe0a0;}
+.ticker-flag.st-init .dot{background:rgba(255,255,255,.7);}
+.ticker-flag .count{
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.02em; opacity:.9;
+  padding-left:5px; margin-left:5px; border-left:1px solid rgba(255,255,255,.35);
+}
+.ticker-viewport{flex:1; min-width:0; overflow:hidden; position:relative; height:100%;}
+.ticker-track{
+  position:absolute; top:0; left:0; height:100%; display:flex; align-items:center;
+  white-space:nowrap; will-change:transform;
+  animation:tickerScroll linear infinite;
+}
+@keyframes tickerScroll{ from{transform:translateX(0);} to{transform:translateX(-50%);} }
+.ticker-item{
+  display:inline-flex; align-items:center; gap:7px; padding:0 22px;
+  font-size:13.5px; font-weight:600; color:rgba(226,240,255,.94); flex-shrink:0;
+}
+.ticker-item .ic{font-size:14.5px; line-height:1;}
+.ticker-item b{color:var(--vna-gold-light); font-weight:800;}
+/* separator diamond between stories */
+.ticker-sep{flex-shrink:0; color:rgba(150,195,255,.42); font-size:9px; padding:0 2px;}
+/* weather and overtake stories get a tint so the eye catches the important ones */
+.ticker-item.hot b{color:#ffd0a0;}
+.ticker-item.wx b{color:#a9d4ff;}
+/* ---------- camera selector, sitting beside the fullscreen button ---------- */
+.cam-switch{display:flex; gap:4px; padding:3px; border-radius:20px; background:rgba(0,20,50,.5); border:1px solid var(--glass-brd);}
+.cam-btn{
+  padding:6px 11px; border-radius:16px; border:0; cursor:pointer; background:transparent;
+  color:rgba(255,255,255,.62); font-family:var(--font-mono); font-size:11.5px; font-weight:700;
+  letter-spacing:.04em; transition:background .18s ease, color .18s ease;
+}
+.cam-btn:hover{color:#fff; background:rgba(255,255,255,.09);}
+.cam-btn.active{background:var(--vna-gold); color:#1d1400;}
+/* while a cinematic has taken the camera, the selector greys out — the buttons still work,
+   they just don't take effect until the cinematic releases the map */
+.cam-switch.cam-locked{opacity:.45;}
 
 /* ---------- big weather announcement (lobby only, presenter + player) ---------- */
 .wx-announce{
@@ -1009,11 +1143,17 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
         <div class="pres-status-pill final-round-pill hidden" id="finalRoundBadge">☀️ FINAL ROUND</div>
       <div class="pres-status-pill glass" id="weatherBadge">🌈 Clear Skies</div>
         <div class="pres-status-pill glass" id="presStatePill">LOBBY</div>
+        <div class="cam-switch" id="camSwitch">
+          <button class="cam-btn active" id="camBtn1" data-cam="1" onclick="setPresenterCam(1)"></button>
+          <button class="cam-btn" id="camBtn2" data-cam="2" onclick="setPresenterCam(2)"></button>
+          <button class="cam-btn" id="camBtn3" data-cam="3" onclick="setPresenterCam(3)"></button>
+        </div>
         <button class="btn btn-ghost pres-fullscreen-btn" id="presFullscreenBtn" onclick="togglePresenterFullscreen()"></button>
       </div>
     </div>
     <div class="pres-body">
       <div class="map-panel glass" id="mapPanel">
+        <div class="sky-ambience hidden" id="skyAmbience"><div class="sun-wash"></div><div class="sun-corner"></div></div>
         <div class="scene-watermark" id="sceneWatermark"></div>
         <div class="map-zoom-wrap" id="mapZoomWrap">
           <svg class="route-svg" id="routeSvg" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet"></svg>
@@ -1036,6 +1176,10 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
       </div>
     </div>
     <div class="q-status-card glass mono" id="presQStatus">Waiting for admin to open Question 1…</div>
+    <div class="ticker" id="eventFeed">
+      <div class="ticker-flag" id="tickerFlag"><span class="dot"></span><span id="tickerFlagText">LIVE</span><span class="count hidden" id="tickerFlagCount"></span></div>
+      <div class="ticker-viewport"><div class="ticker-track" id="tickerTrack"></div></div>
+    </div>
   </section>
 
   <!-- ============ ADMIN ============ -->
@@ -1364,6 +1508,56 @@ vi: {
   /* --- presenter --- */
   'pres.fullscreen':'⛶ Toàn màn hình',
   'pres.exitFullscreen':'⛶ Thoát toàn màn hình',
+  'cam.1':'CAM 1', 'cam.2':'CAM 2', 'cam.3':'CAM 3',
+  'cam.1.tip':'CAM 1 · Toàn cảnh đường đua',
+  'cam.2.tip':'CAM 2 · Bám theo người dẫn đầu',
+  'cam.3.tip':'CAM 3 · Nơi đông máy bay nhất',
+  'cam.switched':'📷 {name}',
+  'cam.noPlayers':'Chưa có máy bay nào để bám theo',
+
+  /* --- event feed: dòng tin chạy dưới cùng màn presenter --- */
+  'feed.flag':'TRỰC TIẾP',
+  'feed.flagOffline':'NGOẠI TUYẾN',
+  'feed.flagInit':'ĐANG KẾT NỐI',
+  'feed.flagCount':'{n} người chơi',
+  'feed.flagOneDevice':'chỉ máy này',
+  'feed.waiting':'Đang chờ người chơi tham gia đường đua…',
+  'feed.lobbyReady':'{n} máy bay đã sẵn sàng tại cửa khởi hành',
+  'feed.raceOn':'Sky Race đang diễn ra — chặng {leg}',
+  'feed.leader':'<b>{name}</b> đang dẫn đầu tại <b>{code}</b> · {city}',
+  'feed.leaderAlone':'<b>{name}</b> dẫn đầu một mình, hơn người thứ nhì <b>{gap}</b>',
+  'feed.second':'Vị trí nhì: <b>{name}</b>, kém người dẫn đầu <b>{gap}</b>',
+  'feed.third':'Vị trí ba: <b>{name}</b> tại <b>{code}</b>',
+  'feed.neck':'Sát nút! <b>{name}</b> đang ngang bằng người dẫn đầu',
+  'feed.chasing':'<b>{name}</b> bám sát người dẫn đầu, chỉ cách <b>{gap}</b>',
+  'feed.raceNeck':'Tranh suất về đích: <b>{a}</b> đang ngang bằng <b>{b}</b>',
+  'feed.raceGap':'Tranh suất về đích: <b>{a}</b> kém <b>{b}</b> <b>{gap}</b>',
+  'feed.gapLegs':'{n} chặng',
+  'feed.gapOne':'1 chặng',
+  'feed.slowest':'Về sau cùng hiện tại: <b>{name}</b> tại <b>{code}</b>',
+  'feed.accuracy':'Tỉ lệ đúng cao nhất: <b>{name}</b> — <b>{pct}%</b> ({n}/{total} câu)',
+  'feed.overtake':'Lượt vừa rồi <b>{a}</b> vượt qua <b>{b}</b>',
+  'feed.overtakeMulti':'Lượt vừa rồi có <b>{n}</b> cú vượt trên đường đua',
+  'feed.correctCount':'Lượt {leg}: <b>{n}</b>/{total} máy bay trả lời đúng',
+  'feed.noneCorrect':'Lượt {leg}: không một máy bay nào trả lời đúng',
+  'feed.allCorrect':'Lượt {leg}: cả <b>{n}</b> máy bay đều trả lời đúng',
+  'feed.fastest':'Nhanh nhất lượt {leg}: <b>{name}</b> — {time}',
+  'feed.pace':'Nhịp độ khoang: <b>{label}</b>, trung bình {time}',
+  'feed.turbo':'Lượt vừa rồi có <b>{n}</b> máy bay bật Turbo Boost',
+  'feed.busiest':'Đông nhất: <b>{code}</b> · {city} với <b>{n}</b> máy bay',
+  'feed.eta':'<b>{name}</b> còn <b>{n}</b> chặng nữa là hạ cánh',
+  'feed.etaOne':'<b>{name}</b> chỉ còn <b>1 chặng</b> nữa là hạ cánh!',
+  'feed.streak':'<b>{name}</b> đang có chuỗi <b>{n}</b> câu đúng liên tiếp',
+  'feed.milestone':'<b>{name}</b> là người đầu tiên tới <b>{code}</b>',
+  'feed.finalRound':'CHẶNG CUỐI — máy bay đầu tiên sắp hạ cánh!',
+  'feed.landed':'<b>{name}</b> đã hạ cánh — về đích thứ <b>{rank}</b>',
+  'feed.slotsLeft':'Còn <b>{n}</b> suất về đích',
+  'feed.bank':'Còn <b>{n}</b> câu hỏi trong kho',
+  'feed.wxClear':'Thời tiết: trời quang, không có nhiễu động',
+  'feed.wxTurb':'Thời tiết: <b>NHIỄU ĐỘNG</b> — trả lời sai bị lùi 1 chặng',
+  'feed.wxStorm':'Thời tiết: <b>BÃO</b> — chỉ 10 câu đúng nhanh nhất được bay tiếp',
+  'feed.wxSun':'<b>TRỜI NẮNG ĐẸP</b> — đúng nhanh nhất được +2 chặng',
+  'feed.raceDone':'Cuộc đua đã kết thúc — chúc mừng các nhà vô địch!',
   'pres.fsUnsupported':'Trình duyệt này không hỗ trợ chế độ toàn màn hình',
   'pres.fsBlocked':'Trình duyệt đã chặn chế độ toàn màn hình',
   'pres.leaderboard':'Bảng xếp hạng trực tiếp',
@@ -1717,6 +1911,56 @@ en: {
 
   'pres.fullscreen':'⛶ Fullscreen',
   'pres.exitFullscreen':'⛶ Exit fullscreen',
+  'cam.1':'CAM 1', 'cam.2':'CAM 2', 'cam.3':'CAM 3',
+  'cam.1.tip':'CAM 1 · Whole race',
+  'cam.2.tip':'CAM 2 · Follow the leader',
+  'cam.3.tip':'CAM 3 · Busiest airspace',
+  'cam.switched':'📷 {name}',
+  'cam.noPlayers':'No aircraft to follow yet',
+
+  /* --- event feed: the rolling ticker along the bottom of the presenter wall --- */
+  'feed.flag':'LIVE',
+  'feed.flagOffline':'OFFLINE',
+  'feed.flagInit':'CONNECTING',
+  'feed.flagCount':'{n} players',
+  'feed.flagOneDevice':'one device',
+  'feed.waiting':'Waiting for players to join the race…',
+  'feed.lobbyReady':'{n} aircraft ready at the departure gate',
+  'feed.raceOn':'Sky Race under way — leg {leg}',
+  'feed.leader':'<b>{name}</b> leads the race at <b>{code}</b> · {city}',
+  'feed.leaderAlone':'<b>{name}</b> out in front alone, <b>{gap}</b> clear of second',
+  'feed.second':'Second place: <b>{name}</b>, <b>{gap}</b> off the lead',
+  'feed.third':'Third place: <b>{name}</b> at <b>{code}</b>',
+  'feed.neck':'Neck and neck! <b>{name}</b> is level with the leader',
+  'feed.chasing':'<b>{name}</b> closing on the leader, just <b>{gap}</b> behind',
+  'feed.raceNeck':'Fight for a finishing place: <b>{a}</b> is level with <b>{b}</b>',
+  'feed.raceGap':'Fight for a finishing place: <b>{a}</b> trails <b>{b}</b> by <b>{gap}</b>',
+  'feed.gapLegs':'{n} legs',
+  'feed.gapOne':'1 leg',
+  'feed.slowest':'Currently last: <b>{name}</b> at <b>{code}</b>',
+  'feed.accuracy':'Best accuracy: <b>{name}</b> — <b>{pct}%</b> ({n}/{total} correct)',
+  'feed.overtake':'Last round <b>{a}</b> overtook <b>{b}</b>',
+  'feed.overtakeMulti':'<b>{n}</b> overtakes on the route last round',
+  'feed.correctCount':'Leg {leg}: <b>{n}</b>/{total} aircraft answered correctly',
+  'feed.noneCorrect':'Leg {leg}: not a single aircraft got it right',
+  'feed.allCorrect':'Leg {leg}: all <b>{n}</b> aircraft answered correctly',
+  'feed.fastest':'Fastest on leg {leg}: <b>{name}</b> — {time}',
+  'feed.pace':'Cabin pace: <b>{label}</b>, averaging {time}',
+  'feed.turbo':'<b>{n}</b> aircraft ran Turbo Boost last round',
+  'feed.busiest':'Busiest stop: <b>{code}</b> · {city} with <b>{n}</b> aircraft',
+  'feed.eta':'<b>{name}</b> is <b>{n}</b> legs from landing',
+  'feed.etaOne':'<b>{name}</b> is just <b>1 leg</b> from landing!',
+  'feed.streak':'<b>{name}</b> is on a <b>{n}</b>-answer streak',
+  'feed.milestone':'<b>{name}</b> was first to reach <b>{code}</b>',
+  'feed.finalRound':'FINAL ROUND — the first aircraft is about to land!',
+  'feed.landed':'<b>{name}</b> has landed — finishing <b>{rank}</b>',
+  'feed.slotsLeft':'<b>{n}</b> finishing places still open',
+  'feed.bank':'<b>{n}</b> questions left in the bank',
+  'feed.wxClear':'Weather: clear skies, no turbulence',
+  'feed.wxTurb':'Weather: <b>TURBULENCE</b> — a wrong answer costs a leg',
+  'feed.wxStorm':'Weather: <b>STORM</b> — only the 10 fastest correct answers fly on',
+  'feed.wxSun':'<b>SUNSHINE</b> — fastest correct answer takes +2 legs',
+  'feed.raceDone':'The race is over — congratulations to our champions!',
   'pres.fsUnsupported':'Fullscreen is not supported in this browser',
   'pres.fsBlocked':'Fullscreen was blocked by the browser',
   'pres.leaderboard':'Live Leaderboard',
@@ -1907,8 +2151,10 @@ function applyStaticI18n(){
   document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder = t(el.dataset.i18nPh); });
   document.querySelectorAll('[data-i18n-title]').forEach(el=>{ el.title = t(el.dataset.i18nTitle); });
   document.querySelectorAll('.lang-opt').forEach(b=>{ b.classList.toggle('on', b.dataset.lang===LANG); });
-  // this one's label depends on runtime state, not just the language, so it can't be a data-i18n
+  // these depend on runtime state, not just the language, so they can't be data-i18n
   if(typeof syncFullscreenBtn === 'function') syncFullscreenBtn();
+  if(typeof syncCamButtons === 'function') syncCamButtons();
+  if(typeof paintTickerFlag === 'function') paintTickerFlag();
 }
 function setLang(l){
   if(LANGS.indexOf(l) < 0 || l === LANG) return;
@@ -1917,6 +2163,9 @@ function setLang(l){
   loadQuestions();   // re-reads the bank in the new language, same shuffle order
   applyStaticI18n();
   if(typeof rulesPage !== 'undefined' && !document.getElementById('rulesModal').classList.contains('hidden')) rulesGoPage(rulesPage);
+  // the ticker normally only re-reads at its wrap point, which can be half a minute away —
+  // a language switch has to show immediately, so force it
+  if(typeof refreshEventFeed === 'function') refreshEventFeed(true);
   renderAll();
 }
 // True "S" route: x traces one sine period (bulge right, then bulge left) while y
@@ -2508,6 +2757,13 @@ function setSyncBadge(){
   const [txt, brd] = map[FB.mode] || map.init;
   el.textContent = txt;
   el.style.borderColor = brd;
+  /* On the presenter wall the corner badge is redundant: the event-feed flag on the left says
+     the same thing, so the badge is hidden there and the flag carries the sync state instead.
+     Player and admin keep the badge — neither has a ticker, and the admin above all needs to
+     see a sync failure the moment it happens. */
+  const onPresenter = !document.getElementById('view-presenter').classList.contains('hidden');
+  el.style.display = onPresenter ? 'none' : '';
+  if(onPresenter) paintTickerFlag();
 }
 
 function goOffline(why){
@@ -2784,23 +3040,49 @@ document.addEventListener('keydown', (e)=>{
   }
 });
 
-/* ---------- ambient clouds ---------- */
+/* ---------- ambient sky: three parallax cloud layers ----------
+   Far clouds are small, pale and slow; near clouds are large, brighter and quick. Each cloud
+   carries its own --dur (normal) and --fast-dur (Turbo), so adding .sky-fast to the field
+   speeds every layer at once while keeping their relative parallax intact. */
+const CLOUD_LAYERS = [
+  { cls:'layer-far',  count:5, wMin: 70, wVar: 70, durMin:150, durVar:70 },
+  { cls:'layer-mid',  count:4, wMin:130, wVar:110, durMin: 85, durVar:45 },
+  { cls:'layer-near', count:3, wMin:230, wVar:170, durMin: 44, durVar:22 },
+];
+const SKY_TURBO_FACTOR = 0.55;  // Turbo rounds run the sky at ~1.8x
 (function initClouds(){
   const field = document.getElementById('cloudField');
-  for(let i=0;i<6;i++){
-    const c = document.createElement('div');
-    c.className='cloud';
-    const w = 120+Math.random()*180, h=w*0.4;
-    const top = 5+Math.random()*70;
-    const dur = 40+Math.random()*40;
-    const delay = -Math.random()*dur;
-    c.style.top = top+'%';
-    c.style.animationDuration = dur+'s';
-    c.style.animationDelay = delay+'s';
-    c.innerHTML = `<svg width="${w}" height="${h}" viewBox="0 0 200 80"><ellipse cx="60" cy="50" rx="55" ry="28" fill="white"/><ellipse cx="110" cy="35" rx="45" ry="30" fill="white"/><ellipse cx="150" cy="52" rx="42" ry="24" fill="white"/></svg>`;
-    field.appendChild(c);
-  }
+  if(!field) return;
+  CLOUD_LAYERS.forEach(L=>{
+    for(let i=0;i<L.count;i++){
+      const c = document.createElement('div');
+      c.className = 'cloud ' + L.cls;
+      const w = L.wMin + Math.random()*L.wVar, h = w*0.4;
+      const dur = L.durMin + Math.random()*L.durVar;
+      c.style.top = (3 + Math.random()*80) + '%';
+      c.style.setProperty('--dur', dur+'s');
+      c.style.setProperty('--fast-dur', (dur*SKY_TURBO_FACTOR)+'s');
+      c.style.animationDelay = (-Math.random()*dur)+'s';
+      c.innerHTML = `<svg width="${w}" height="${h}" viewBox="0 0 200 80"><ellipse cx="60" cy="50" rx="55" ry="28" fill="white"/><ellipse cx="110" cy="35" rx="45" ry="30" fill="white"/><ellipse cx="150" cy="52" rx="42" ry="24" fill="white"/></svg>`;
+      field.appendChild(c);
+    }
+  });
 })();
+/* Turbo Boost made visible as speed rather than as a token teleporting two stops: the whole
+   sky accelerates for a few seconds. Restarting the animations on class change would snap
+   every cloud back to its start position, so each element's elapsed progress is preserved by
+   only swapping the duration — the browser keeps the current phase. */
+let _skyFastUntil = 0;
+function bumpSkySpeed(ms){
+  const field = document.getElementById('cloudField');
+  if(!field) return;
+  _skyFastUntil = Math.max(_skyFastUntil, Date.now() + (ms||6000));
+  field.classList.add('sky-fast');
+  clearTimeout(field._skyTimer);
+  field._skyTimer = setTimeout(()=>{
+    if(Date.now() >= _skyFastUntil) field.classList.remove('sky-fast');
+  }, (ms||6000) + 50);
+}
 
 /* ============================================================
    PLAYER VIEW
@@ -3432,6 +3714,423 @@ const LOCATION_THEMES = {
   FINISH: {cls:'scene-finish',icon:'🏁'},
 };
 const ALL_SCENE_CLASSES = Object.values(LOCATION_THEMES).map(t=>t.cls).filter(Boolean);
+
+/* ============================================================
+   PRESENTER AMBIENCE — clear-skies daylight, tiny background life, camera
+   Everything below is decoration on the presenter wall only. None of it touches game state,
+   and all of it is skipped while the presenter view is hidden, so a player's phone never
+   pays for animations nobody is looking at.
+   ============================================================ */
+
+/* The sun sits off the top-right corner (see .sun-corner), so "sunlit" means high-x, low-y in
+   the 1000x560 route coordinate space. The falloff is normalised between two explicit
+   distances rather than from a single radius: the S-curve only ever comes within ~480 of the
+   sun and never goes past ~840, so a plain 1 - d/reach curve compressed every stop into the
+   dim end of the range and nothing visibly caught the light. NEAR/FAR stretch that real band
+   across the full 0-1, which is what makes flying east actually look like flying into the sun. */
+const SUN_POINT = { x: 1010, y: -60 };
+const SUN_NEAR = 480;   // at or inside this distance: fully lit
+const SUN_FAR  = 840;   // at or beyond this distance: fully shaded
+function sunlitAmount(x, y){
+  const d = Math.hypot(x - SUN_POINT.x, y - SUN_POINT.y);
+  return Math.max(0, Math.min(1, (SUN_FAR - d) / (SUN_FAR - SUN_NEAR)));
+}
+// Is the sky currently clear? Any weather or event owns the panel instead.
+function skyIsClear(){
+  return !isTurbulenceLeg(state.currentQ) && !isStormLeg(state.currentQ) && !state.powerQuestionActive;
+}
+function updateSkyAmbience(){
+  const el = document.getElementById('skyAmbience');
+  if(!el) return;
+  el.classList.toggle('hidden', !skyIsClear());
+}
+
+/* Turbo Boost → the whole sky accelerates. Every client watches the broadcast leg brief
+   rather than the answers tree (which only the admin may read), so the presenter wall reacts
+   to a boost it can't otherwise see. Keyed on the leg so one round bumps the sky once, and
+   the aircraft only start gliding after the answer card clears — which is exactly when the
+   speed-up should land, so it is delayed to match. */
+let _skyBumpedForLeg = null;
+function tickSkyForTurbo(){
+  const brief = state.legBrief;
+  if(!brief || !brief.turboCount){ return; }
+  if(_skyBumpedForLeg === brief.leg) return;
+  _skyBumpedForLeg = brief.leg;
+  const wait = Math.max(0, ANSWER_CARD_MS - (state.revealAt ? Date.now()-state.revealAt : ANSWER_CARD_MS));
+  setTimeout(()=>bumpSkySpeed(6000), wait);
+}
+
+/* Lens flare when an aircraft crosses the sunlit corner. Fired from renderPresenterPlanes
+   on the transition into the bright zone only — holding position under the sun must not
+   re-trigger it every second, so the last state per player is remembered. */
+const _lastLitByPlayer = {};
+// Calibrated against the actual route: only the three brightest stops (HAN, MUC, FINISH)
+// clear this, so a flare stays an occasional highlight rather than a per-round effect.
+const FLARE_THRESHOLD = 0.82;
+function maybeFlare(playerId, x, y, lit){
+  const was = _lastLitByPlayer[playerId] || 0;
+  _lastLitByPlayer[playerId] = lit;
+  if(!(lit >= FLARE_THRESHOLD && was < FLARE_THRESHOLD)) return;
+  if(!skyIsClear()) return;
+  const host = document.getElementById('skyAmbience');
+  if(!host || host.classList.contains('hidden')) return;
+  const f = document.createElement('div');
+  f.className = 'lens-flare';
+  f.style.left = (x/1000*100)+'%';
+  f.style.top  = (y/560*100)+'%';
+  f.innerHTML = '<div class="core"></div><div class="streak"></div>'
+    + '<div class="ghost" style="left:38%; top:44%; width:13px; height:13px;"></div>'
+    + '<div class="ghost" style="left:64%; top:58%; width:8px; height:8px; opacity:.6;"></div>';
+  host.appendChild(f);
+  setTimeout(()=>f.remove(), 1200);
+}
+
+/* Tiny background life — a distant bird, a speck of far-off traffic, a stray contrail.
+   One every 15-25s, never while weather owns the sky, never while the presenter is hidden.
+   Deliberately too small and too faint to compete with the race for attention. */
+const TINY_OBJECTS = [
+  { cls:'tiny-bird',  html:()=>'🐦', top:[8,42],  secs:[16,26] },
+  { cls:'tiny-bird',  html:()=>'🕊', top:[10,38], secs:[18,28] },
+  { cls:'tiny-jet',   html:()=>'✈️', top:[6,30],  secs:[13,20] },
+  { cls:'tiny-trail', html:()=>'',   top:[5,34],  secs:[11,17], width:[40,90] },
+];
+let _tinyTimer = null;
+function spawnTinyObject(){
+  const host = document.getElementById('skyAmbience');
+  const presenterVisible = !document.getElementById('view-presenter').classList.contains('hidden');
+  if(!host || !presenterVisible || !skyIsClear()) return;
+  const spec = TINY_OBJECTS[Math.floor(Math.random()*TINY_OBJECTS.length)];
+  const el = document.createElement('div');
+  el.className = 'tiny-obj ' + spec.cls;
+  const rightToLeft = Math.random() < 0.35;
+  const secs = spec.secs[0] + Math.random()*(spec.secs[1]-spec.secs[0]);
+  el.style.top = (spec.top[0] + Math.random()*(spec.top[1]-spec.top[0])) + '%';
+  el.style.left = rightToLeft ? '105%' : '-8%';
+  el.style.setProperty('--cross', rightToLeft ? '-118vw' : '118vw');
+  el.style.animationDuration = secs+'s';
+  if(spec.width) el.style.width = (spec.width[0] + Math.random()*(spec.width[1]-spec.width[0])) + 'px';
+  if(spec.cls==='tiny-jet' && rightToLeft) el.style.transform = 'scaleX(-1)';
+  el.innerHTML = spec.html();
+  host.appendChild(el);
+  setTimeout(()=>el.remove(), secs*1000 + 500);
+}
+function scheduleTinyObject(){
+  clearTimeout(_tinyTimer);
+  const wait = 15000 + Math.random()*10000;   // 15-25s, per the brief
+  _tinyTimer = setTimeout(()=>{ spawnTinyObject(); scheduleTinyObject(); }, wait);
+}
+scheduleTinyObject();
+
+/* ---------- camera system ----------
+   CAM 1 whole race · CAM 2 the leader · CAM 3 the busiest stretch of airspace.
+   The map already has one transform-driven zoom (#mapZoomWrap), which the landing
+   cinematics also drive. Those outrank the camera: while one is running the selector greys
+   out and applyCamera() no-ops, then the camera reasserts itself the moment it is released. */
+let presCam = 1;
+const CAM_ZOOM = { 1: 1, 2: 1.85, 3: 1.6 };
+let _finishCamHoldUntil = 0;         // set by triggerFinishCinematic while it owns the map
+function cinematicOwnsCamera(){
+  return _soloZoomOn || Date.now() < _finishCamHoldUntil;
+}
+// Where CAM 2 / CAM 3 should point, in route coordinates — or null if there's nothing to see.
+function cameraTarget(){
+  const players = Object.values(state.players);
+  if(!players.length) return null;
+  if(presCam === 2){
+    const leader = rankedPlayers()[0];
+    if(!leader) return null;
+    const n = ROUTE[displayPosition(leader)];
+    return n ? { x:n.x, y:n.y } : null;
+  }
+  if(presCam === 3){
+    // busiest airspace = the stop with the most aircraft; ties go to the one further along,
+    // because that is the end of the field the room actually cares about
+    const byPos = {};
+    players.forEach(p=>{ const d = displayPosition(p); byPos[d] = (byPos[d]||0) + 1; });
+    let best = null, bestN = 0;
+    Object.keys(byPos).forEach(k=>{
+      const pos = +k;
+      if(byPos[pos] > bestN || (byPos[pos] === bestN && pos > best)){ bestN = byPos[pos]; best = pos; }
+    });
+    const n = (best===null) ? null : ROUTE[best];
+    return n ? { x:n.x, y:n.y } : null;
+  }
+  return null;
+}
+function applyCamera(){
+  const wrap = document.getElementById('mapZoomWrap');
+  const sw = document.getElementById('camSwitch');
+  if(sw) sw.classList.toggle('cam-locked', cinematicOwnsCamera());
+  if(!wrap || cinematicOwnsCamera()) return;
+  if(presCam === 1){
+    wrap.style.transformOrigin = '50% 50%';
+    wrap.style.transform = 'scale(1)';
+    return;
+  }
+  const target = cameraTarget();
+  if(!target){ wrap.style.transformOrigin = '50% 50%'; wrap.style.transform = 'scale(1)'; return; }
+  wrap.style.transformOrigin = (target.x/1000*100)+'% '+(target.y/560*100)+'%';
+  wrap.style.transform = 'scale('+CAM_ZOOM[presCam]+')';
+}
+function setPresenterCam(n){
+  presCam = n;
+  ['1','2','3'].forEach(k=>{
+    const b = document.getElementById('camBtn'+k);
+    if(b) b.classList.toggle('active', String(n)===k);
+  });
+  if(n!==1 && !Object.keys(state.players).length) toast(t('cam.noPlayers'));
+  else toast(t('cam.switched',{name:t('cam.'+n+'.tip')}));
+  applyCamera();
+}
+function syncCamButtons(){
+  ['1','2','3'].forEach(k=>{
+    const b = document.getElementById('camBtn'+k);
+    if(!b) return;
+    b.textContent = t('cam.'+k);
+    b.title = t('cam.'+k+'.tip');
+    b.classList.toggle('active', String(presCam)===k);
+  });
+}
+
+/* ============================================================
+   EVENT FEED — the rolling commentary along the bottom of the presenter wall
+   Every story is derived from state the presenter can already see, so nothing new has to be
+   synced. Each builder returns null when its story doesn't apply right now, and the whole
+   list is filtered — so the feed narrows gracefully to "waiting for players" in an empty
+   lobby and widens to a dozen stories mid-race, without ever emitting a half-filled
+   sentence. Order is deliberate: the standings lead, then what just happened, then colour.
+   ============================================================ */
+function gapText(n){
+  return n===1 ? t('feed.gapOne') : t('feed.gapLegs',{n:n});
+}
+// Ranking as it stood BEFORE the last reveal, read out of the undo snapshot the admin writes
+// for exactly this leg — that's what makes "who overtook whom" possible without extra sync.
+function previousRanking(){
+  if(!state.undoSnapshot || !state.undoSnapshot.players) return null;
+  const snap = state.undoSnapshot.players;
+  const ids = Object.keys(state.players).filter(id=>snap[id]);
+  if(!ids.length) return null;
+  return ids.map(id=>({ id, position: snap[id].position||0, totalAnswerTime: snap[id].totalAnswerTime||0,
+                        finishRank: snap[id].finishRank||null }))
+    .sort((a,b)=>{
+      if(a.finishRank && b.finishRank) return a.finishRank - b.finishRank;
+      if(a.finishRank) return -1;
+      if(b.finishRank) return 1;
+      return b.position - a.position || a.totalAnswerTime - b.totalAnswerTime;
+    })
+    .map(x=>x.id);
+}
+function buildEventFeed(){
+  const nm = p => escapeHtml(p.name);
+  const ranked = rankedPlayers();
+  const players = Object.values(state.players);
+  const stories = [];
+  const push = (cls, icon, html)=>{ if(html) stories.push({cls, icon, html}); };
+
+  if(!players.length){
+    push('', '⏳', t('feed.waiting'));
+    push('', '📋', t('feed.bank',{n:questionsRemaining()}));
+    return stories;
+  }
+  if(state.gameState==='finished'){
+    push('hot', '🏁', t('feed.raceDone'));
+  }
+
+  // ---- the standings ----
+  // Gap stories only make sense between aircraft that are still flying: once someone has
+  // landed, their position is pinned at FINISH, so comparing legs would report a finisher as
+  // "neck and neck" with another finisher. Landed aircraft get their landing story instead.
+  const racing = ranked.filter(p=>!p.finishRank);
+  const leader = ranked[0], second = ranked[1], third = ranked[2];
+  if(leader){
+    const node = ROUTE[leader.position];
+    const gapToSecond = (second && !leader.finishRank && !second.finishRank) ? leader.position - second.position : null;
+    if(gapToSecond !== null && gapToSecond >= 2) push('', '🥇', t('feed.leaderAlone',{name:nm(leader), gap:gapText(gapToSecond)}));
+    else push('', '🥇', t('feed.leader',{name:nm(leader), code:node.code, city:node.city}));
+  }
+  if(second && !second.finishRank && !leader.finishRank){
+    const gap = leader.position - second.position;
+    if(gap === 0) push('hot', '⚔️', t('feed.neck',{name:nm(second)}));
+    else if(gap === 1) push('hot', '🔥', t('feed.chasing',{name:nm(second), gap:gapText(gap)}));
+    else push('', '🥈', t('feed.second',{name:nm(second), gap:gapText(gap)}));
+  } else if(racing.length >= 2){
+    // Some have landed, so the race for the lead is settled — the live story is the fight for
+    // the places still open. The gap is against the leading *racer*, so the copy names them
+    // rather than saying "the leader", who is already on the ground.
+    const first = racing[0], next = racing[1];
+    const gap = first.position - next.position;
+    if(gap === 0) push('hot', '⚔️', t('feed.raceNeck',{a:nm(next), b:nm(first)}));
+    else push('hot', '🔥', t('feed.raceGap',{a:nm(next), b:nm(first), gap:gapText(gap)}));
+  }
+  if(third && !third.finishRank) push('', '🥉', t('feed.third',{name:nm(third), code:ROUTE[third.position].code}));
+  // Only worth calling out when there's a real tail to speak of — with two aircraft left
+  // still flying, "currently last" is just the chaser again under a different headline.
+  if(racing.length >= 3){
+    const last = racing[racing.length-1];
+    if(last && last.id !== leader.id) push('', '🐢', t('feed.slowest',{name:nm(last), code:ROUTE[last.position].code}));
+  }
+
+  // ---- leader's run to the line ----
+  if(leader && !leader.finishRank){
+    const legsLeft = (ROUTE.length-1) - leader.position;
+    if(legsLeft === 1) push('hot', '🛬', t('feed.etaOne',{name:nm(leader)}));
+    else if(legsLeft > 1) push('', '🛬', t('feed.eta',{name:nm(leader), n:legsLeft}));
+  }
+  if(finalRoundActive()) push('hot', '☀️', t('feed.finalRound'));
+  const landed = ranked.filter(p=>p.finishRank).sort((a,b)=>a.finishRank-b.finishRank);
+  landed.slice(0,FINISHERS_TO_END).forEach(p=>{
+    push('hot', RANK_TROPHY[p.finishRank-1] || '🏁', t('feed.landed',{name:nm(p), rank:ordinal(p.finishRank)}));
+  });
+  if(landed.length && landed.length < FINISHERS_TO_END){
+    push('', '🏁', t('feed.slotsLeft',{n:FINISHERS_TO_END - landed.length}));
+  }
+
+  // ---- what just happened on the last scored round ----
+  const brief = state.legBrief;
+  if(brief){
+    const legNo = brief.leg + 1;
+    const total = brief.total || players.length;
+    if(brief.correctCount === 0) push('hot', '❌', t('feed.noneCorrect',{leg:legNo}));
+    else if(brief.correctCount === total && total > 1) push('hot', '✅', t('feed.allCorrect',{leg:legNo, n:total}));
+    else push('', '✅', t('feed.correctCount',{leg:legNo, n:brief.correctCount, total:total}));
+    if(brief.fastestName){
+      push('', '⚡', t('feed.fastest',{leg:legNo, name:escapeHtml(brief.fastestName), time:formatTime(brief.fastestTime)}));
+    }
+    if(brief.turboCount) push('hot', '🚀', t('feed.turbo',{n:brief.turboCount}));
+    if(typeof brief.avgTime === 'number'){
+      const label = brief.avgTime < 7000 ? t('brief.paceFast') : brief.avgTime < 14000 ? t('brief.paceSteady') : t('brief.paceSlow');
+      push('', '⏱', t('feed.pace',{label:label, time:formatTime(brief.avgTime)}));
+    }
+    // overtakes: whose rank improved past somebody else's since the pre-reveal snapshot
+    const prev = previousRanking();
+    if(prev){
+      const now = ranked.map(p=>p.id);
+      const passes = [];
+      now.forEach((id, i)=>{
+        const was = prev.indexOf(id);
+        if(was > i){
+          const passed = prev.slice(i, was).filter(x=>now.indexOf(x) > i);
+          if(passed.length && state.players[id] && state.players[passed[0]]){
+            passes.push({ a: state.players[id], b: state.players[passed[0]] });
+          }
+        }
+      });
+      if(passes.length === 1) push('hot', '↗️', t('feed.overtake',{a:nm(passes[0].a), b:nm(passes[0].b)}));
+      else if(passes.length > 1) push('hot', '↕️', t('feed.overtakeMulti',{n:passes.length}));
+    }
+  }
+
+  // ---- accuracy, streaks, milestones ----
+  const answered = players.filter(p=>(p.answeredCount||0) > 0);
+  if(answered.length){
+    const best = answered.slice().sort((a,b)=>
+      (b.correctCount/b.answeredCount) - (a.correctCount/a.answeredCount) || b.correctCount - a.correctCount)[0];
+    push('', '🎯', t('feed.accuracy',{name:nm(best), pct:Math.round(best.correctCount/best.answeredCount*100),
+                                      n:best.correctCount, total:best.answeredCount}));
+  }
+  const hottest = players.slice().sort((a,b)=>(b.currentStreak||0)-(a.currentStreak||0))[0];
+  if(hottest && (hottest.currentStreak||0) >= 3) push('hot', '🔥', t('feed.streak',{name:nm(hottest), n:hottest.currentStreak}));
+  ['HAN','SPC','SGN'].forEach(code=>{
+    const id = state.milestones && state.milestones[code];
+    const p = id && state.players[id];
+    if(p) push('', '🏅', t('feed.milestone',{name:nm(p), code:code}));
+  });
+
+  // ---- where the traffic is ----
+  const byPos = {};
+  players.forEach(p=>{ byPos[p.position] = (byPos[p.position]||0) + 1; });
+  let busyPos = null, busyN = 1;
+  Object.keys(byPos).forEach(k=>{ if(byPos[+k] > busyN){ busyN = byPos[+k]; busyPos = +k; } });
+  if(busyPos !== null){
+    push('', '📍', t('feed.busiest',{code:ROUTE[busyPos].code, city:ROUTE[busyPos].city, n:busyN}));
+  }
+
+  // ---- weather + housekeeping ----
+  if(isTurbulenceLeg(state.currentQ)) push('wx', '🌪', t('feed.wxTurb'));
+  else if(isStormLeg(state.currentQ)) push('wx', '⛈', t('feed.wxStorm'));
+  else if(state.powerQuestionActive) push('wx', '☀️', t('feed.wxSun'));
+  else push('wx', '🌈', t('feed.wxClear'));
+  if(state.gameState==='lobby' && !state.legBrief) push('', '✈️', t('feed.lobbyReady',{n:players.length}));
+  push('', '📋', t('feed.bank',{n:questionsRemaining()}));
+  return stories;
+}
+
+/* The ticker itself. Two identical copies of the story list are laid end to end and the
+   track slides exactly -50%, so the wrap is invisible. Content is only swapped at that wrap
+   (the animationiteration event), which is what stops the text jumping mid-sentence when a
+   reveal lands — the alternative, rebuilding on every 1s render, made it unreadable. */
+const TICKER_PX_PER_SEC = 85;   // reading pace on a wall, not a phone
+let _tickerPending = true;      // a rebuild is due at the next wrap
+let _tickerHTML = '';
+function eventFeedHTML(){
+  const stories = buildEventFeed();
+  if(!stories.length) return '';
+  return stories.map(s=>
+    `<span class="ticker-item ${s.cls}"><span class="ic">${s.icon}</span><span>${s.html}</span></span><span class="ticker-sep">◆</span>`
+  ).join('');
+}
+function refreshEventFeed(force){
+  const track = document.getElementById('tickerTrack');
+  if(!track) return;
+  const html = eventFeedHTML();
+  if(!html){ track.innerHTML = ''; return; }
+  if(!force && html === _tickerHTML) return;
+  _tickerHTML = html;
+  track.innerHTML = html + html;   // two copies -> seamless -50% loop
+  // duration from the real rendered width, so long and short feeds scroll at the same speed
+  const half = track.scrollWidth / 2;
+  track.style.animation = 'none';
+  void track.offsetWidth;          // reflow, so restarting the animation actually takes
+  track.style.animationName = 'tickerScroll';
+  track.style.animationDuration = Math.max(12, half / TICKER_PX_PER_SEC) + 's';
+  track.style.animationTimingFunction = 'linear';
+  track.style.animationIterationCount = 'infinite';
+}
+/* The ticker's left-hand flag doubles as the presenter's sync indicator, replacing the
+   floating corner badge on this screen. Red LIVE + player count when synced; amber OFFLINE
+   when the room is running off one laptop; grey while connecting. The colour has to change
+   too — a red "LIVE" flag while actually offline would tell the room the opposite of true. */
+function paintTickerFlag(){
+  const flag = document.getElementById('tickerFlag');
+  const txt = document.getElementById('tickerFlagText');
+  const cnt = document.getElementById('tickerFlagCount');
+  if(!flag || !txt || !cnt) return;
+  const mode = (FB.mode === 'online' || FB.mode === 'offline') ? FB.mode : 'init';
+  flag.classList.toggle('st-offline', mode === 'offline');
+  flag.classList.toggle('st-init', mode === 'init');
+  if(mode === 'online'){
+    const n = Object.keys(state.players || {}).length;
+    txt.textContent = t('feed.flag');
+    cnt.textContent = t('feed.flagCount',{n:n});
+    cnt.classList.remove('hidden');
+  } else if(mode === 'offline'){
+    txt.textContent = t('feed.flagOffline');
+    cnt.textContent = t('feed.flagOneDevice');
+    cnt.classList.remove('hidden');
+  } else {
+    txt.textContent = t('feed.flagInit');
+    cnt.classList.add('hidden');
+  }
+}
+function initEventFeed(){
+  const track = document.getElementById('tickerTrack');
+  paintTickerFlag();
+  if(!track) return;
+  // swap in fresh content only at the loop point, where it cannot be seen
+  track.addEventListener('animationiteration', ()=>{
+    if(_tickerPending){ _tickerPending = false; refreshEventFeed(true); }
+  });
+  refreshEventFeed(true);
+}
+// called from renderPresenter: mark the feed stale, don't rebuild mid-scroll
+function tickEventFeed(){
+  paintTickerFlag();   // cheap, and keeps the player count live between wraps
+  const track = document.getElementById('tickerTrack');
+  if(!track) return;
+  if(!track.innerHTML){ refreshEventFeed(true); return; }   // first paint / after a reset
+  _tickerPending = true;
+}
+
 let lastLeaderLocationCode = null;
 function updateLocationScene(){
   const mapPanel = document.getElementById('mapPanel');
@@ -3457,6 +4156,7 @@ function triggerFinishCinematic(){
   finishFlourishIds = new Set(finishers.map(p=>p.id));
   const zoomWrap = document.getElementById('mapZoomWrap');
   const finishNode = ROUTE[ROUTE.length-1];
+  _finishCamHoldUntil = Date.now() + 7000;   // the cinematic outranks the camera selector
   if(zoomWrap){
     zoomWrap.style.transformOrigin = (finishNode.x/1000*100)+'% '+(finishNode.y/560*100)+'%';
     zoomWrap.style.transform = 'scale(2.1)';
@@ -3465,7 +4165,8 @@ function triggerFinishCinematic(){
   renderPresenterPlanes(); // apply the landing flourish now, don't wait for the 1s tick
   setTimeout(()=>{
     finishFlourishIds = new Set();
-    if(zoomWrap) zoomWrap.style.transform = 'scale(1)';
+    _finishCamHoldUntil = 0;
+    applyCamera();          // hand the map back to whichever CAM the host had selected
     renderPresenterPlanes();
   }, 7000);
 }
@@ -3548,7 +4249,7 @@ function updateFirstFinishZoom(){
     playApplause(2200);
   } else if(state.gameState!=='finished'){
     // the end-of-race cinematic owns the zoom once the race is decided; don't fight it
-    zoomWrap.style.transform = 'scale(1)';
+    applyCamera();   // back to the host's selected CAM, not unconditionally to scale(1)
   }
 }
 
@@ -3601,6 +4302,11 @@ function renderPresenterPlanes(){
         + (finishFlourishIds.has(p.id) ? ' landing-flourish' : '');
       tok.style.left = (node.x/1000*100)+'%';
       tok.style.top = ((node.y/560*100) - stackIdx*4.2)+'%';
+      // fuselage catches the sun as it moves toward the bright corner; crossing into the
+      // brightest zone throws a one-shot lens flare (see maybeFlare)
+      const lit = skyIsClear() ? sunlitAmount(node.x, node.y) : 0;
+      tok.style.setProperty('--lit', lit.toFixed(3));
+      maybeFlare(p.id, node.x, node.y, lit);
       tok.innerHTML = `<div class="stack"><div class="icon">${avatarHTML(p.avatar,'1em','#FFFFFF')}</div><div class="pname">${escapeHtml(p.name)}</div></div><div class="flame-trail">🔥</div>`;
       stackIdx++;
     });
@@ -3608,6 +4314,7 @@ function renderPresenterPlanes(){
       const tok = tokenFor('agg-'+pos);
       tok.style.left = (node.x/1000*100)+'%';
       tok.style.top = ((node.y/560*100) - stackIdx*4.2)+'%';
+      tok.style.setProperty('--lit', (skyIsClear() ? sunlitAmount(node.x, node.y) : 0).toFixed(3));
       tok.innerHTML = `<div class="stack"><div class="icon">${planeSvg('#FFFFFF')}</div><div class="pname">+${othersHere.length}</div></div>`;
     }
   });
@@ -3728,6 +4435,10 @@ function buildLegBrief(leg, correctIdx){
     fastestName: fastest ? fastest.p.name : null,
     fastestTime: fastest && typeof fastest.a.timeTaken==='number' ? fastest.a.timeTaken : null,
     avgTime: times.length ? Math.round(times.reduce((s,v)=>s+v,0)/times.length) : null,
+    // How many aircraft ran Turbo this round. The presenter can't read the answers tree
+    // (admin-only under database.rules.json), so the count rides along on the brief — that
+    // is what lets the wall speed the sky up when somebody boosts. See tickSkyForTurbo.
+    turboCount: submitted.filter(x=>x.a.turbo).length,
   };
 }
 function renderPresenterBrief(){
@@ -3837,10 +4548,15 @@ document.addEventListener('webkitfullscreenchange', syncFullscreenBtn);
 function renderPresenter(){
   const pill = document.getElementById('presStatePill');
   pill.textContent = t('st.'+state.gameState);
+  updateSkyAmbience();   // before the planes: their sunlight depends on whether the sky is clear
+  tickSkyForTurbo();
   renderPresenterPlanes();
   renderPresenterLeaderboard();
   renderPresenterBrief();
   updateLocationScene();
+  syncCamButtons();
+  applyCamera();         // CAM 2/3 follow the field, so re-aim every tick
+  tickEventFeed();       // marks the ticker stale; it re-reads at its next wrap
   if(state.gameState==='finished' && !finishCinematicPlayed){
     finishCinematicPlayed = true;
     triggerFinishCinematic();
@@ -4494,12 +5210,18 @@ function resetPresenterCinematics(){
   finishFlourishIds = new Set();
   finishCinematicPlayed = false;
   _soloZoomOn = false;
+  _finishCamHoldUntil = 0;
+  _skyBumpedForLeg = null;
+  Object.keys(_lastLitByPlayer).forEach(k=>delete _lastLitByPlayer[k]);
   const zoomWrap = document.getElementById('mapZoomWrap');
   if(zoomWrap) zoomWrap.style.transform = 'scale(1)';
+  applyCamera();   // a reset drops any cinematic zoom back to the host's selected CAM
   const mapPanel = document.getElementById('mapPanel');
   if(mapPanel) mapPanel.classList.remove(...ALL_SCENE_CLASSES);
   const banner = document.getElementById('newLeaderBanner');
   if(banner) banner.remove();
+  // a reset changes every story at once — don't make the wall wait for the wrap
+  if(typeof refreshEventFeed === 'function') refreshEventFeed(true);
 }
 function resetProgress(){
   if(!confirm(t('a.t.resetProgressConfirm'))) return;
@@ -4842,6 +5564,7 @@ setInterval(paintCountdowns, 200);
 /* init route from hash, then bring up the sync layer */
 (function init(){
   applyStaticI18n();   // paint every data-i18n string before the first render
+  initEventFeed();     // start the bottom ticker rolling; it never stops for the whole race
   const v = location.hash.replace('#','');
   if(v==='admin'){ go('landing'); openAdminGate(); }
   else if(['player','presenter'].includes(v)) go(v);

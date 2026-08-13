@@ -101,6 +101,68 @@ Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng 
 
 **Màn presenter** — khi admin mở câu hỏi, màn LED hiện **câu hỏi + 4 đáp án + đồng hồ đếm ngược cỡ lớn** trên nền đặc (không blur, để đọc được từ cuối phòng), bảng xếp hạng vẫn hiện bên phải. Có nút **⛶ Fullscreen** ở góc trên.
 
+### Bầu trời trên màn presenter
+
+**Trời quang** — nắng nhẹ hắt từ **góc trên bên phải** bản đồ: một vầng sáng ấm cộng một lớp wash rộng, nên nửa trên bên phải sáng hơn hẳn góc dưới bên trái. Thân máy bay **bắt sáng theo vị trí** — càng bay về phía nắng càng sáng và có viền vàng nhẹ (HAN/MUC/FINISH là ba điểm sáng nhất, START/CPH tối nhất). Khi một máy bay lọt vào **vùng sáng nhất**, một **lens flare rất nhẹ** loé lên khoảng 1 giây rồi tắt. Cả ba hiệu ứng **tự tắt** khi có nhiễu động, bão hoặc Trời nắng đẹp — lúc đó theme thời tiết làm chủ màn hình.
+
+> Flare chỉ loé **khi máy bay vừa bay vào** vùng sáng, không loé lại nếu nó đứng yên ở đó — nếu không mỗi giây một lần sẽ thành đèn nháy.
+
+**Mây chia 3 lớp** để có chiều sâu — mỗi lớp khác nhau cả tốc độ, kích thước, độ mờ và độ nét, kèm bóng đổ nhẹ:
+
+| Lớp | Số mây | Một vòng qua màn hình |
+|---|---|---|
+| Mây xa | 5 | ~150–220s (bò rất chậm, nhỏ và mờ nhất) |
+| Mây giữa | 4 | ~85–130s |
+| Mây gần | 3 | ~44–66s (to, rõ và nhanh nhất) |
+
+**Turbo Boost → cả bầu trời tăng tốc** khoảng **1,8×** trong 6 giây, giữ nguyên tỉ lệ parallax giữa ba lớp, nên khán giả *cảm* được tốc độ chứ không chỉ thấy một máy bay nhảy 2 chặng. Hiệu ứng khớp đúng lúc máy bay bắt đầu bay (sau khi thẻ đáp án tắt).
+
+> Màn presenter **không đọc được** nhánh `answers` trên Firebase (chỉ admin đọc được — xem `database.rules.json`), nên số lượt dùng Turbo được admin tính sẵn và **gửi kèm trong `legBrief`**. Đó là cách màn LED biết có ai vừa boost.
+
+**Vật thể nhỏ ở hậu cảnh** — cứ **15–25 giây** ngẫu nhiên xuất hiện **một** thứ rất nhỏ và rất mờ, bay ngang qua rồi mất: chim bay xa (🐦/🕊), một máy bay thương mại siêu nhỏ (✈️), hoặc một vệt contrail mảnh. Bay cả hai chiều. Mục đích duy nhất là làm thế giới trông như đang sống — nên chúng cố tình nhỏ và mờ tới mức không tranh sự chú ý với cuộc đua. Tự dừng khi có thời tiết hoặc khi không ai đang xem màn presenter.
+
+**Camera System** — ba nút cạnh nút Fullscreen, đổi góc quay bản đồ:
+
+| Nút | Góc quay | Zoom |
+|---|---|---|
+| **CAM 1** | Toàn bộ đường đua | 1× |
+| **CAM 2** | Bám theo người dẫn đầu | 1,85× |
+| **CAM 3** | Vùng đang đông máy bay nhất | 1,6× |
+
+CAM 2 và CAM 3 **tự bám theo** khi đội hình di chuyển. Nếu chưa có người chơi nào thì cả hai tự trả về góc rộng thay vì zoom vào chỗ trống.
+
+> **Cinematic luôn thắng camera.** Lúc máy bay đầu tiên hạ cánh (zoom solo) và lúc kết thúc cuộc đua (zoom vào FINISH), bản đồ do cinematic điều khiển; bộ chọn CAM mờ đi và không có tác dụng. Khi cinematic xong, camera **tự trả về đúng CAM mà MC đang chọn** — không nhảy về CAM 1.
+
+### Event Feed — dòng tin chạy dưới cùng
+
+Một dải tin kiểu bản tin thời sự, có cờ đỏ **TRỰC TIẾP / LIVE** ghim bên trái, chữ **chạy liên tục từ phải sang trái suốt cả cuộc đua**. Nội dung tự sinh từ tình hình thực tế, khoảng **12–18 tin** mỗi vòng:
+
+- **Thứ hạng** — ai dẫn đầu và đang ở đâu, hạng nhì kém bao nhiêu chặng, hạng ba, ai đang về sau cùng. Nếu hạng nhì ngang bằng hoặc chỉ kém 1 chặng thì đổi thành tin "sát nút / bám sát".
+- **Đường về đích** — người dẫn đầu còn bao nhiêu chặng nữa là hạ cánh, cảnh báo CHẶNG CUỐI, ai đã hạ cánh và về thứ mấy, còn bao nhiêu suất về đích.
+- **Vòng vừa rồi** — bao nhiêu người trả lời đúng (có câu riêng cho "không ai đúng" và "cả phòng đều đúng"), ai trả lời đúng nhanh nhất và trong bao lâu, mấy người bật Turbo Boost, nhịp độ khoang, và **ai vừa vượt ai**.
+- **Phong độ** — tỉ lệ đúng cao nhất là ai (kèm số câu), ai đang có chuỗi đúng liên tiếp từ 3 câu trở lên, ai là người đầu tiên tới HAN / SPC / SGN.
+- **Giao thông & thời tiết** — điểm đang đông máy bay nhất, tình hình thời tiết hiện tại kèm luật đang áp dụng, còn bao nhiêu câu trong kho.
+
+> **Ai vừa vượt ai** được suy ra từ `undoSnapshot` — bảng vị trí *trước* khi công bố đáp án mà admin ghi lại cho đúng vòng đó. Nhờ vậy không cần đồng bộ thêm dữ liệu nào.
+
+Hai điểm về cách chạy:
+
+- **Vòng lặp không có mối nối.** Danh sách tin được đặt **hai bản giống nhau** cạnh nhau rồi trượt đúng `-50%`, nên khi bản thứ nhất ra khỏi màn hình thì bản thứ hai đã ở đúng vị trí đó — không thấy điểm nối.
+- **Không bao giờ đổi chữ giữa lúc đang chạy.** Mỗi giây bản tin chỉ được *đánh dấu là cũ*; nội dung mới chỉ được thay **đúng lúc vòng lặp quay vòng**, nơi mắt không nhìn thấy. Nếu thay ngay lúc có đáp án mới thì chữ sẽ nhảy giữa câu và không đọc được. Riêng **đổi ngôn ngữ** và **reset** thì thay ngay, vì chờ tới vòng sau có thể mất gần một phút.
+- Tốc độ chạy cố định **~85 px/giây** bất kể dài ngắn, nên nhịp đọc luôn như nhau.
+
+**Ô cờ bên trái kiêm luôn báo trạng thái đồng bộ.** Trên màn presenter, badge online/offline ở góc dưới phải **đã được bỏ** — nó nói đúng cùng một thứ với ô cờ, để hai cái trên một màn LED là thừa. Ô cờ giờ hiển thị:
+
+| Trạng thái | Ô cờ |
+|---|---|
+| Online | 🔴 đỏ · **TRỰC TIẾP / LIVE** · *{n} người chơi* (điểm sáng nháy) |
+| Offline | 🟠 hổ phách · **NGOẠI TUYẾN / OFFLINE** · *chỉ máy này* (điểm sáng ngừng nháy) |
+| Đang kết nối | ⚪ xám · **ĐANG KẾT NỐI / CONNECTING** |
+
+> Màu **phải** đổi theo trạng thái: một ô cờ đỏ ghi "TRỰC TIẾP" trong khi thực tế đang chạy offline sẽ nói với cả phòng điều ngược lại sự thật.
+
+> Màn **player và admin vẫn giữ badge** ở góc — hai màn này không có dải tin, và admin là người cần thấy sự cố đồng bộ ngay khi nó xảy ra nhất.
+
 Chạy test luật chơi:
 
 ```bash
