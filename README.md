@@ -23,9 +23,9 @@ VNA_Race/
 
 Lựa chọn ngôn ngữ lưu **theo từng thiết bị** (`localStorage`), không đồng bộ: MC có thể chạy màn LED tiếng Việt trong khi một khách nước ngoài đọc điện thoại tiếng Anh. Hai bên vẫn thấy **cùng một chữ cái ứng với cùng một đáp án**, vì thứ tự xáo đáp án chỉ phụ thuộc id câu hỏi chứ không phụ thuộc ngôn ngữ.
 
-> ⚠️ File gốc `Question Viet.docx` trộn cả câu tiếng Việt lẫn câu tiếng Anh. Câu nào thiếu ngôn ngữ nào thì **đã được dịch bổ sung** để nút VI/EN đổi được toàn bộ. Bản dịch **nên được người của Vietnam Airlines rà lại trước sự kiện** — MC sẽ đọc trước các đại lý du lịch và nội dung có nhiều thuật ngữ ngành. Các tên riêng sản phẩm (LotusMiles, Transit Tour, Tour Series, Business FOC, Gold Agent, Premium Economy…) được giữ nguyên tiếng Anh theo cách gọi thông dụng trong ngành.
+> ⚠️ File gốc `Question Viet.docx` trộn cả câu tiếng Việt lẫn câu tiếng Anh, còn `Question Viet addon.docx` thuần tiếng Việt. Câu nào thiếu ngôn ngữ nào thì **đã được dịch bổ sung** để nút VI/EN đổi được toàn bộ. Bản dịch **nên được người của Vietnam Airlines rà lại trước sự kiện** — MC sẽ đọc trước các đại lý du lịch và nội dung có nhiều thuật ngữ ngành. Các tên riêng sản phẩm (LotusMiles, Transit Tour, Tour Series, Business FOC, Gold Agent, Premium Economy…) được giữ nguyên tiếng Anh theo cách gọi thông dụng trong ngành.
 
-**Ngân hàng câu hỏi:** 23 câu thường (từ `Question Viet.docx`), hỏi **lần lượt theo đúng thứ tự** trong file, mỗi lượt một câu, **câu đã dùng không bao giờ lặp lại**. Hết 23 câu thì admin không mở thêm được câu mới.
+**Ngân hàng câu hỏi:** 30 câu thường — 23 câu từ `Question Viet.docx`, rồi **7 câu từ `Question Viet addon.docx` nối tiếp phía sau**. Hỏi **lần lượt theo đúng thứ tự** đó, mỗi lượt một câu, **câu đã dùng không bao giờ lặp lại**. Hết 30 câu thì admin không mở thêm được câu mới.
 
 > Câu 20 và câu 22 của file gốc đã được **bỏ** vì trùng nội dung với câu 6 (Premium Economy) và câu 13 (Transit Tour) — chỉ khác ngôn ngữ gốc.
 
@@ -58,7 +58,9 @@ Bật Turbo/Seatbelt mà không bấm Nộp thì không bị phạt và không m
 
 **☀️ Trời nắng đẹp / Sunshine** — nút của admin, **một lần duy nhất cả ván**, bấm trước khi mở câu hỏi. Màn LED hiện ☀️ TRỜI NẮNG ĐẸP và **câu hỏi Sunshine riêng** được đưa ra thay cho câu thường. Người **trả lời đúng nhanh nhất** được **+2 chặng**, người đúng khác +1, người sai đứng nguyên. Không bật được trên chặng turbulence/storm. Huỷ trước khi mở câu thì được trả lại lượt. Cả ba trợ giúp bị khoá.
 
-**Turbulence** — tự động ở **chặng 6 và chặng 10**. Màn LED chuyển theme mưa sấm chớp, badge đổi từ 🌈 Clear Skies sang 🌪 Turbulence. Trả lời đúng **đứng nguyên**, **không đúng thì lùi 1 chặng** (kể cả người không trả lời) — trừ khi bật 🔒 Fasten Seatbelt. 50:50 và Turbo bị khoá.
+**Turbulence** — tự động ở **chặng 6 và chặng 10**, cộng thêm **một lượt bất ngờ ngay sau khi máy bay đầu tiên tới SGN**. Màn LED chuyển theme mưa sấm chớp, badge đổi từ 🌈 Clear Skies sang 🌪 Turbulence. Trả lời đúng **đứng nguyên**, **không đúng thì lùi 1 chặng** (kể cả người không trả lời) — trừ khi bật 🔒 Fasten Seatbelt. 50:50 và Turbo bị khoá.
+
+> Lượt nhiễu động theo SGN được tính bằng **vị trí ≥ SGN** chứ không phải "hạ cánh đúng ở SGN", vì một cú Turbo (+2 chặng) có thể đưa máy bay vượt thẳng qua SGN mà không dừng lại. Nếu lượt kế tiếp đã có thời tiết riêng (chặng 6/10 hoặc chặng Storm) thì nó tự đẩy sang lượt sau để không chồng lên nhau. Bấm *Undo* sẽ trả lại trạng thái trước khi lượt này được kích hoạt.
 
 **Thông báo thời tiết** — ngay khi admin bấm *Next question →* vào chặng turbulence/storm (hoặc bật Trời nắng đẹp), màn presenter **và** màn của mọi người chơi hiện **thông báo to** kèm luật chơi. Bấm *Open question* thì thông báo to biến mất, chỉ còn badge thời tiết nhỏ ở góc.
 
@@ -93,7 +95,9 @@ Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng 
 
 **📖 Hướng dẫn** có 5 trang: (1) luật chơi + giải thưởng, (2) **bản đồ hành trình vẽ tĩnh** — cùng đường cong chữ S và cùng toạ độ mà màn presenter dùng, để người chơi hình dung trước sa bàn sẽ đua, (3) các loại thời tiết, (4) ba trợ giúp, (5) tài liệu chương trình (Sales Kit tiếng Việt + tiếng Anh).
 
-**Nâng hạng khoang theo thứ hạng** — người **dẫn đầu** thấy màn hình chuyển sang **vàng Hạng Thương gia**, người **hạng nhì** sang **xanh ngọc Hạng Phổ thông Đặc biệt**, từ hạng ba trở xuống giữ giao diện thường. Cả hai đều kèm dòng báo ai đang bám sát phía sau và cách bao nhiêu chặng.
+**Nâng hạng khoang theo thứ hạng** — người **dẫn đầu** thấy màn hình chuyển sang **vàng Hạng Thương gia**, người **hạng nhì** sang **xanh ngọc Hạng Phổ thông Đặc biệt**. **Hạng ba và hạng tư** là **Hạng Phổ thông**, riêng hạng ba có thêm dòng *"Nâng lên hạng Thương gia nếu còn chỗ"*. Từ hạng năm trở xuống không có ruy-băng. Cả bốn hạng đầu đều kèm dòng báo ai đang bám sát phía sau và cách bao nhiêu chặng.
+
+> Chỉ hạng nhất và hạng nhì đổi cả nền màn hình; hạng ba/tư chỉ có ruy-băng — để khoang vàng và khoang xanh ngọc vẫn là thứ đáng để giành giật.
 
 **Màn presenter** — khi admin mở câu hỏi, màn LED hiện **câu hỏi + 4 đáp án + đồng hồ đếm ngược cỡ lớn** trên nền đặc (không blur, để đọc được từ cuối phòng), bảng xếp hạng vẫn hiện bên phải. Có nút **⛶ Fullscreen** ở góc trên.
 

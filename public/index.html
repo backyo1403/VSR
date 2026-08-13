@@ -670,6 +670,18 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
   background:linear-gradient(120deg,#1E9B77,#39C79B); color:#03251c;
   box-shadow:0 10px 28px rgba(30,155,119,.35);
 }
+/* 3rd and 4th ride Economy. No full-screen skin — the point of the gold and jade cabins is
+   that they are visibly worth defending — just the ribbon naming the cabin, in the VNA blue
+   of an Economy boarding pass. 3rd additionally carries the upgrade-if-available line. */
+.biz-ribbon.econ-ribbon{
+  background:linear-gradient(120deg,#0B4C8C,#1877CC); color:#eaf3ff;
+  box-shadow:0 10px 28px rgba(11,76,140,.35);
+}
+.biz-ribbon .up{
+  display:inline-block; margin-top:3px; padding:2px 8px; border-radius:99px;
+  background:rgba(255,255,255,.16); border:1px solid rgba(255,214,120,.6); color:#ffe9a8;
+  font-size:10.5px; font-weight:700; letter-spacing:.02em;
+}
 .biz-ribbon .medal{font-size:26px; line-height:1;}
 .biz-ribbon .tt{font-family:var(--font-display); font-weight:800; font-size:15px; letter-spacing:.03em;}
 .biz-ribbon .sb{font-size:11.5px; font-weight:600; opacity:.82; margin-top:1px;}
@@ -1194,7 +1206,7 @@ vi: {
   'rules.h.clear':'🌈 Trời quang',
   'rules.p.clear':'Mặc định. Trả lời đúng tiến <strong>1 chặng</strong>; trả lời sai thì đứng nguyên — không bị phạt.',
   'rules.h.turb':'🌪 Nhiễu động',
-  'rules.p.turb':'Trả lời đúng thì <strong>đứng nguyên</strong>. Còn lại — sai, hoặc không trả lời — bị <strong>lùi 1 chặng</strong>. 50:50 và Turbo Boost bị khoá; đây là lúc duy nhất Thắt dây an toàn phát huy tác dụng.',
+  'rules.p.turb':'Trả lời đúng thì <strong>đứng nguyên</strong>. Còn lại — sai, hoặc không trả lời — bị <strong>lùi 1 chặng</strong>. 50:50 và Turbo Boost bị khoá; đây là lúc duy nhất Thắt dây an toàn phát huy tác dụng.<br><br>Có <strong>hai lượt nhiễu động cố định</strong>, cộng thêm <strong>một lượt bất ngờ</strong> ngay sau khi máy bay đầu tiên tới <strong>SGN</strong>.',
   'rules.h.storm':'⛈ Bão',
   'rules.p.storm':'Chỉ <strong>10 người trả lời đúng nhanh nhất</strong> được ATC cấp phép bay tiếp 1 chặng. Những người còn lại đứng nguyên, kể cả trả lời đúng nhưng ngoài top 10 — nhưng không ai bị lùi. Cả ba trợ giúp và Trời nắng đẹp đều bị khoá.',
   'rules.h.power':'☀️ Trời nắng đẹp',
@@ -1326,7 +1338,9 @@ vi: {
   /* --- business class ribbon --- */
   'biz.title':'Hạng Thương gia · Hạng {n}',
   'prem.title':'Hạng Phổ thông Đặc biệt · Hạng {n}',
-  'biz.place1':'nhất', 'biz.place2':'nhì', 'biz.place3':'ba',
+  'econ.title':'Hạng Phổ thông · Hạng {n}',
+  'econ.upgrade':'Nâng lên hạng Thương gia nếu còn chỗ',
+  'biz.place1':'nhất', 'biz.place2':'nhì', 'biz.place3':'ba', 'biz.place4':'tư',
   'biz.chasing':'{name} đang bám sát bạn — {gap}',
   'biz.level':'ngang bằng bạn',
   'biz.oneLeg':'kém 1 chặng',
@@ -1553,7 +1567,7 @@ en: {
   'rules.h.clear':'🌈 Clear Skies',
   'rules.p.clear':'The default. Correct answer advances you <strong>1 leg</strong>; a wrong answer holds your position — no penalty.',
   'rules.h.turb':'🌪 Turbulence',
-  'rules.p.turb':'Correct answer <strong>holds</strong> your position. Anything else — wrong, or no answer at all — sends you <strong>back 1 leg</strong>. 50:50 and Turbo Boost are disabled; this is the only time Fasten Seatbelt works.',
+  'rules.p.turb':'Correct answer <strong>holds</strong> your position. Anything else — wrong, or no answer at all — sends you <strong>back 1 leg</strong>. 50:50 and Turbo Boost are disabled; this is the only time Fasten Seatbelt works.<br><br>There are <strong>two scheduled turbulence rounds</strong>, plus <strong>one surprise round</strong> right after the first aircraft reaches <strong>SGN</strong>.',
   'rules.h.storm':'⛈ Storm',
   'rules.p.storm':'Only the <strong>10 fastest correct answers</strong> get ATC clearance to advance 1 leg. Everyone else holds position, including correct answers outside the top 10 — but nobody goes backwards. All three helps and Sunshine are disabled.',
   'rules.h.power':'☀️ Sunshine',
@@ -1679,7 +1693,9 @@ en: {
 
   'biz.title':'Business Class · {n} place',
   'prem.title':'Premium Economy · {n} place',
-  'biz.place1':'1st','biz.place2':'2nd','biz.place3':'3rd',
+  'econ.title':'Economy Class · {n} place',
+  'econ.upgrade':'Upgrade to Business if available',
+  'biz.place1':'1st','biz.place2':'2nd','biz.place3':'3rd','biz.place4':'4th',
   'biz.chasing':'{name} is chasing you — {gap}',
   'biz.level':'level with you',
   'biz.oneLeg':'1 leg behind',
@@ -1949,11 +1965,13 @@ const ROUTE = [
     node.y = Math.round(curveY(t)*10)/10;
   });
 })();
-// Question bank — 23 questions from "Question Viet.docx", asked in this exact order, one
-// per round, never repeating (see pickQuestionIndex). `explain` is the 🎤 Presenter Note
-// the host reads aloud after the answer is revealed. The source deck's items 20 and 22
-// duplicated items 6 and 13 (same question, just written in the other language) and were
-// dropped; ids are NOT renumbered, because the answer shuffle is seeded from the id.
+// Question bank — 30 questions, asked in this exact order, one per round, never repeating
+// (see pickQuestionIndex). `explain` is the 🎤 Presenter Note the host reads aloud after the
+// answer is revealed. Ids 1-25 come from "Question Viet.docx" and ids 26-32 from
+// "Question Viet addon.docx", which is why they run on after it rather than interleaving.
+// The source deck's items 20 and 22 duplicated items 6 and 13 (same question, just written
+// in the other language) and were dropped; ids are NOT renumbered, because the answer
+// shuffle is seeded from the id and renumbering would move every answer letter.
 //
 // Each entry carries both languages: the source deck mixes Vietnamese and English items,
 // so every question was completed in the missing language rather than left to fall back.
@@ -2066,6 +2084,35 @@ const QUESTION_BANK = [
  vi:{q:"Đâu là cách hiểu đầy đủ nhất về định hướng của Vietnam Airlines tại thị trường châu Âu?",opts:["Tăng số lượng chuyến bay là mục tiêu duy nhất","Tập trung vào việc bán vé giá thấp nhất","Kết hợp network, product/fare mới, digital distribution, agent partnership và các giải pháp sales để tăng khả năng cạnh tranh","Chỉ tập trung vào khách người Việt"],explain:"Đây là câu tổng hợp. Các “điểm mới” không nên được nhìn riêng lẻ. Network + Product + Fare + Distribution + Agent Partnership phải cùng tạo ra một proposition cạnh tranh hơn cho Vietnam Airlines tại châu Âu."},
  en:{q:"Which is the most complete understanding of Vietnam Airlines' direction in the European market?",opts:["Increasing flight numbers is the only goal","Focusing on selling the lowest fares","Combining network, new product/fare, digital distribution, agent partnership and sales solutions to compete more strongly","Focusing on Vietnamese passengers only"],explain:"This is the synthesis question. The “what's new” items should not be looked at in isolation. Network + Product + Fare + Distribution + Agent Partnership together have to create a more competitive proposition for Vietnam Airlines in Europe."}},
 
+
+// ---- added from "Question Viet addon.docx", asked after the questions above ----
+{id:26,correct:1,
+ vi:{q:"Điểm nào sau đây giúp phân biệt rõ nhất trải nghiệm Business Class trên tàu bay thân rộng của Vietnam Airlines với Economy Class?",opts:["Business Class chỉ có suất ăn cao cấp hơn","Business Class có ghế được thiết kế đặc biệt, có thể ngả 180°, cùng các dịch vụ ưu tiên","Business Class chỉ được ưu tiên làm thủ tục tại sân bay","Business Class được miễn tất cả các loại phụ phí"],explain:"Business Class của Vietnam Airlines không chỉ khác biệt ở suất ăn hay quy trình check-in. Trên tàu bay thân rộng, hành khách có ghế được thiết kế riêng có khả năng ngả 180 độ, cùng với nhiều dịch vụ ưu tiên từ check-in, hành lý, boarding, transfer desk đến lounge. Đây là một sản phẩm premium được thiết kế để tạo ra trải nghiệm xuyên suốt."},
+ en:{q:"Which point best distinguishes the Business Class experience on Vietnam Airlines' wide-body aircraft from Economy Class?",opts:["Business Class only has better meals","Business Class has specially designed seats that recline to 180°, together with a range of priority services","Business Class only gets priority check-in at the airport","Business Class is exempt from all surcharges"],explain:"Vietnam Airlines' Business Class is not just about the meal or the check-in process. On wide-body aircraft, passengers get a purpose-designed seat that reclines fully flat to 180 degrees, along with priority services spanning check-in, baggage, boarding, transfer desk and lounge. It is a premium product designed to deliver a consistent experience end to end."}},
+
+{id:27,correct:1,
+ vi:{q:"Một gia đình đi cùng trẻ nhỏ, trong đó có một hành khách cần hỗ trợ đặc biệt. Theo Sales Kit, nhóm dịch vụ nào cho thấy Vietnam Airlines có khả năng đáp ứng nhu cầu cá nhân hóa ngoài việc bán vé?",opts:["Chỉ Advance Seat Selection và Upgrade","Travelling with Pet, Reduced Mobility Passenger và Unaccompanied Minor Service","Chỉ Excess Baggage và Special Meal","Chỉ Sky Sofa và Upgrade"],explain:"Điểm đáng chú ý trong nhóm ancillary của Vietnam Airlines là danh mục không chỉ tập trung vào các dịch vụ tạo thêm doanh thu như chọn ghế hay hành lý. VNA còn cung cấp các dịch vụ phục vụ những nhu cầu hành khách đặc thù như hành khách giảm khả năng di chuyển, trẻ em đi một mình hay hành khách đi cùng thú cưng."},
+ en:{q:"A family is travelling with small children and one passenger who needs special assistance. According to the Sales Kit, which group of services shows that Vietnam Airlines can meet personalised needs beyond simply selling a ticket?",opts:["Advance Seat Selection and Upgrade only","Travelling with Pet, Reduced Mobility Passenger and Unaccompanied Minor Service","Excess Baggage and Special Meal only","Sky Sofa and Upgrade only"],explain:"What stands out about Vietnam Airlines' ancillary range is that it is not limited to revenue-generating extras like seat selection or baggage. VNA also offers services for specific passenger needs — passengers with reduced mobility, children travelling alone, and passengers travelling with pets."}},
+
+{id:28,correct:1,
+ vi:{q:"Một thương hiệu muốn hợp tác với LotusMiles nhưng không muốn chỉ sử dụng hình thức tặng dặm. Theo Sales Kit, lựa chọn nào sau đây phản ánh đúng khả năng hợp tác của LotusMiles?",opts:["Chỉ có Mileage Rewards","Mileage Rewards, Tier Miles, Vouchers và Media Exposure","Chỉ có giảm giá vé máy bay","Chỉ có quảng cáo trên website"],explain:"Một điểm rất đáng chú ý của LotusMiles là mô hình hợp tác khá linh hoạt. Đối tác không nhất thiết chỉ tham gia bằng cách thưởng dặm cho khách hàng. Sales Kit đề cập đến nhiều mô hình như mileage rewards, tier miles, voucher và media exposure thông qua mạng lưới của Vietnam Airlines."},
+ en:{q:"A brand wants to partner with LotusMiles but does not want to use mileage rewards alone. According to the Sales Kit, which option correctly reflects what a LotusMiles partnership can cover?",opts:["Mileage Rewards only","Mileage Rewards, Tier Miles, Vouchers and Media Exposure","Airfare discounts only","Website advertising only"],explain:"One notable thing about LotusMiles is how flexible the partnership model is. A partner does not have to take part solely by awarding miles to customers. The Sales Kit sets out several models: mileage rewards, tier miles, vouchers, and media exposure through Vietnam Airlines' network."}},
+
+{id:29,correct:1,
+ vi:{q:"Một khách sạn cao cấp muốn hợp tác với Vietnam Airlines để vừa tăng nhận diện thương hiệu vừa tạo doanh thu từ khách hàng chung. Phương án nào phù hợp nhất với định hướng partnership trong Sales Kit?",opts:["Chỉ mua quảng cáo banner của Vietnam Airlines","Kết hợp flight + hotel/entertainment và triển khai joint promotion","Chỉ xin mức giá vé thấp hơn","Chỉ tham gia LotusMiles bằng cách mua vé máy bay"],explain:"VNA đưa ra một tư duy hợp tác rộng hơn việc đơn thuần mua quảng cáo. Các đối tác có thể cùng Vietnam Airlines xây dựng các chương trình kết hợp như flight + hotel hoặc entertainment, qua đó vừa tăng doanh số vừa tạo thêm giá trị cho khách hàng."},
+ en:{q:"A luxury hotel wants to partner with Vietnam Airlines to raise brand awareness and generate revenue from shared customers. Which option best fits the partnership direction in the Sales Kit?",opts:["Only buying banner advertising from Vietnam Airlines","Bundling flight + hotel/entertainment and running joint promotions","Only asking for lower fares","Only joining LotusMiles by buying air tickets"],explain:"VNA takes a broader view of partnership than simply selling advertising. Partners can work with Vietnam Airlines to build combined programmes such as flight + hotel or entertainment, lifting sales while adding value for the customer."}},
+
+{id:30,correct:1,
+ vi:{q:"Đến năm 2030 Vietnam Airlines dự kiến phát triển thêm bao nhiêu đường bay so với 2026 trong danh sách các đường bay được nêu?",opts:["19 đường bay","26 đường bay","29 đường bay","32 đường bay"],explain:"Năm 2026 có 3 đường bay mới, đến 2030 danh sách mở rộng lên 29 đường bay — tức là thêm 26 đường bay nữa. Điều này cho thấy một tham vọng mở rộng đáng kể trong trung và dài hạn. Đối với đại lý, điều này rất quan trọng vì network mới đồng nghĩa với routing mới, destination mới và cơ hội xây dựng sản phẩm mới."},
+ en:{q:"By 2030, how many more routes does Vietnam Airlines plan to add compared with 2026, based on the route list presented?",opts:["19 routes","26 routes","29 routes","32 routes"],explain:"2026 brings 3 new routes; by 2030 the list expands to 29 routes — 26 more on top. That signals substantial expansion ambition over the medium and long term. For agents this matters, because a new network means new routings, new destinations and new opportunities to build products."}},
+
+{id:31,correct:0,
+ vi:{q:"Nhóm đại lý nào được xếp vào Platinum Agents?",opts:["Top 1–3 đại lý theo doanh thu","Top 4–10 đại lý theo doanh thu","Tất cả đại lý đạt KPI","Đại lý có doanh số cao nhất trong từng tháng"],explain:"Vietnam Airlines có cơ chế ghi nhận các đại lý có kết quả kinh doanh nổi bật. Platinum Agents là nhóm Top 1–3, trong khi Gold Agents nằm trong nhóm Top 4–10. Ngoài việc ghi nhận thứ hạng, các đại lý doanh thu cao còn có cơ hội nhận những phần thưởng như FOC tickets hoặc Fam Trip."},
+ en:{q:"Which group of agents is classified as Platinum Agents?",opts:["The top 1–3 agents by revenue","The top 4–10 agents by revenue","All agents who meet their KPI","The agent with the highest sales each month"],explain:"Vietnam Airlines has a mechanism for recognising agents with outstanding business results. Platinum Agents are the top 1–3, while Gold Agents sit in the top 4–10. Beyond the ranking itself, high-revenue agents can also earn rewards such as FOC tickets or a Fam Trip."}},
+
+{id:32,correct:2,
+ vi:{q:"Một đại lý muốn tối ưu incentive của Vietnam Airlines, đâu là cách hiểu ĐẦY ĐỦ nhất về các loại incentive?",opts:["Chỉ dựa trên tổng doanh thu cuối năm","Chỉ dựa trên số lượng vé bán trong tháng","Có incentive theo KPI doanh thu trong các kỳ và tactical incentive dựa trên số lượng vé trong một số giai đoạn nhất định","Chỉ dành cho Platinum Agents"],explain:"Đây là một điểm dễ bị bỏ qua. Incentive không chỉ có một hình thức. Sales Kit phân biệt incentive dựa trên KPI doanh thu theo các chu kỳ như quarterly, semi-annual hoặc annual, đồng thời có tactical incentive dựa trên số lượng vé trong một số giai đoạn cụ thể. Ngoài ra, loại incentive còn được đánh giá dựa trên target của VNA và cam kết về doanh thu hoặc market share của từng đại lý."},
+ en:{q:"An agent wants to maximise their Vietnam Airlines incentive. Which is the MOST complete understanding of the incentive types?",opts:["Based on total year-end revenue only","Based on the number of tickets sold in the month only","There are revenue-KPI incentives across defined periods, plus tactical incentives based on ticket volume during certain windows","Available to Platinum Agents only"],explain:"This one is easy to overlook: incentives are not a single scheme. The Sales Kit distinguishes revenue-KPI incentives over cycles such as quarterly, semi-annual or annual, alongside tactical incentives based on ticket volume in specific windows. The incentive type is also assessed against VNA's targets and each agent's revenue or market-share commitments."}},
 // ☀️ Sunshine — held back for the host to arm; never served as an ordinary round.
 {id:SUNSHINE_QUESTION_ID,correct:2,
  vi:{q:"Lựa chọn thông điệp quan trọng nhất mà Vietnam Airlines muốn truyền tải tới các quý đại lý?",opts:["Vietnam Airlines cần cạnh tranh chủ yếu bằng giá thấp","Đại lý nên tập trung bán Economy Class","Vietnam Airlines và đại lý cùng tạo giá trị thông qua sản phẩm premium, network, loyalty, dịch vụ và hợp tác thương mại","Trong tương lai Vietnam Airlines sẽ tập trung hoàn toàn vào bán trực tiếp"],explain:"Vietnam Airlines không chỉ muốn đại lý bán nhiều vé hơn. Chúng tôi muốn cùng các đại lý xây dựng một hệ sinh thái kinh doanh bền vững: từ network, sản phẩm premium, dịch vụ bổ trợ, LotusMiles cho đến marketing và chính sách thương mại. Khi đại lý hiểu sản phẩm và biết cách bán giá trị, cả hai bên đều có thể phát triển mạnh hơn."},
@@ -2135,6 +2182,7 @@ const AVATARS = [
 /* ---- game mechanics: question pools, turbo boost, power question, turbulence ---- */
 const TURBO_MIN_LEG = ROUTE.findIndex(r=>r.code==='MUC'); // a player unlocks Turbo once their own aircraft reaches MUC
 const TURBULENCE_LEGS = [5, 9]; // 0-based leg index = "lượt chơi thứ 6 và thứ 10"
+const SGN_LEG_INDEX = ROUTE.findIndex(r=>r.code==='SGN'); // arriving here arms one extra turbulence
 const STORM_LEG = 7; // 0-based leg index = "lượt chơi thứ 8" — ⛈ Storm, ATC clears only the 10 fastest correct answers
 function randInt(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
 // Questions are served straight down the bank in order, and a question that has already
@@ -2181,7 +2229,14 @@ function ensureQuestionPicked(){
   }
   return true;
 }
-function isTurbulenceLeg(legIndex){ return TURBULENCE_LEGS.includes(legIndex); }
+/* Two turbulence rounds are fixed on the schedule; a third is armed dynamically the moment
+   the first aircraft reaches SGN (see adminRevealAnswer). state.sgnTurbLeg holds which round
+   that turned out to be, and is part of the admin slice so every screen agrees. */
+function isTurbulenceLeg(legIndex){
+  if(TURBULENCE_LEGS.includes(legIndex)) return true;
+  const sgn = state.sgnTurbLeg;
+  return sgn!==null && sgn!==undefined && legIndex===sgn;
+}
 function isStormLeg(legIndex){ return legIndex === STORM_LEG; }
 
 /* FINAL ROUND: the moment anybody parks on FRA — the last stop before FINISH — the very
@@ -2283,6 +2338,7 @@ function defaultState(){
     players: {}, // id -> {id,name,avatar,position,correctCount,answers:{legIdx:{choice,submitted,turbo,timeTaken}},totalAnswerTime,turboUsed}
     winnerId: null,
     milestones: { HAN:null, SPC:null, SGN:null }, // playerId of first arrival at each checkpoint
+    sgnTurbLeg: null,      // leg index of the extra turbulence armed when the first aircraft reaches SGN
     awardShown: false,
     congratsShown: false, // the presenter's "Congratulations! X wins" overlay only appears once the admin triggers it
     stormClearedIds: null, // ids of the 10 fastest correct answers on the Storm leg, fastest first
@@ -2330,7 +2386,7 @@ const MAX_PLAYERS_PER_ROOM = 200;
 // via profiles/progress below) — this is the admin-owned "game state" slice.
 const ADMIN_KEYS = ['gameState','currentQ','currentQuestionIndex','currentCorrectIndex',
   'questionIndexByLeg','powerQuestionActive','powerQuestionUsed','questionOpenedAt','deadline',
-  'revealedLegs','undoSnapshot','paused','winnerId','milestones','awardShown','congratsShown',
+  'revealedLegs','undoSnapshot','paused','winnerId','milestones','sgnTurbLeg','awardShown','congratsShown',
   'stormClearedIds','stormRevealAt','revealAt','legAnnouncedAt','firstFinishAt','firstFinishId','finishSeq','legBrief'];
 
 const FB = { mode:'init', role:'player', uid:null };
@@ -3053,13 +3109,17 @@ function renderBizRibbon(me){
   const view = document.getElementById('view-player');
   const ranked = rankedPlayers();
   const idx = ranked.findIndex(p=>p.id===myPlayerId);
-  // Cabin upgrade by standing: the leader flies Business (gold), 2nd flies Premium Economy
-  // (the jade green of that cabin), everyone from 3rd down sits in the normal skin.
+  // Cabin by standing: the leader flies Business (gold), 2nd Premium Economy (the jade of
+  // that cabin), 3rd and 4th Economy. Only the top two get a full-screen skin — the gold and
+  // jade cabins are meant to look worth defending — so Economy is the ribbon alone.
+  // 3rd carries the "upgrade to Business if available" line; 4th is plain Economy.
   const enoughPlayers = ranked.length >= 2;
-  const tier = !enoughPlayers ? null : (idx===0 ? 'biz' : (idx===1 ? 'prem' : null));
+  const tier = !enoughPlayers ? null
+    : (idx===0 ? 'biz' : idx===1 ? 'prem' : idx===2 ? 'econUp' : idx===3 ? 'econ' : null);
   view.classList.toggle('biz-gold', tier==='biz');
   view.classList.toggle('cabin-premium', tier==='prem');
   if(!tier){ wrap.innerHTML = ''; return; }
+  const isEcon = tier==='econUp' || tier==='econ';
   const medal = RANK_TROPHY[idx];
   const place = t('biz.place'+(idx+1));
   const chaser = ranked[idx+1];
@@ -3071,9 +3131,12 @@ function renderBizRibbon(me){
   } else {
     sub = t('biz.alone');
   }
-  wrap.innerHTML = `<div class="biz-ribbon ${tier==='prem'?'prem-ribbon':''}">
+  const titleKey = isEcon ? 'econ.title' : (tier==='prem' ? 'prem.title' : 'biz.title');
+  const cls = isEcon ? 'econ-ribbon' : (tier==='prem' ? 'prem-ribbon' : '');
+  const upgrade = tier==='econUp' ? `<div class="up">⬆ ${t('econ.upgrade')}</div>` : '';
+  wrap.innerHTML = `<div class="biz-ribbon ${cls}">
     <div class="medal">${medal}</div>
-    <div><div class="tt">${t(tier==='prem'?'prem.title':'biz.title',{n:place})}</div><div class="sb">${sub}</div></div>
+    <div><div class="tt">${t(titleKey,{n:place})}</div><div class="sb">${sub}</div>${upgrade}</div>
   </div>`;
 }
 
@@ -4157,6 +4220,7 @@ function adminRevealAnswer(){
     leg: state.currentQ,
     players: JSON.parse(JSON.stringify(state.players)),
     milestones: JSON.parse(JSON.stringify(state.milestones||{})),
+    sgnTurbLeg: (state.sgnTurbLeg===undefined ? null : state.sgnTurbLeg),
     winnerId: state.winnerId,
     gameState: state.gameState,
     finishSeq: state.finishSeq||0,
@@ -4255,6 +4319,18 @@ function adminRevealAnswer(){
     }
   });
 
+  // One extra 🌪 Turbulence, armed the moment the first aircraft reaches SGN — the NEXT
+  // round flies through it. Tested on position >= SGN rather than the SGN milestone,
+  // because a Turbo jump (+2) can carry an aircraft straight past the stop without ever
+  // landing on it. Rounds that already carry weather are skipped so nothing double-books.
+  if(state.sgnTurbLeg===null || state.sgnTurbLeg===undefined){
+    if(Object.values(state.players).some(p=>(p.position||0) >= SGN_LEG_INDEX)){
+      let leg = state.currentQ + 1;
+      while(isStormLeg(leg) || TURBULENCE_LEGS.includes(leg)) leg++;
+      state.sgnTurbLeg = leg;
+    }
+  }
+
   if(storm){
     state.stormClearedIds = stormClearedIds;
     state.stormRevealAt = Date.now();
@@ -4298,6 +4374,7 @@ function adminUndoReveal(){
   if(!confirm(t('a.t.confirmUndo',{n:snap.leg+1}))) return;
   state.players = JSON.parse(JSON.stringify(snap.players));
   state.milestones = JSON.parse(JSON.stringify(snap.milestones||{}));
+  state.sgnTurbLeg = (snap.sgnTurbLeg===undefined ? null : snap.sgnTurbLeg);
   state.winnerId = snap.winnerId;
   state.finishSeq = snap.finishSeq||0;
   state.currentQ = snap.leg;
@@ -4450,6 +4527,7 @@ function resetProgress(){
   state.questionOpenedAt = null;
   state.winnerId = null;
   state.milestones = { HAN:null, SPC:null, SGN:null };
+  state.sgnTurbLeg = null;
   state.awardShown = false;
   state.congratsShown = false;
   state.revealedLegs = {};
