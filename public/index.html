@@ -808,8 +808,29 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
 #view-player.wx-power .q-card{background:linear-gradient(160deg,rgba(255,196,0,.22),rgba(255,120,0,.13)); border-color:rgba(255,196,0,.6);}
 .player-fx{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;}
 
+/* ---------- cabin skin cross-fade ----------
+   Being upgraded (or bumped back down) should feel like the cabin lights changing, not like
+   a new page loading. CSS cannot transition a gradient — background-image is not an
+   animatable property — so each cabin's gradient sits on its own full-screen layer and only
+   the LAYER OPACITY is transitioned. Gold and jade can therefore cross-fade through each
+   other, and either can fade to nothing when a player drops back to Economy.
+   z-index:-1 keeps both layers behind the player's content but above the page background. */
+#view-player::before, #view-player::after{
+  content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  opacity:0; transition:opacity 1.1s ease;
+}
+#view-player::before{background:linear-gradient(180deg,#231903 0%,#4b3705 42%,#8a6816 100%);}   /* Business gold */
+#view-player::after {background:linear-gradient(180deg,#04211a 0%,#0A4436 42%,#177A5F 100%);}   /* Premium jade */
+#view-player.biz-gold::before{opacity:1;}
+#view-player.cabin-premium::after{opacity:1;}
+/* the panels ease with the backdrop rather than snapping to the new palette */
+.q-card, .dest-strip, .status-banner, .opt-btn{
+  transition:background-color .9s ease, border-color .9s ease;
+}
+/* …except while the answer is being revealed, where green/red must land instantly */
+.opt-btn.correct, .opt-btn.wrong{transition:background-color .12s ease, border-color .12s ease;}
+
 /* Vietnam Airlines business-class gold treatment for whoever is currently 1st/2nd/3rd */
-#view-player.biz-gold{background:linear-gradient(180deg,#231903 0%,#4b3705 42%,#8a6816 100%);}
 #view-player.biz-gold .q-card,
 #view-player.biz-gold .dest-strip,
 #view-player.biz-gold .status-banner{border-color:rgba(212,175,55,.5); background:rgba(46,33,0,.5);}
@@ -825,8 +846,8 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
   background:linear-gradient(120deg,rgba(212,175,55,.9),rgba(240,214,120,.78)); color:#2a1d00;
   box-shadow:0 10px 28px rgba(212,175,55,.35);
 }
-/* 2nd place rides Premium Economy — the jade green of that cabin, same layout as gold */
-#view-player.cabin-premium{background:linear-gradient(180deg,#04211a 0%,#0A4436 42%,#177A5F 100%);}
+/* 2nd place rides Premium Economy — the jade green of that cabin, same layout as gold.
+   The backdrop itself is the ::after layer above; these are the panel colours. */
 #view-player.cabin-premium .q-card,
 #view-player.cabin-premium .dest-strip,
 #view-player.cabin-premium .status-banner{border-color:rgba(46,190,150,.42); background:rgba(6,52,40,.5);}
@@ -850,6 +871,14 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
   display:inline-block; margin-top:3px; padding:2px 8px; border-radius:99px;
   background:rgba(255,255,255,.16); border:1px solid rgba(255,214,120,.6); color:#ffe9a8;
   font-size:10.5px; font-weight:700; letter-spacing:.02em;
+}
+/* played once when the player actually changes cabin, so the new ribbon announces itself
+   instead of just being there on the next repaint */
+.biz-ribbon.cabin-change{animation:cabinArrive .85s cubic-bezier(.2,.9,.3,1.25);}
+@keyframes cabinArrive{
+  0%{opacity:0; transform:translateY(-10px) scale(.96);}
+  60%{opacity:1; transform:translateY(0) scale(1.02);}
+  100%{opacity:1; transform:translateY(0) scale(1);}
 }
 .biz-ribbon .medal{font-size:26px; line-height:1;}
 .biz-ribbon .tt{font-family:var(--font-display); font-weight:800; font-size:15px; letter-spacing:.03em;}
@@ -907,28 +936,23 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
   th{padding:6px 8px;} td{padding:7px 8px;}
   .answer-grid{grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); gap:8px;}
 }
-/* ---------- iPhone portrait: fit the whole game screen without scrolling ----------
+/* ---------- iPhone portrait ----------
    Keyed off viewport height rather than width: an iPhone 15 is 844px tall, an SE 667px,
-   and the thing that has to fit is the vertical stack (header → progress → clock →
-   question → helps → position strip), not the width. */
+   and the thing being tuned is the vertical stack (header → progress → clock → question →
+   helps → position strip), not the width.
+
+   The question card is NOT a fixed scrolling box. An earlier version pinned the screen to
+   exactly one viewport and let the card scroll internally, which kept the position strip
+   always visible — but on a real iPhone a long question then had to be scrolled inside a
+   short window and the last option was cut off mid-word. The page simply grows instead and
+   the whole thing scrolls as one, so every question and all four options are readable in
+   full; the position strip sits below the fold on the longest questions, which is the right
+   trade because the answer is what the player is looking at while the clock runs. */
 @media (max-height:900px){
-  /* Nothing floats over the phone any more (the sync badge moved onto the state pill), so
-     the 44px that used to be reserved for it is given back to the layout.
-     The screen is also pinned to exactly one viewport tall and the QUESTION CARD is the only
-     thing allowed to scroll. Previously the whole column just grew: a long question with four
-     long options pushed the position strip off the bottom edge, where it was both clipped and
-     sitting under the sync badge. Now the furniture the player needs at a glance — rank
-     ribbon, route strip, clock, helps, position strip — is always on screen whatever the
-     question's length, and only the question itself scrolls. 100dvh (with a 100vh fallback)
-     so mobile browser chrome doesn't eat the bottom row. */
   #view-player{
-    padding-top:calc(11px + env(safe-area-inset-top)); padding-bottom:calc(12px + env(safe-area-inset-bottom));
-    height:100vh; height:100dvh; min-height:0; overflow:hidden;
+    padding-top:calc(11px + env(safe-area-inset-top)); padding-bottom:calc(18px + env(safe-area-inset-bottom));
+    min-height:100vh; min-height:100dvh;
   }
-  #pGame{flex:1; min-height:0; display:flex; flex-direction:column;}
-  #pQCard{flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;}
-  /* these must never be squeezed out to make room for the question */
-  #pBizRibbon, #pRouteStrip, .timer-ring-wrap, #pStatusBanner, #pHelpsWrap, .dest-strip{flex-shrink:0;}
   .p-header{margin-bottom:9px;}
   .route-strip{margin:8px 0 5px;}
   .rs-slot{height:32px;}
@@ -3480,6 +3504,8 @@ function renderPlayerRouteStrip(me){
 
 /* Top 3 fly business class: the whole phone turns Vietnam Airlines gold, and they're told
    who is breathing down their neck — the point being that a lead is something to defend. */
+let _lastCabinTier = null;   // previous tier, so an actual cabin change can be told apart
+                             // from the ribbon merely re-rendering with a new chaser name
 function renderBizRibbon(me){
   const wrap = document.getElementById('pBizRibbon');
   const view = document.getElementById('view-player');
@@ -3494,7 +3520,7 @@ function renderBizRibbon(me){
     : (idx===0 ? 'biz' : idx===1 ? 'prem' : idx===2 ? 'econUp' : idx===3 ? 'econ' : null);
   view.classList.toggle('biz-gold', tier==='biz');
   view.classList.toggle('cabin-premium', tier==='prem');
-  if(!tier){ wrap.innerHTML = ''; return; }
+  if(!tier){ wrap.innerHTML = ''; wrap.dataset.sig = ''; return; }
   const isEcon = tier==='econUp' || tier==='econ';
   const medal = RANK_TROPHY[idx];
   const place = t('biz.place'+(idx+1));
@@ -3510,10 +3536,19 @@ function renderBizRibbon(me){
   const titleKey = isEcon ? 'econ.title' : (tier==='prem' ? 'prem.title' : 'biz.title');
   const cls = isEcon ? 'econ-ribbon' : (tier==='prem' ? 'prem-ribbon' : '');
   const upgrade = tier==='econUp' ? `<div class="up">⬆ ${t('econ.upgrade')}</div>` : '';
-  wrap.innerHTML = `<div class="biz-ribbon ${cls}">
+  const html = `<div class="biz-ribbon ${cls}">
     <div class="medal">${medal}</div>
     <div><div class="tt">${t(titleKey,{n:place})}</div><div class="sb">${sub}</div>${upgrade}</div>
   </div>`;
+  // Only touch the DOM when the ribbon actually changed. renderPlayer runs every second, and
+  // rewriting innerHTML each time would restart the arrival animation on every tick.
+  if(wrap.dataset.sig === html) return;
+  const movedCabin = _lastCabinTier !== null && _lastCabinTier !== tier;
+  _lastCabinTier = tier;
+  wrap.dataset.sig = html;
+  wrap.innerHTML = html;
+  // an actual change of cabin gets the arrival flourish; a new chaser name does not
+  if(movedCabin) wrap.firstElementChild.classList.add('cabin-change');
 }
 
 /* The three round help buttons, sitting right under "Select an answer above". */
@@ -3559,6 +3594,7 @@ function renderPlayer(){
     // player leaves the join screen wearing the gold business-class background
     document.getElementById('view-player').classList.remove('biz-gold','cabin-premium','wx-turbulence','wx-storm','wx-power','final-round-theme');
     const fx = document.getElementById('playerFx'); if(fx) fx.remove();
+    _lastCabinTier = null;   // next join starts fresh, with no phantom "you changed cabin"
     return;
   }
   document.getElementById('pRegistration').classList.add('hidden');

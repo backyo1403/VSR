@@ -101,6 +101,10 @@ Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng 
 
 > Chỉ hạng nhất và hạng nhì đổi cả nền màn hình; hạng ba/tư chỉ có ruy-băng — để khoang vàng và khoang xanh ngọc vẫn là thứ đáng để giành giật.
 
+**Đổi khoang thì màu chuyển từ từ**, không nhảy phát một: nền cũ mờ dần trong khi nền mới hiện dần (~1,1 giây), các panel đổi màu viền/nền theo trong ~0,9 giây, và ruy-băng mới trượt vào. Được nâng hạng — hoặc bị tụt xuống — phải *cảm nhận* được như đèn khoang đổi màu, chứ không như vừa tải lại trang.
+
+> CSS **không transition được gradient** (`background-image` không phải thuộc tính animate được), nên mỗi khoang có một **lớp phủ toàn màn hình riêng** và chỉ **độ mờ của lớp** được transition. Nhờ vậy vàng và xanh ngọc mới hoà vào nhau được, và cả hai đều mờ hẳn đi khi người chơi tụt về Phổ thông. Riêng ô đáp án đúng/sai lúc công bố vẫn đổi màu **tức thì** — chỗ đó chậm lại là sai.
+
 **Màn presenter** — khi admin mở câu hỏi, màn LED hiện **câu hỏi + 4 đáp án + đồng hồ đếm ngược cỡ lớn** trên nền đặc (không blur, để đọc được từ cuối phòng), bảng xếp hạng vẫn hiện bên phải. Có nút **⛶ Fullscreen** ở góc trên.
 
 ### Bầu trời trên màn presenter
@@ -177,7 +181,7 @@ Hai điểm về cách chạy:
 
 > **Màn player cũng đã bỏ badge.** Trên điện thoại không có góc nào trống thật sự — badge nổi đè lên dải thông tin vị trí ở đáy màn hình. Trạng thái kết nối giờ là một **chấm tròn 6px trên ô trạng thái** ở góc trên bên phải (xanh = đã đồng bộ, hổ phách = ngoại tuyến, xám = đang kết nối). Chỉ còn **màn admin và trang chủ** giữ badge ở góc.
 
-> **Màn player cao đúng một khung hình.** Toàn bộ phần cố định — ruy-băng hạng, dải chặng, đồng hồ, trợ giúp, dải vị trí — luôn nằm trong màn hình; **chỉ thẻ câu hỏi cuộn** khi câu quá dài. Trước đây cả cột cùng dài ra, nên một câu dài với bốn đáp án dài đẩy dải vị trí rơi khỏi đáy màn hình.
+> **Câu hỏi và đáp án không nằm trong ô cuộn cố định.** Đã từng thử ghim màn hình đúng một khung hình và cho riêng thẻ câu hỏi cuộn bên trong — dải vị trí luôn thấy được, nhưng trên iPhone thật thì câu dài phải kéo trong một ô hẹp và đáp án cuối bị cắt ngang chữ. Giờ **cả trang dài ra và cuộn như một khối**, nên mọi câu hỏi và cả bốn đáp án đều đọc trọn vẹn. Với những câu dài nhất, dải vị trí nằm dưới màn hình một chút — đánh đổi đúng, vì thứ người chơi đang nhìn khi đồng hồ chạy là đáp án.
 
 Chạy test luật chơi:
 
