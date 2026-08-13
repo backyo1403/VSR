@@ -25,9 +25,9 @@ Lựa chọn ngôn ngữ lưu **theo từng thiết bị** (`localStorage`), kh�
 
 > ⚠️ File gốc `Question Viet.docx` trộn cả câu tiếng Việt lẫn câu tiếng Anh, còn `Question Viet addon.docx` thuần tiếng Việt. Câu nào thiếu ngôn ngữ nào thì **đã được dịch bổ sung** để nút VI/EN đổi được toàn bộ. Bản dịch **nên được người của Vietnam Airlines rà lại trước sự kiện** — MC sẽ đọc trước các đại lý du lịch và nội dung có nhiều thuật ngữ ngành. Các tên riêng sản phẩm (LotusMiles, Transit Tour, Tour Series, Business FOC, Gold Agent, Premium Economy…) được giữ nguyên tiếng Anh theo cách gọi thông dụng trong ngành.
 
-**Ngân hàng câu hỏi:** 30 câu thường — 23 câu từ `Question Viet.docx`, rồi **7 câu từ `Question Viet addon.docx` nối tiếp phía sau**. Hỏi **lần lượt theo đúng thứ tự** đó, mỗi lượt một câu, **câu đã dùng không bao giờ lặp lại**. Hết 30 câu thì admin không mở thêm được câu mới.
+**Ngân hàng câu hỏi:** 30 câu thường từ `Question Viet.docx`, **đánh số đúng theo file** (id N = "Câu N"). Hỏi **lần lượt theo đúng thứ tự** đó, mỗi lượt một câu, **câu đã dùng không bao giờ lặp lại**. Hết 30 câu thì admin không mở thêm được câu mới.
 
-> Câu 20 và câu 22 của file gốc đã được **bỏ** vì trùng nội dung với câu 6 (Premium Economy) và câu 13 (Transit Tour) — chỉ khác ngôn ngữ gốc.
+> **Đáp án đúng giữ nguyên 100% theo file** — chỉ **vị trí A/B/C/D bị xáo**. Muốn cập nhật ngân hàng câu hỏi thì sửa `QUESTION_BANK` trong `public/index.html`: mỗi mục có `id` (số câu trong file), `correct` (chỉ số 0-3 của đáp án đúng **theo thứ tự gốc trong file**, trước khi xáo), và hai khối `vi` / `en`.
 
 **Câu hỏi Sunshine** nằm riêng, **không bao giờ ra ở lượt thường**: nó chỉ hiện khi admin bấm ☀️ Trời nắng đẹp. Bấm lần nữa để huỷ thì câu thường đang chờ được trả lại nguyên vẹn vào kho.
 
@@ -47,6 +47,8 @@ Lựa chọn ngôn ngữ lưu **theo từng thiết bị** (`localStorage`), kh�
 ### Ba sự trợ giúp
 
 Mỗi thứ dùng **một lần cả ván**, hiển thị là 3 nút tròn dưới ô "Select an answer above". Cả ba — 50:50, Turbo Boost và Fasten Seatbelt — **mở khoá riêng cho từng người khi máy bay của chính họ tới MUC**, không phải khi cuộc đua tới MUC.
+
+> **Mở khoá là một chiều.** Đã tới MUC một lần thì giữ trợ giúp **cả ván**, kể cả khi nhiễu động đẩy tụt lại HAN hay về tận START. Mất trợ giúp trên đường lùi lại nghĩa là bị phạt hai lần cho cùng một câu trả lời sai. Cờ `reachedMuc` nằm trên node `progress` (admin sở hữu) nên sống sót qua reload điện thoại; nó cũng tự bật cho người chơi đã ở MUC trở lên nhưng dữ liệu cũ chưa có cờ này.
 
 | Trợ giúp | Tác dụng | Bị khoá khi |
 |---|---|---|
@@ -161,7 +163,9 @@ Hai điểm về cách chạy:
 
 > Màu **phải** đổi theo trạng thái: một ô cờ đỏ ghi "TRỰC TIẾP" trong khi thực tế đang chạy offline sẽ nói với cả phòng điều ngược lại sự thật.
 
-> Màn **player và admin vẫn giữ badge** ở góc — hai màn này không có dải tin, và admin là người cần thấy sự cố đồng bộ ngay khi nó xảy ra nhất.
+> **Màn player cũng đã bỏ badge.** Trên điện thoại không có góc nào trống thật sự — badge nổi đè lên dải thông tin vị trí ở đáy màn hình. Trạng thái kết nối giờ là một **chấm tròn 6px trên ô trạng thái** ở góc trên bên phải (xanh = đã đồng bộ, hổ phách = ngoại tuyến, xám = đang kết nối). Chỉ còn **màn admin và trang chủ** giữ badge ở góc.
+
+> **Màn player cao đúng một khung hình.** Toàn bộ phần cố định — ruy-băng hạng, dải chặng, đồng hồ, trợ giúp, dải vị trí — luôn nằm trong màn hình; **chỉ thẻ câu hỏi cuộn** khi câu quá dài. Trước đây cả cột cùng dài ra, nên một câu dài với bốn đáp án dài đẩy dải vị trí rơi khỏi đáy màn hình.
 
 Chạy test luật chơi:
 

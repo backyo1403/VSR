@@ -191,13 +191,20 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 /* ================= PLAYER ================= */
 #view-player{
   max-width:460px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column;
-  padding:calc(20px + env(safe-area-inset-top)) calc(18px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left));
+  padding:calc(20px + env(safe-area-inset-top)) calc(18px + env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) calc(18px + env(safe-area-inset-left));
 }
 /* left padding keeps the brand clear of the fixed "← Exit" button, which floats over
    the top-left corner of every non-landing view */
 .p-header{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; padding-left:76px;}
 .p-header .brand-mark{margin:0;}
-.p-badge{font-family:var(--font-mono); font-size:11px; background:var(--glass); border:1px solid var(--glass-brd); padding:6px 10px; border-radius:20px;}
+.p-badge{font-family:var(--font-mono); font-size:11px; background:var(--glass); border:1px solid var(--glass-brd); padding:6px 10px; border-radius:20px; display:inline-flex; align-items:center; gap:6px;}
+/* Connection state rides on the state pill the player is already looking at, instead of a
+   floating badge over the bottom of the screen — on a phone there is no spare corner, and
+   the fixed badge ended up covering the position strip. Green synced · amber offline ·
+   grey connecting. */
+.conn-dot{width:6px; height:6px; border-radius:50%; flex-shrink:0; background:#2ecc71; box-shadow:0 0 5px rgba(46,204,113,.9);}
+.conn-dot.off{background:#f0b43c; box-shadow:0 0 5px rgba(240,180,60,.9);}
+.conn-dot.init{background:rgba(255,255,255,.5); box-shadow:none;}
 
 .reg-card{border-radius:22px; padding:26px 22px; margin-top:10px;}
 .reg-card h2{margin:0 0 4px; font-size:22px;}
@@ -877,9 +884,23 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
    and the thing that has to fit is the vertical stack (header → progress → clock →
    question → helps → position strip), not the width. */
 @media (max-height:900px){
-  /* bottom padding clears the fixed 🟢 LIVE sync badge; because .q-card is flex:1 it
-     absorbs the extra padding rather than pushing the page taller */
-  #view-player{padding-top:calc(11px + env(safe-area-inset-top)); padding-bottom:calc(44px + env(safe-area-inset-bottom));}
+  /* Nothing floats over the phone any more (the sync badge moved onto the state pill), so
+     the 44px that used to be reserved for it is given back to the layout.
+     The screen is also pinned to exactly one viewport tall and the QUESTION CARD is the only
+     thing allowed to scroll. Previously the whole column just grew: a long question with four
+     long options pushed the position strip off the bottom edge, where it was both clipped and
+     sitting under the sync badge. Now the furniture the player needs at a glance — rank
+     ribbon, route strip, clock, helps, position strip — is always on screen whatever the
+     question's length, and only the question itself scrolls. 100dvh (with a 100vh fallback)
+     so mobile browser chrome doesn't eat the bottom row. */
+  #view-player{
+    padding-top:calc(11px + env(safe-area-inset-top)); padding-bottom:calc(12px + env(safe-area-inset-bottom));
+    height:100vh; height:100dvh; min-height:0; overflow:hidden;
+  }
+  #pGame{flex:1; min-height:0; display:flex; flex-direction:column;}
+  #pQCard{flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+  /* these must never be squeezed out to make room for the question */
+  #pBizRibbon, #pRouteStrip, .timer-ring-wrap, #pStatusBanner, #pHelpsWrap, .dest-strip{flex-shrink:0;}
   .p-header{margin-bottom:9px;}
   .route-strip{margin:8px 0 5px;}
   .rs-slot{height:32px;}
@@ -1086,7 +1107,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
   <section id="view-player" class="hidden">
     <div class="p-header">
       <div class="brand-mark"><img class="brand-logo" src="vendor/vna-logo.png" alt="Vietnam Airlines" /><span>Sky Race</span></div>
-      <div class="p-badge mono" id="pStateBadge">LOBBY</div>
+      <div class="p-badge mono" id="pStateBadge"><span class="conn-dot" id="pConnDot"></span><span id="pStateText">LOBBY</span></div>
     </div>
 
     <div id="pRegistration" class="reg-card glass">
@@ -1356,7 +1377,7 @@ vi: {
   'rules.h.power':'☀️ Trời nắng đẹp',
   'rules.p.power':'Lượt thưởng duy nhất cả ván của người điều phối, kích hoạt trước khi mở câu hỏi. Người <strong>trả lời đúng nhanh nhất</strong> được <strong>+2 chặng</strong>, những người đúng khác <strong>+1</strong>, trả lời sai đứng nguyên. Không kích hoạt được trên chặng Nhiễu động hay Bão, và cả ba trợ giúp đều bị khoá.',
   'rules.h.helps':'Ba trợ giúp của bạn',
-  'rules.p.helps':'Mỗi trợ giúp dùng được <strong>một lần cả ván</strong>. Cả ba — <strong>50:50</strong>, <strong>Turbo Boost</strong> và <strong>Thắt dây an toàn</strong> — mở khoá khi <strong>máy bay của chính bạn tới MUC</strong>, không phải khi cuộc đua tới MUC.',
+  'rules.p.helps':'Mỗi trợ giúp dùng được <strong>một lần cả ván</strong>. Cả ba — <strong>50:50</strong>, <strong>Turbo Boost</strong> và <strong>Thắt dây an toàn</strong> — mở khoá khi <strong>máy bay của chính bạn tới MUC</strong>, không phải khi cuộc đua tới MUC. Đã mở khoá thì <strong>giữ nguyên cả ván</strong>, kể cả khi bạn bị nhiễu động đẩy lùi lại phía sau MUC.',
   'rules.help.fifty':'50:50',
   'rules.help.fiftyDesc':'Loại bỏ hai đáp án sai, chỉ còn đáp án đúng và một đáp án nhiễu. Bị khoá trong Nhiễu động, Bão và Trời nắng đẹp.',
   'rules.help.turbo':'Turbo Boost',
@@ -1767,7 +1788,7 @@ en: {
   'rules.h.power':'☀️ Sunshine',
   'rules.p.power':'The host\'s one-time bonus round for the whole game, armed before the question opens. The <strong>fastest correct</strong> answer gets <strong>+2 legs</strong>, every other correct answer <strong>+1</strong>, wrong answers hold. Can\'t be armed on a Turbulence or Storm leg, and all three helps are disabled.',
   'rules.h.helps':'Your three helps',
-  'rules.p.helps':'Each one can be used <strong>once per game</strong>. All three — <strong>50:50</strong>, <strong>Turbo Boost</strong> and <strong>Fasten Seatbelt</strong> — unlock the moment <strong>your own aircraft reaches MUC</strong>, not when the race reaches MUC.',
+  'rules.p.helps':'Each one can be used <strong>once per game</strong>. All three — <strong>50:50</strong>, <strong>Turbo Boost</strong> and <strong>Fasten Seatbelt</strong> — unlock the moment <strong>your own aircraft reaches MUC</strong>, not when the race reaches MUC. Once unlocked they <strong>stay unlocked for the rest of the game</strong>, even if turbulence pushes you back behind MUC.',
   'rules.help.fifty':'50:50',
   'rules.help.fiftyDesc':'Removes two wrong answers, leaving the correct one and a single decoy. Disabled during Turbulence, Storm and Sunshine.',
   'rules.help.turbo':'Turbo Boost',
@@ -2214,13 +2235,11 @@ const ROUTE = [
     node.y = Math.round(curveY(t)*10)/10;
   });
 })();
-// Question bank — 30 questions, asked in this exact order, one per round, never repeating
-// (see pickQuestionIndex). `explain` is the 🎤 Presenter Note the host reads aloud after the
-// answer is revealed. Ids 1-25 come from "Question Viet.docx" and ids 26-32 from
-// "Question Viet addon.docx", which is why they run on after it rather than interleaving.
-// The source deck's items 20 and 22 duplicated items 6 and 13 (same question, just written
-// in the other language) and were dropped; ids are NOT renumbered, because the answer
-// shuffle is seeded from the id and renumbering would move every answer letter.
+// Question bank — the 30 questions of "Question Viet.docx", in the file's own order and
+// numbering (id N == "Câu N"), asked one per round and never repeated (see
+// pickQuestionIndex). `explain` is the 🎤 Presenter Note the host reads aloud after the
+// answer is revealed. The correct answer of each question is exactly the one marked in the
+// file; only the A/B/C/D *positions* are shuffled (see shuffleOrderFor).
 //
 // Each entry carries both languages: the source deck mixes Vietnamese and English items,
 // so every question was completed in the missing language rather than left to fall back.
@@ -2317,49 +2336,49 @@ const QUESTION_BANK = [
  vi:{q:"Theo chiến lược Tầm nhìn 2030, Vietnam Airlines đặt mục tiêu trở thành một trong ___ hãng hàng không dịch vụ đầy đủ hàng đầu Đông Nam Á.",opts:["10","5","3","2"],explain:"Vietnam Airlines không chỉ đơn thuần mở rộng mạng bay. Tham vọng của chúng tôi là trở thành một trong ba hãng hàng không dịch vụ đầy đủ hàng đầu Đông Nam Á, thông qua sản phẩm cao cấp, vận hành xuất sắc và trải nghiệm khách hàng nổi bật."},
  en:{q:"According to the Vision 2030 strategy, Vietnam Airlines aims to become one of the top ___ full-service airlines in Southeast Asia.",opts:["10","5","3","2"],explain:"Vietnam Airlines isn't simply expanding its network. Our ambition is to become one of Southeast Asia's top three full-service airlines by delivering premium products, operational excellence, and outstanding customer experience."}},
 
-{id:21,correct:1,
+{id:20,correct:1,
  vi:{q:"Vietnam Airlines đánh giá incentive bán hàng chủ yếu dựa trên yếu tố nào?",opts:["Số lượng nhân sự","Kết quả doanh thu và mức độ hoàn thành KPI","Vị trí văn phòng","Chỉ số năm hợp tác"],explain:"Vietnam Airlines tưởng thưởng các đại lý liên tục đạt mục tiêu bán hàng. Các chương trình incentive dựa trên kết quả doanh thu, mức độ hoàn thành KPI và cam kết thị trường, bảo đảm những đối tác xuất sắc nhận được sự ghi nhận và hỗ trợ xứng đáng."},
  en:{q:"Vietnam Airlines evaluates sales incentives primarily based on...",opts:["Number of employees.","Revenue performance and KPI achievement.","Office location.","Years of partnership only."],explain:"Vietnam Airlines rewards agencies that consistently achieve their sales targets. Incentive programs are based on revenue performance, KPI achievement, and market commitments, ensuring that outstanding partners receive meaningful recognition and support."}},
 
-{id:23,correct:2,
+{id:21,correct:2,
  vi:{q:"Nếu so với cách bán truyền thống “Europe → Hanoi/Saigon”, Vietnam Airlines muốn đại lý khai thác thêm cách bán nào?",opts:["Chỉ bán one-way","Chỉ tập trung vào giá","Bán toàn bộ journey: Europe → Vietnam gateway → domestic destination","Không cần quan tâm điểm đến cuối cùng"],explain:"Đây là một trong những thông điệp quan trọng nhất: Sell the journey, not just the sector. Ví dụ AMS–HAN–DAD có giá trị bán hàng lớn hơn việc chỉ nhìn vào AMS–HAN."},
  en:{q:"Compared with the traditional “Europe → Hanoi/Saigon” way of selling, what additional approach does Vietnam Airlines want agents to take?",opts:["Sell one-way only","Focus on price only","Sell the whole journey: Europe → Vietnam gateway → domestic destination","Ignore the final destination"],explain:"This is one of the most important messages: sell the journey, not just the sector. AMS–HAN–DAD, for example, is worth far more commercially than looking at AMS–HAN alone."}},
 
-{id:24,correct:2,
+{id:22,correct:2,
  vi:{q:"Khi booking trong các tháng thấp điểm có dấu hiệu yếu, Sales Kit nên giúp đại lý nhìn nhận cơ hội như thế nào?",opts:["Không bán Vietnam Airlines trong low season","Chỉ chờ đến peak season","Sử dụng promotional fare và các chương trình kích cầu để tạo demand mới","Chỉ giảm giá cho Corporate"],explain:"Điểm mới ở đây là chuyển từ reactive selling sang tactical selling. Đại lý có thể sử dụng fare/product phù hợp để chủ động kích thích demand trong những tháng thấp điểm."},
  en:{q:"When bookings look weak in the low-season months, how should the Sales Kit help agents see the opportunity?",opts:["Stop selling Vietnam Airlines in low season","Just wait for the peak season","Use promotional fares and demand-stimulation programmes to create new demand","Discount for corporate accounts only"],explain:"The shift here is from reactive selling to tactical selling. Agents can use the right fare or product to actively stimulate demand during the quieter months."}},
 
-{id:25,correct:2,
+{id:23,correct:2,
  vi:{q:"Đâu là cách hiểu đầy đủ nhất về định hướng của Vietnam Airlines tại thị trường châu Âu?",opts:["Tăng số lượng chuyến bay là mục tiêu duy nhất","Tập trung vào việc bán vé giá thấp nhất","Kết hợp network, product/fare mới, digital distribution, agent partnership và các giải pháp sales để tăng khả năng cạnh tranh","Chỉ tập trung vào khách người Việt"],explain:"Đây là câu tổng hợp. Các “điểm mới” không nên được nhìn riêng lẻ. Network + Product + Fare + Distribution + Agent Partnership phải cùng tạo ra một proposition cạnh tranh hơn cho Vietnam Airlines tại châu Âu."},
  en:{q:"Which is the most complete understanding of Vietnam Airlines' direction in the European market?",opts:["Increasing flight numbers is the only goal","Focusing on selling the lowest fares","Combining network, new product/fare, digital distribution, agent partnership and sales solutions to compete more strongly","Focusing on Vietnamese passengers only"],explain:"This is the synthesis question. The “what's new” items should not be looked at in isolation. Network + Product + Fare + Distribution + Agent Partnership together have to create a more competitive proposition for Vietnam Airlines in Europe."}},
 
 
 // ---- added from "Question Viet addon.docx", asked after the questions above ----
-{id:26,correct:1,
+{id:24,correct:1,
  vi:{q:"Điểm nào sau đây giúp phân biệt rõ nhất trải nghiệm Business Class trên tàu bay thân rộng của Vietnam Airlines với Economy Class?",opts:["Business Class chỉ có suất ăn cao cấp hơn","Business Class có ghế được thiết kế đặc biệt, có thể ngả 180°, cùng các dịch vụ ưu tiên","Business Class chỉ được ưu tiên làm thủ tục tại sân bay","Business Class được miễn tất cả các loại phụ phí"],explain:"Business Class của Vietnam Airlines không chỉ khác biệt ở suất ăn hay quy trình check-in. Trên tàu bay thân rộng, hành khách có ghế được thiết kế riêng có khả năng ngả 180 độ, cùng với nhiều dịch vụ ưu tiên từ check-in, hành lý, boarding, transfer desk đến lounge. Đây là một sản phẩm premium được thiết kế để tạo ra trải nghiệm xuyên suốt."},
  en:{q:"Which point best distinguishes the Business Class experience on Vietnam Airlines' wide-body aircraft from Economy Class?",opts:["Business Class only has better meals","Business Class has specially designed seats that recline to 180°, together with a range of priority services","Business Class only gets priority check-in at the airport","Business Class is exempt from all surcharges"],explain:"Vietnam Airlines' Business Class is not just about the meal or the check-in process. On wide-body aircraft, passengers get a purpose-designed seat that reclines fully flat to 180 degrees, along with priority services spanning check-in, baggage, boarding, transfer desk and lounge. It is a premium product designed to deliver a consistent experience end to end."}},
 
-{id:27,correct:1,
+{id:25,correct:1,
  vi:{q:"Một gia đình đi cùng trẻ nhỏ, trong đó có một hành khách cần hỗ trợ đặc biệt. Theo Sales Kit, nhóm dịch vụ nào cho thấy Vietnam Airlines có khả năng đáp ứng nhu cầu cá nhân hóa ngoài việc bán vé?",opts:["Chỉ Advance Seat Selection và Upgrade","Travelling with Pet, Reduced Mobility Passenger và Unaccompanied Minor Service","Chỉ Excess Baggage và Special Meal","Chỉ Sky Sofa và Upgrade"],explain:"Điểm đáng chú ý trong nhóm ancillary của Vietnam Airlines là danh mục không chỉ tập trung vào các dịch vụ tạo thêm doanh thu như chọn ghế hay hành lý. VNA còn cung cấp các dịch vụ phục vụ những nhu cầu hành khách đặc thù như hành khách giảm khả năng di chuyển, trẻ em đi một mình hay hành khách đi cùng thú cưng."},
  en:{q:"A family is travelling with small children and one passenger who needs special assistance. According to the Sales Kit, which group of services shows that Vietnam Airlines can meet personalised needs beyond simply selling a ticket?",opts:["Advance Seat Selection and Upgrade only","Travelling with Pet, Reduced Mobility Passenger and Unaccompanied Minor Service","Excess Baggage and Special Meal only","Sky Sofa and Upgrade only"],explain:"What stands out about Vietnam Airlines' ancillary range is that it is not limited to revenue-generating extras like seat selection or baggage. VNA also offers services for specific passenger needs — passengers with reduced mobility, children travelling alone, and passengers travelling with pets."}},
 
-{id:28,correct:1,
+{id:26,correct:1,
  vi:{q:"Một thương hiệu muốn hợp tác với LotusMiles nhưng không muốn chỉ sử dụng hình thức tặng dặm. Theo Sales Kit, lựa chọn nào sau đây phản ánh đúng khả năng hợp tác của LotusMiles?",opts:["Chỉ có Mileage Rewards","Mileage Rewards, Tier Miles, Vouchers và Media Exposure","Chỉ có giảm giá vé máy bay","Chỉ có quảng cáo trên website"],explain:"Một điểm rất đáng chú ý của LotusMiles là mô hình hợp tác khá linh hoạt. Đối tác không nhất thiết chỉ tham gia bằng cách thưởng dặm cho khách hàng. Sales Kit đề cập đến nhiều mô hình như mileage rewards, tier miles, voucher và media exposure thông qua mạng lưới của Vietnam Airlines."},
  en:{q:"A brand wants to partner with LotusMiles but does not want to use mileage rewards alone. According to the Sales Kit, which option correctly reflects what a LotusMiles partnership can cover?",opts:["Mileage Rewards only","Mileage Rewards, Tier Miles, Vouchers and Media Exposure","Airfare discounts only","Website advertising only"],explain:"One notable thing about LotusMiles is how flexible the partnership model is. A partner does not have to take part solely by awarding miles to customers. The Sales Kit sets out several models: mileage rewards, tier miles, vouchers, and media exposure through Vietnam Airlines' network."}},
 
-{id:29,correct:1,
+{id:27,correct:1,
  vi:{q:"Một khách sạn cao cấp muốn hợp tác với Vietnam Airlines để vừa tăng nhận diện thương hiệu vừa tạo doanh thu từ khách hàng chung. Phương án nào phù hợp nhất với định hướng partnership trong Sales Kit?",opts:["Chỉ mua quảng cáo banner của Vietnam Airlines","Kết hợp flight + hotel/entertainment và triển khai joint promotion","Chỉ xin mức giá vé thấp hơn","Chỉ tham gia LotusMiles bằng cách mua vé máy bay"],explain:"VNA đưa ra một tư duy hợp tác rộng hơn việc đơn thuần mua quảng cáo. Các đối tác có thể cùng Vietnam Airlines xây dựng các chương trình kết hợp như flight + hotel hoặc entertainment, qua đó vừa tăng doanh số vừa tạo thêm giá trị cho khách hàng."},
  en:{q:"A luxury hotel wants to partner with Vietnam Airlines to raise brand awareness and generate revenue from shared customers. Which option best fits the partnership direction in the Sales Kit?",opts:["Only buying banner advertising from Vietnam Airlines","Bundling flight + hotel/entertainment and running joint promotions","Only asking for lower fares","Only joining LotusMiles by buying air tickets"],explain:"VNA takes a broader view of partnership than simply selling advertising. Partners can work with Vietnam Airlines to build combined programmes such as flight + hotel or entertainment, lifting sales while adding value for the customer."}},
 
-{id:30,correct:1,
+{id:28,correct:1,
  vi:{q:"Đến năm 2030 Vietnam Airlines dự kiến phát triển thêm bao nhiêu đường bay so với 2026 trong danh sách các đường bay được nêu?",opts:["19 đường bay","26 đường bay","29 đường bay","32 đường bay"],explain:"Năm 2026 có 3 đường bay mới, đến 2030 danh sách mở rộng lên 29 đường bay — tức là thêm 26 đường bay nữa. Điều này cho thấy một tham vọng mở rộng đáng kể trong trung và dài hạn. Đối với đại lý, điều này rất quan trọng vì network mới đồng nghĩa với routing mới, destination mới và cơ hội xây dựng sản phẩm mới."},
  en:{q:"By 2030, how many more routes does Vietnam Airlines plan to add compared with 2026, based on the route list presented?",opts:["19 routes","26 routes","29 routes","32 routes"],explain:"2026 brings 3 new routes; by 2030 the list expands to 29 routes — 26 more on top. That signals substantial expansion ambition over the medium and long term. For agents this matters, because a new network means new routings, new destinations and new opportunities to build products."}},
 
-{id:31,correct:0,
+{id:29,correct:0,
  vi:{q:"Nhóm đại lý nào được xếp vào Platinum Agents?",opts:["Top 1–3 đại lý theo doanh thu","Top 4–10 đại lý theo doanh thu","Tất cả đại lý đạt KPI","Đại lý có doanh số cao nhất trong từng tháng"],explain:"Vietnam Airlines có cơ chế ghi nhận các đại lý có kết quả kinh doanh nổi bật. Platinum Agents là nhóm Top 1–3, trong khi Gold Agents nằm trong nhóm Top 4–10. Ngoài việc ghi nhận thứ hạng, các đại lý doanh thu cao còn có cơ hội nhận những phần thưởng như FOC tickets hoặc Fam Trip."},
  en:{q:"Which group of agents is classified as Platinum Agents?",opts:["The top 1–3 agents by revenue","The top 4–10 agents by revenue","All agents who meet their KPI","The agent with the highest sales each month"],explain:"Vietnam Airlines has a mechanism for recognising agents with outstanding business results. Platinum Agents are the top 1–3, while Gold Agents sit in the top 4–10. Beyond the ranking itself, high-revenue agents can also earn rewards such as FOC tickets or a Fam Trip."}},
 
-{id:32,correct:2,
+{id:30,correct:2,
  vi:{q:"Một đại lý muốn tối ưu incentive của Vietnam Airlines, đâu là cách hiểu ĐẦY ĐỦ nhất về các loại incentive?",opts:["Chỉ dựa trên tổng doanh thu cuối năm","Chỉ dựa trên số lượng vé bán trong tháng","Có incentive theo KPI doanh thu trong các kỳ và tactical incentive dựa trên số lượng vé trong một số giai đoạn nhất định","Chỉ dành cho Platinum Agents"],explain:"Đây là một điểm dễ bị bỏ qua. Incentive không chỉ có một hình thức. Sales Kit phân biệt incentive dựa trên KPI doanh thu theo các chu kỳ như quarterly, semi-annual hoặc annual, đồng thời có tactical incentive dựa trên số lượng vé trong một số giai đoạn cụ thể. Ngoài ra, loại incentive còn được đánh giá dựa trên target của VNA và cam kết về doanh thu hoặc market share của từng đại lý."},
  en:{q:"An agent wants to maximise their Vietnam Airlines incentive. Which is the MOST complete understanding of the incentive types?",opts:["Based on total year-end revenue only","Based on the number of tickets sold in the month only","There are revenue-KPI incentives across defined periods, plus tactical incentives based on ticket volume during certain windows","Available to Platinum Agents only"],explain:"This one is easy to overlook: incentives are not a single scheme. The Sales Kit distinguishes revenue-KPI incentives over cycles such as quarterly, semi-annual or annual, alongside tactical incentives based on ticket volume in specific windows. The incentive type is also assessed against VNA's targets and each agent's revenue or market-share commitments."}},
 // ☀️ Sunshine — held back for the host to arm; never served as an ordinary round.
@@ -2675,6 +2694,9 @@ function rebuildPlayers(){
       turboUsed: !!pr.turboUsed,
       fiftyUsed: !!pr.fiftyUsed,
       seatbeltUsed: !!pr.seatbeltUsed,
+      // one-way latch: once true it stays true, and it also self-heals for a player whose
+      // progress node predates this field but who is already at or past MUC
+      reachedMuc: !!pr.reachedMuc || (pr.position||0) >= TURBO_MIN_LEG,
       finishRank: pr.finishRank || null,
       currentStreak: pr.currentStreak || 0,
       longestStreak: pr.longestStreak || 0,
@@ -2706,7 +2728,7 @@ function fbWriteAdmin(){
     u['rooms/'+ROOM+'/progress/'+p.id] = {
       position: p.position||0, correctCount: p.correctCount||0,
       totalAnswerTime: p.totalAnswerTime||0, turboUsed: !!p.turboUsed,
-      fiftyUsed: !!p.fiftyUsed, seatbeltUsed: !!p.seatbeltUsed,
+      fiftyUsed: !!p.fiftyUsed, seatbeltUsed: !!p.seatbeltUsed, reachedMuc: !!p.reachedMuc,
       finishRank: p.finishRank||null, currentStreak: p.currentStreak||0,
       longestStreak: p.longestStreak||0, answeredCount: p.answeredCount||0,
     };
@@ -2735,7 +2757,7 @@ function reconcileProgress(){
   if(FB.mode!=='online' || FB.role!=='admin') return;
   const u = {};
   Object.keys(_profiles).forEach(id=>{
-    if(!_progress[id]) u['rooms/'+ROOM+'/progress/'+id] = {position:0,correctCount:0,totalAnswerTime:0,turboUsed:false,fiftyUsed:false,seatbeltUsed:false,finishRank:null,currentStreak:0,longestStreak:0,answeredCount:0};
+    if(!_progress[id]) u['rooms/'+ROOM+'/progress/'+id] = {position:0,correctCount:0,totalAnswerTime:0,turboUsed:false,fiftyUsed:false,seatbeltUsed:false,reachedMuc:false,finishRank:null,currentStreak:0,longestStreak:0,answeredCount:0};
   });
   if(Object.keys(u).length) db.ref().update(u).catch(()=>{});
 }
@@ -2757,13 +2779,16 @@ function setSyncBadge(){
   const [txt, brd] = map[FB.mode] || map.init;
   el.textContent = txt;
   el.style.borderColor = brd;
-  /* On the presenter wall the corner badge is redundant: the event-feed flag on the left says
-     the same thing, so the badge is hidden there and the flag carries the sync state instead.
-     Player and admin keep the badge — neither has a ticker, and the admin above all needs to
-     see a sync failure the moment it happens. */
-  const onPresenter = !document.getElementById('view-presenter').classList.contains('hidden');
-  el.style.display = onPresenter ? 'none' : '';
+  /* The floating corner badge is only kept where there is spare screen and nothing else says
+     it: the landing page and the admin dashboard. The presenter has the event-feed flag, and
+     the player has a dot on the state pill — on a phone there is no spare corner at all, and
+     this badge was landing on top of the bottom position strip. */
+  const vis = id => !document.getElementById(id).classList.contains('hidden');
+  const onPresenter = vis('view-presenter');
+  const onPlayer = vis('view-player');
+  el.style.display = (onPresenter || onPlayer) ? 'none' : '';
   if(onPresenter) paintTickerFlag();
+  if(onPlayer) paintPlayerConnDot();
 }
 
 function goOffline(why){
@@ -3124,7 +3149,7 @@ async function playerJoin(){
     localStorage.setItem('vna_my_player_id', myPlayerId);
     localStorage.setItem('vna_my_room', ROOM);
     state.players[myPlayerId] = {
-      id: myPlayerId, name, avatar: selectedAvatar, position: 0, correctCount:0, answers:{}, totalAnswerTime:0, turboUsed:false, fiftyUsed:false, seatbeltUsed:false, finishRank:null, currentStreak:0, longestStreak:0, answeredCount:0, joinedAt: Date.now()
+      id: myPlayerId, name, avatar: selectedAvatar, position: 0, correctCount:0, answers:{}, totalAnswerTime:0, turboUsed:false, fiftyUsed:false, seatbeltUsed:false, reachedMuc:false, finishRank:null, currentStreak:0, longestStreak:0, answeredCount:0, joinedAt: Date.now()
     };
     saveState();
     document.getElementById('pRegistration').classList.add('hidden');
@@ -3214,9 +3239,19 @@ const HELP_ICONS = {
    player cannot hand themselves a fresh set of helps by reloading. */
 function me_turbulenceActive(){ return isTurbulenceLeg(state.currentQ); }
 function me_stormActive(){ return isStormLeg(state.currentQ); }
+/* Reaching MUC unlocks the three helps permanently. It is a one-way latch, not a live
+   position test: a player who unlocked at MUC and was then pushed back to HAN by turbulence
+   keeps their helps. Losing them on the way back down would punish the same wrong answer
+   twice. `reachedMuc` lives on the admin-owned progress node so it survives a refresh, and
+   markMucReached() is the single place it is ever set. */
+function markMucReached(p){
+  if(p && !p.reachedMuc && (p.position||0) >= TURBO_MIN_LEG) p.reachedMuc = true;
+}
 function helpsUnlocked(){
   const me = state.players[myPlayerId];
-  return !!me && me.position >= TURBO_MIN_LEG;
+  if(!me) return false;
+  markMucReached(me);   // covers the offline path, where nothing else observes the position
+  return !!me.reachedMuc;
 }
 function boostsBlocked(){
   return me_turbulenceActive() || me_stormActive() || !!state.powerQuestionActive;
@@ -3454,8 +3489,9 @@ function renderHelps(me, myAns){
 }
 
 function renderPlayer(){
-  const badge = document.getElementById('pStateBadge');
-  badge.textContent = t('st.'+state.gameState);
+  const stateText = document.getElementById('pStateText');
+  if(stateText) stateText.textContent = t('st.'+state.gameState);
+  paintPlayerConnDot();
 
   if(!myPlayerId || !state.players[myPlayerId]){
     document.getElementById('pRegistration').classList.remove('hidden');
@@ -4111,6 +4147,18 @@ function paintTickerFlag(){
     txt.textContent = t('feed.flagInit');
     cnt.classList.add('hidden');
   }
+}
+/* The player's equivalent: a 6px dot on the state pill they are already watching. Replaces
+   the floating corner badge on the phone, which had no room to float without covering the
+   position strip along the bottom. */
+function paintPlayerConnDot(){
+  const dot = document.getElementById('pConnDot');
+  if(!dot) return;
+  const mode = (FB.mode === 'online' || FB.mode === 'offline') ? FB.mode : 'init';
+  dot.classList.toggle('off', mode === 'offline');
+  dot.classList.toggle('init', mode === 'init');
+  dot.title = mode === 'online' ? t('sync.live',{count:Object.keys(state.players||{}).length, s:''})
+            : mode === 'offline' ? t('sync.offline') : t('sync.connecting');
 }
 function initEventFeed(){
   const track = document.getElementById('tickerTrack');
@@ -5029,6 +5077,7 @@ function adminRevealAnswer(){
     }
 
     p.position = Math.max(0, Math.min(p.position + delta, ROUTE.length-1));
+    markMucReached(p);   // latches on the way up; never cleared on the way back down
     const landedCode = ROUTE[p.position].code;
     if(['HAN','SPC','SGN'].includes(landedCode) && !state.milestones[landedCode]){
       state.milestones[landedCode] = p.id;
@@ -5233,6 +5282,7 @@ function resetProgress(){
     p.turboUsed = false;
     p.fiftyUsed = false;
     p.seatbeltUsed = false;
+    p.reachedMuc = false;
     p.finishRank = null;
     p.currentStreak = 0;
     p.longestStreak = 0;
@@ -5314,6 +5364,7 @@ function adminNudgePlayer(id, delta){
   const before = p.position;
   p.position = Math.max(0, Math.min(p.position + delta, ROUTE.length-1));
   if(p.position===before){ toast(t('a.t.alreadyAt',{name:p.name, code:ROUTE[before].code})); return; }
+  markMucReached(p);   // a manual nudge past MUC unlocks the helps just like a correct answer
   const landedCode = ROUTE[p.position].code;
   if(['HAN','SPC','SGN'].includes(landedCode) && !state.milestones[landedCode]){
     state.milestones[landedCode] = p.id;
@@ -5375,9 +5426,11 @@ function renderAnswersFull(){
 }
 
 // Which of a player's three one-time helps are still in hand — greyed once spent, dimmer
-// still while their aircraft is short of MUC and none of them have unlocked yet.
+// still while their aircraft has not yet reached MUC and none of them have unlocked yet.
+// Reads the reachedMuc latch, not the live position, so the dashboard agrees with the
+// player's own phone after they get pushed back below MUC.
 function helpTags(p){
-  const unlocked = (p.position||0) >= TURBO_MIN_LEG;
+  const unlocked = !!p.reachedMuc || (p.position||0) >= TURBO_MIN_LEG;
   const one = (icon, used, label)=>{
     const style = !unlocked ? 'opacity:.3;' : used ? 'opacity:.35; text-decoration:line-through;' : 'color:var(--vna-gold-light);';
     return `<span class="tag" style="${style}" title="${label}${used?' — used':(unlocked?' — ready':' — locked')}">${icon}</span>`;
