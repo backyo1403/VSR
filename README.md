@@ -135,6 +135,18 @@ CAM 2 và CAM 3 **tự bám theo** khi đội hình di chuyển. Nếu chưa có
 
 > **Cinematic luôn thắng camera.** Lúc máy bay đầu tiên hạ cánh (zoom solo) và lúc kết thúc cuộc đua (zoom vào FINISH), bản đồ do cinematic điều khiển; bộ chọn CAM mờ đi và không có tác dụng. Khi cinematic xong, camera **tự trả về đúng CAM mà MC đang chọn** — không nhảy về CAM 1.
 
+### Thông báo Turbo Boost
+
+Ngay khi có người bấm **⚡ Turbo Boost**, tên người đó hiện lên **góc trên bên phải** màn presenter trong **3 giây**. Nhiều người bấm cùng lúc thì bảng ghi **tất cả các tên**, và bảng chỉ tắt **3 giây sau khi người cuối cùng bấm** — mỗi người bấm thêm sẽ gia hạn bảng.
+
+> Hai người bấm cách nhau hơn 3 giây sẽ được tính là **hai đợt riêng**, mỗi đợt một bảng, chứ không gộp thành một bảng chạy mãi.
+
+Bảng đặt **chồng lên đầu cột bên phải, không bao giờ che câu hỏi** — lúc có câu hỏi thì khung câu hỏi phủ kín toàn bộ bản đồ, nên mọi thứ đặt trong bản đồ sẽ hoặc bị khuất, hoặc che mất đáp án.
+
+> Màn presenter **không đọc được** nhánh `answers` (chỉ admin đọc được), nên nếu chờ tới lúc công bố đáp án mới biết ai bật Turbo thì đã quá muộn để thông báo. Vì vậy có thêm nhánh `boosts/{lượt}/{uid}` trong `database.rules.json`, **chỉ chứa tên và mốc thời gian — không bao giờ chứa đáp án** — nên mọi client đã đăng nhập đều đọc được mà không lộ bài của ai. Mỗi người chỉ ghi được vào ô của chính mình; bỏ bật Turbo thì xoá luôn tên khỏi bảng.
+
+⚠️ **Nhánh `boosts` là rule mới — phải publish lại `database.rules.json` lên Firebase Console**, nếu không thông báo sẽ không chạy khi online (offline vẫn chạy vì cả state được broadcast).
+
 ### Event Feed — dòng tin chạy dưới cùng
 
 Một dải tin kiểu bản tin thời sự, có cờ đỏ **TRỰC TIẾP / LIVE** ghim bên trái, chữ **chạy liên tục từ phải sang trái suốt cả cuộc đua**. Nội dung tự sinh từ tình hình thực tế, khoảng **12–18 tin** mỗi vòng:

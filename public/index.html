@@ -540,8 +540,36 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 @keyframes sunBlaze{0%,100%{transform:translateX(-50%) scale(1); opacity:.42;} 50%{transform:translateX(-50%) scale(1.09); opacity:.62;}}
 #view-player.final-round-theme .q-card{background:linear-gradient(160deg,rgba(255,213,90,.2),rgba(255,150,0,.11)); border-color:rgba(255,205,90,.55);}
 
+/* ---------- TURBO BOOST call-out ----------
+   Anchored over the top of the right-hand column, never over the map: while a question is up
+   the map panel is completely covered by .pres-question-overlay, so anything mounted there
+   would either hide behind the question or sit on top of the answer options. Here it is
+   always visible and can never obscure the question. */
+.boost-notice{
+  position:absolute; top:0; left:0; right:0; z-index:40;
+  border-radius:18px; padding:11px 15px;
+  background:linear-gradient(135deg,#ffbe2e,#ff7a18); color:#2a1500;
+  box-shadow:0 12px 34px rgba(255,140,0,.45); border:1px solid #ffe0a0;
+  transform:translateY(-14px); opacity:0; pointer-events:none;
+  transition:transform .28s cubic-bezier(.2,.9,.3,1.3), opacity .28s ease;
+}
+.boost-notice.show{transform:translateY(0); opacity:1;}
+.boost-notice .bn-head{
+  display:flex; align-items:center; gap:7px;
+  font-family:var(--font-display); font-weight:800; font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+}
+.boost-notice .bn-bolt{font-size:15px; animation:boostBolt .7s ease-in-out infinite alternate;}
+@keyframes boostBolt{from{transform:scale(1) rotate(-6deg);} to{transform:scale(1.22) rotate(8deg);}}
+.boost-notice .bn-names{
+  display:flex; flex-wrap:wrap; gap:5px 7px; margin-top:7px;
+}
+.boost-notice .bn-name{
+  background:rgba(0,0,0,.20); border-radius:99px; padding:3px 10px;
+  font-weight:800; font-size:13px; white-space:nowrap;
+}
+
 /* ---------- presenter: the cabin bulletin under the leaderboard ---------- */
-.pres-side{display:flex; flex-direction:column; gap:18px; min-height:0;}
+.pres-side{display:flex; flex-direction:column; gap:18px; min-height:0; position:relative;}
 .leader-panel{flex:2 1 0; min-height:0;}
 .brief-panel{flex:1 1 0; min-height:0; border-radius:26px; padding:14px 16px; display:flex; flex-direction:column; overflow:hidden;}
 .brief-head{
@@ -1183,6 +1211,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
         </div>
       </div>
       <div class="pres-side">
+        <div class="boost-notice" id="boostNotice" aria-live="polite"></div>
         <div class="leader-panel glass">
           <h3 id="presLeaderboardTitle"></h3>
           <div id="presLeaderboard"></div>
@@ -1537,6 +1566,9 @@ vi: {
   'cam.noPlayers':'Chưa có máy bay nào để bám theo',
 
   /* --- event feed: dòng tin chạy dưới cùng màn presenter --- */
+  'boost.one':'Turbo Boost đã kích hoạt!',
+  'boost.many':'{n} máy bay bật Turbo Boost!',
+
   'feed.flag':'TRỰC TIẾP',
   'feed.flagOffline':'NGOẠI TUYẾN',
   'feed.flagInit':'ĐANG KẾT NỐI',
@@ -1940,6 +1972,9 @@ en: {
   'cam.noPlayers':'No aircraft to follow yet',
 
   /* --- event feed: the rolling ticker along the bottom of the presenter wall --- */
+  'boost.one':'Turbo Boost engaged!',
+  'boost.many':'{n} aircraft engaged Turbo Boost!',
+
   'feed.flag':'LIVE',
   'feed.flagOffline':'OFFLINE',
   'feed.flagInit':'CONNECTING',
@@ -2663,6 +2698,7 @@ let roomRefs = null;      // {admin,profiles,progress,answers} refs currently su
 let _profiles = {};       // uid -> {name,avatar,joinedAt}
 let _progress = {};       // uid -> {position,correctCount,totalAnswerTime,turboUsed,finishRank,currentStreak,longestStreak,answeredCount}
 let _answers = {};        // leg -> uid -> {choice,turbo,submitted,timeTaken} — only ever populated for the admin
+let _boosts = {};         // leg -> uid -> {name,at} — Turbo announcements, readable by everyone (see database.rules.json)
 
 function pickAdminSlice(){
   const o = {};
@@ -2805,6 +2841,7 @@ function fbDetachRoom(){
   roomRefs.admin.off();
   roomRefs.profiles.off();
   roomRefs.progress.off();
+  if(roomRefs.boosts) roomRefs.boosts.off();
   if(roomRefs.answers) roomRefs.answers.off();
   roomRefs = null;
 }
@@ -2821,7 +2858,12 @@ function fbSubscribeRoom(){
   adminRef.on('value', s=>{ applyAdminSlice(s.val()); renderAll(); });
   profilesRef.on('value', s=>{ _profiles = s.val()||{}; reconcileProgress(); rebuildPlayers(); renderAll(); });
   progressRef.on('value', s=>{ _progress = s.val()||{}; rebuildPlayers(); renderAll(); });
-  roomRefs = { admin:adminRef, profiles:profilesRef, progress:progressRef, answers:null };
+  // Turbo announcements: name + timestamp only, so unlike `answers` every role may read it.
+  // This is the only way the presenter wall learns a boost was armed while the clock is
+  // still running — by reveal time it would be far too late to announce.
+  const boostsRef = base.child('boosts');
+  boostsRef.on('value', s=>{ _boosts = s.val()||{}; renderPresenterBoosts(); });
+  roomRefs = { admin:adminRef, profiles:profilesRef, progress:progressRef, boosts:boostsRef, answers:null };
   if(FB.role==='admin') fbSubscribeAnswers();
 }
 /* admin subscribes to the answer feed only after signing in (rules block it otherwise) */
@@ -3211,7 +3253,7 @@ function playerSubmitAnswer(choiceIdx){
   if(myTimeUp()){ toast(t('p.timeUpToast')); return; }
   const existing = me.answers[state.currentQ];
   if(existing && existing.submitted) return;
-  me.answers[state.currentQ] = { choice: choiceIdx, submitted:false, turbo: existing ? !!existing.turbo : false, fifty: existing ? !!existing.fifty : false, seatbelt: existing ? !!existing.seatbelt : false };
+  me.answers[state.currentQ] = { choice: choiceIdx, submitted:false, turbo: existing ? !!existing.turbo : false, turboAt: existing ? (existing.turboAt||0) : 0, fifty: existing ? !!existing.fifty : false, seatbelt: existing ? !!existing.seatbelt : false };
   saveState();
   renderPlayer();
 }
@@ -3285,9 +3327,26 @@ function playerToggleTurbo(){
   const existing = myAnswerDraft();
   if(existing.submitted) return;
   existing.turbo = !existing.turbo;
+  existing.turboAt = existing.turbo ? Date.now() : 0;   // drives the offline call-out window
   me.answers[state.currentQ] = existing;
+  announceBoost(existing.turbo);   // puts the name on the presenter wall (or takes it back off)
   saveState();
   renderPlayer();
+}
+/* Tells the room a Turbo was just armed. Written to its own `boosts` node rather than read
+   off `answers`, because answers are admin-read-only — the wall could never see it there.
+   Only a name and a timestamp go out, never the choice. Disarming removes the entry again,
+   so a mis-tap that is immediately undone does not leave a name on screen. */
+function announceBoost(on){
+  const me = state.players[myPlayerId];
+  if(!me) return;
+  if(FB.mode!=='online'){
+    // offline the whole state is broadcast anyway, so the presenter reads it from answers
+    return;
+  }
+  const path = 'rooms/'+ROOM+'/boosts/'+state.currentQ+'/'+myPlayerId;
+  const val = on ? { name: String(me.name||'').slice(0,18), at: Date.now() } : null;
+  db.ref(path).set(val).catch(e=>console.warn('[sync] boost announce failed', e));
 }
 function playerUseFifty(){
   const me = state.players[myPlayerId];
@@ -4148,6 +4207,52 @@ function paintTickerFlag(){
     cnt.classList.add('hidden');
   }
 }
+/* ---------- Turbo Boost call-out on the presenter wall ----------
+   Presses are grouped into a burst: anyone who presses within BOOST_NOTICE_MS of the previous
+   presser joins the same call-out, and the whole panel — every name in it — stays up until
+   BOOST_NOTICE_MS after the LAST of them pressed. So three players boosting together get one
+   panel listing all three, extended by each new press; two players boosting ten seconds apart
+   get two separate panels rather than one that never closes. */
+const BOOST_NOTICE_MS = 3000;
+// The burst that is on screen right now, newest name first. Online this comes from the
+// `boosts` node; offline the whole state is broadcast, so the armed flag on the answer is
+// readable directly and no extra node is needed.
+function activeBoosts(){
+  const now = Date.now();
+  let rows = [];
+  if(FB.mode==='online'){
+    const leg = _boosts[state.currentQ] || {};
+    rows = Object.keys(leg)
+      .map(uid=>({ uid, name: (leg[uid]||{}).name || '', at: (leg[uid]||{}).at || 0 }))
+      .filter(r=>r.name && r.at);
+  } else {
+    rows = Object.values(state.players)
+      .map(p=>{ const a = p.answers[state.currentQ]; return (a && a.turbo && a.turboAt) ? { uid:p.id, name:p.name, at:a.turboAt } : null; })
+      .filter(Boolean);
+  }
+  if(!rows.length) return [];
+  rows.sort((a,b)=>a.at-b.at);
+  // walk the presses and keep only the most recent burst
+  let burst = [rows[0]];
+  for(let i=1;i<rows.length;i++){
+    if(rows[i].at - burst[burst.length-1].at < BOOST_NOTICE_MS) burst.push(rows[i]);
+    else burst = [rows[i]];
+  }
+  if(now - burst[burst.length-1].at >= BOOST_NOTICE_MS) return [];
+  return burst.slice().sort((a,b)=>b.at-a.at);
+}
+function renderPresenterBoosts(){
+  const el = document.getElementById('boostNotice');
+  if(!el) return;
+  const rows = activeBoosts();
+  if(!rows.length){ el.classList.remove('show'); return; }
+  const head = rows.length===1 ? t('boost.one') : t('boost.many',{n:rows.length});
+  const html = `<div class="bn-head"><span class="bn-bolt">⚡</span><span>${head}</span></div>`
+    + `<div class="bn-names">${rows.map(r=>`<span class="bn-name">${escapeHtml(r.name)}</span>`).join('')}</div>`;
+  if(el.dataset.sig !== html){ el.innerHTML = html; el.dataset.sig = html; }
+  el.classList.add('show');
+}
+
 /* The player's equivalent: a 6px dot on the state pill they are already watching. Replaces
    the floating corner badge on the phone, which had no room to float without covering the
    position strip along the bottom. */
@@ -5242,8 +5347,9 @@ function resetGame(){
       ['rooms/'+ROOM+'/profiles']: null,
       ['rooms/'+ROOM+'/progress']: null,
       ['rooms/'+ROOM+'/answers']: null,
+      ['rooms/'+ROOM+'/boosts']: null,
     }).catch(e=>console.warn('[sync] room wipe failed', e));
-    _profiles = {}; _progress = {}; _answers = {};
+    _profiles = {}; _progress = {}; _answers = {}; _boosts = {};
   }
   saveState();
   toast(t('a.t.resetDone'));
@@ -5612,7 +5718,12 @@ setInterval(()=>{
 /* Fast clock-only tick. The 1s render loop above is too coarse to keep three separately
    scheduled screens showing the same number; this repaints just the countdown text so the
    phone, the wall and the dashboard never differ by more than a fifth of a second. */
-setInterval(paintCountdowns, 200);
+setInterval(()=>{
+  paintCountdowns();
+  // the Turbo call-out lives for 3s, so it needs a finer tick than the 1s render loop to
+  // appear promptly and clear on time
+  if(!document.getElementById('view-presenter').classList.contains('hidden')) renderPresenterBoosts();
+}, 200);
 
 /* init route from hash, then bring up the sync layer */
 (function init(){

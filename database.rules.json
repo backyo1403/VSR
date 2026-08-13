@@ -21,6 +21,18 @@
           }
         },
 
+        "//boosts": "Turbo Boost announcements for the presenter wall. The answers tree is admin-read-only, so the wall could never see a boost being armed; this node carries ONLY a display name and a timestamp — never a choice — so it is safe for every signed-in client to read. Self-write per uid, plus admin for the reset wipe.",
+        "boosts": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.token.email == 'admin@vna-sky-race.local'",
+          "$q": {
+            "$uid": {
+              ".write": "auth != null && auth.uid == $uid",
+              ".validate": "!newData.exists() || (newData.hasChildren(['name','at']) && newData.child('name').isString() && newData.child('name').val().length <= 18 && newData.child('at').isNumber())"
+            }
+          }
+        },
+
         "answers": {
           ".read": "auth != null && auth.token.email == 'admin@vna-sky-race.local'",
           "$q": {
