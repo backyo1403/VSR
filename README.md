@@ -123,7 +123,11 @@ Tranh **phủ kín panel, sát tới viền bo ngoài** — không có dải tr�
 
 > **Tuyến thuyền không phải ước lượng bằng mắt.** Bức tranh được lấy mẫu trên lưới 50×33 và phân loại theo màu pixel (xanh dương trội rõ, không gần trắng); 5 tuyến trong `SHIPPING_LANES` là những dải cho kết quả "nước" từ đầu đến cuối. Bộ test kiểm lại từng tuyến trên chính bản đồ nước đó — lần chạy đầu đã bắt được một tuyến ở đường chân trời đi xuyên qua một hòn đảo nhỏ. Toạ độ tính theo phần trăm bản đồ nên thuyền giữ đúng luồng nước ở mọi kích thước màn.
 
-**Máy bay bay theo hướng đường vàng** — mỗi máy bay xoay theo đúng hướng chặng nó sắp bay, thay vì luôn chúc mũi lên trời. Về tới FINISH thì giữ nguyên hướng lúc hạ cánh chứ không quay ngược về hướng bắc. Icon trong bảng xếp hạng vẫn để thẳng đứng như cũ.
+**Máy bay bay theo hướng đường vàng** — máy bay **giữ hướng của chặng đang bay suốt cả đường bay**, chỉ **tới nơi mới ngoặt** sang hướng chặng tiếp theo. Về tới FINISH thì giữ nguyên hướng lúc hạ cánh chứ không quay ngược về hướng bắc. Icon trong bảng xếp hạng vẫn để thẳng đứng như cũ.
+
+> **Luôn ngoặt theo đường ngắn.** `atan2` trả về −180…180, cộng 90 thành −90…270, mà CSS thì nội suy *con số* chứ không hiểu hướng — nên chặng MOW→SPC (257°) đi sau chặng MUC→MOW (−54°) sẽ làm máy bay **quay 311° vòng dài** thay vì ngoặt 49°. Mỗi hướng mới đều được quy về đường ngắn nhất so với hướng trước (`applyHeading`), và đó là **chỗ duy nhất** ghi `--hdg` nên không lối nào lách được. Đo trên toàn tuyến: không cú ngoặt nào vượt 180°, nặng nhất là 136° ở HAN — đúng vì HAN là điểm quay đầu của lộ trình.
+
+**Tốc độ bay khác nhau theo người** — ai trả lời nhanh nhất thì máy bay nhanh nhất: **3,4 giây**, mỗi vị trí sau chậm thêm **0,26 giây**, chặn ở **4,7 giây** để không ai bò. Xếp theo **thời gian trả lời trung bình** (nằm trên node `progress` nên màn presenter đọc được mà không cần nhánh `answers`); người chưa trả lời câu nào xếp cuối. Bản trước mọi máy bay đều bay 2,2 giây như nhau.
 
 ⚠️ **File gốc `Background.png` (8000×5328, ~197 MB) không được commit** — GitHub chặn file trên 100 MB và nó sẽ phình repo vĩnh viễn. File này đã nằm trong `.gitignore`; giữ bản gốc trên ổ chia sẻ. Bản web `public/vendor/route-bg.jpg` (2400px, ~780 KB) mới là bản app dùng và **có** được commit. Muốn xuất lại bản web thì resize `Background.png` xuống 2400px, JPEG chất lượng ~82.
 
@@ -156,6 +160,8 @@ Tranh **phủ kín panel, sát tới viền bo ngoài** — không có dải tr�
 | **CAM 3** | Vùng đang đông máy bay nhất | 1,6× |
 
 CAM 2 và CAM 3 **tự bám theo** khi đội hình di chuyển. Nếu chưa có người chơi nào thì cả hai tự trả về góc rộng thay vì zoom vào chỗ trống.
+
+**Mỗi điểm dừng cũng là một camera** — bấm vào một điểm trên bản đồ là zoom thẳng vào đó (2,1×, sát hơn ba góc kia). Điểm đang được quay có **vòng sáng trắng nhấp nháy** để MC biết đang zoom vào đâu. **Bấm lại đúng điểm đó** là thoát về góc rộng, không phải đi tìm CAM 1. Chọn CAM 1/2/3 cũng nhả camera điểm. Camera điểm hoạt động được cả khi chưa có người chơi nào — hữu ích lúc giới thiệu lộ trình trước giờ chạy.
 
 > **Cinematic luôn thắng camera.** Lúc máy bay đầu tiên hạ cánh (zoom solo) và lúc kết thúc cuộc đua (zoom vào FINISH), bản đồ do cinematic điều khiển; bộ chọn CAM mờ đi và không có tác dụng. Khi cinematic xong, camera **tự trả về đúng CAM mà MC đang chọn** — không nhảy về CAM 1.
 

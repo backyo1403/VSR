@@ -223,7 +223,9 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 /* On the map an aircraft points along the leg it is flying, not permanently due north.
    Scoped to .plane-token so the leaderboard and cabin ribbons keep their upright icons.
    The glyph is drawn nose-up, so --hdg is the leg's compass bearing (see routeHeadingAt). */
-.plane-token .plane-ico{transform:rotate(var(--hdg, 0deg)); transition:transform 1.4s ease;}
+/* The turn is a bank onto the new heading, not a slow drift — it happens on arrival, so it
+   has to be over quickly enough to read as "banked onto the next leg". */
+.plane-token .plane-ico{transform:rotate(var(--hdg, 0deg)); transition:transform .7s cubic-bezier(.4,0,.2,1);}
 .avatar-compose .face-emoji{display:inline-block; line-height:1; transform:translateY(0.02em);}
 
 /* horizontal route map across the top of the player's phone.
@@ -380,13 +382,24 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .airport-node.checkpoint .airport-icon{font-size:30px;}
 .airport-node:hover .airport-dot{transform:scale(1.12); box-shadow:0 0 0 6px rgba(255,255,255,.28);}
 .airport-node.checkpoint:hover .airport-dot{box-shadow:0 0 30px 10px rgba(212,175,55,.8);}
+/* the stop currently being used as the camera wears a pulsing white ring, so the host can see
+   at a glance which pin the wide shot is pushed into */
+.airport-node.cam-on .airport-dot{animation:camOnPulse 1.5s ease-in-out infinite;}
+@keyframes camOnPulse{
+  0%,100%{box-shadow:0 0 0 3px rgba(255,255,255,.95), 0 0 22px 8px rgba(255,255,255,.45);}
+  50%{box-shadow:0 0 0 6px rgba(255,255,255,.75), 0 0 34px 14px rgba(255,255,255,.3);}
+}
 .airport-node.checkpoint .airport-label .code{font-size:15px; font-weight:800; color:var(--vna-gold-light);}
 .airport-node.checkpoint .airport-label .city{font-size:10.5px; font-weight:600;}
 .airport-label{position:absolute; top:40px; left:50%; transform:translateX(-50%); text-align:center; white-space:nowrap;}
 .airport-node.checkpoint .airport-label{top:68px;}
 .airport-label .code{font-family:var(--font-mono); font-weight:700; font-size:12.5px; color:#fff;}
 .airport-label .city{font-size:9.5px; color:rgba(255,255,255,.6);}
-.plane-token{position:absolute; transform:translate(-50%,-50%); transition:left 2.2s cubic-bezier(.45,.05,.15,1), top 2.2s cubic-bezier(.45,.05,.15,1); z-index:5;}
+/* --fly is set per aircraft in renderPresenterPlanes: the quickest answerer gets the shortest
+   glide, each place back a little longer. Falls back to the mid speed if it is ever unset. */
+.plane-token{position:absolute; transform:translate(-50%,-50%);
+  transition:left var(--fly, 3.4s) cubic-bezier(.45,.05,.15,1), top var(--fly, 3.4s) cubic-bezier(.45,.05,.15,1);
+  z-index:5;}
 .plane-token .stack{display:flex; flex-direction:column; align-items:center; gap:2px;}
 .plane-token .icon{font-size:18px; filter:drop-shadow(0 2px 6px rgba(0,0,0,.5)); animation:float 2.6s ease-in-out infinite;}
 .plane-token.leader{z-index:6;}
@@ -1652,6 +1665,8 @@ vi: {
   'cam.3.tip':'CAM 3 · Nơi đông máy bay nhất',
   'cam.switched':'📷 {name}',
   'cam.noPlayers':'Chưa có máy bay nào để bám theo',
+  'cam.stopped':'📷 Zoom vào {code} · {city}',
+  'cam.stopTip':'Bấm để zoom camera vào {code}',
 
   /* --- event feed: dòng tin chạy dưới cùng màn presenter --- */
   'boost.one':'Turbo Boost đã kích hoạt!',
@@ -2058,6 +2073,8 @@ en: {
   'cam.3.tip':'CAM 3 · Busiest airspace',
   'cam.switched':'📷 {name}',
   'cam.noPlayers':'No aircraft to follow yet',
+  'cam.stopped':'📷 Zoomed in on {code} · {city}',
+  'cam.stopTip':'Click to point the camera at {code}',
 
   /* --- event feed: the rolling ticker along the bottom of the presenter wall --- */
   'boost.one':'Turbo Boost engaged!',
@@ -2556,7 +2573,13 @@ const AVATARS = [
   flagSvg('<rect width="30" height="20" fill="#AE1C28"/><rect y="6.67" width="30" height="6.66" fill="#fff"/><rect y="13.33" width="30" height="6.67" fill="#21468B"/>'), // Netherlands
   flagSvg('<rect width="30" height="20" fill="#C60C30"/><rect x="9" width="4" height="20" fill="#fff"/><rect y="8" width="30" height="4" fill="#fff"/>'), // Denmark
   flagSvg('<rect width="30" height="6.67" fill="#000"/><rect y="6.67" width="30" height="6.66" fill="#DD0000"/><rect y="13.33" width="30" height="6.67" fill="#FFCE00"/>'), // Germany
-]; // UK, France, Vietnam, Italy, Russia, Netherlands, Denmark, Germany
+  // Belgium — vertical black/yellow/red, so it cannot be confused with Germany's horizontal bands
+  flagSvg('<rect width="10" height="20" fill="#000"/><rect x="10" width="10" height="20" fill="#FAE042"/><rect x="20" width="10" height="20" fill="#ED2939"/>'), // Belgium
+];
+/* UK, France, Vietnam, Italy, Russia, Netherlands, Denmark, Germany, Belgium.
+   New flags go on the END: a player's choice is stored as the SVG markup itself, not as an
+   index into this list, so appending never reassigns anybody's aircraft — but inserting in the
+   middle would still be safe for the same reason. Order here is only the picker's order. */
 
 /* ---- game mechanics: question pools, turbo boost, power question, turbulence ---- */
 const TURBO_MIN_LEG = ROUTE.findIndex(r=>r.code==='MUC'); // a player unlocks Turbo once their own aircraft reaches MUC
@@ -3874,6 +3897,9 @@ function buildRouteSvg(){
     node.innerHTML = `<div class="airport-dot"><span class="airport-icon">${a.icon}</span></div><div class="airport-label"><div class="code">${a.code}</div><div class="city">${a.city}</div></div>`;
     node.addEventListener('mouseenter', ()=>{ presHoveredLeg = idx; renderPresenterLeaderboard(); });
     node.addEventListener('mouseleave', ()=>{ presHoveredLeg = null; renderPresenterLeaderboard(); });
+    // every stop is also a camera — click to push in, click again to pull back out
+    node.addEventListener('click', ()=>setPresenterCamStop(idx));
+    node.title = t('cam.stopTip',{code:a.code});
     airportLayer.appendChild(node);
   });
 }
@@ -4118,18 +4144,25 @@ function scheduleTinyObject(){
 scheduleTinyObject();
 
 /* ---------- camera system ----------
-   CAM 1 whole race · CAM 2 the leader · CAM 3 the busiest stretch of airspace.
+   CAM 1 whole race · CAM 2 the leader · CAM 3 the busiest stretch of airspace · plus every
+   stop on the map is itself a camera: click a pin to push in on it.
    The map already has one transform-driven zoom (#mapZoomWrap), which the landing
    cinematics also drive. Those outrank the camera: while one is running the selector greys
    out and applyCamera() no-ops, then the camera reasserts itself the moment it is released. */
 let presCam = 1;
+let presCamStop = null;              // route index when a pin is the camera; null otherwise
 const CAM_ZOOM = { 1: 1, 2: 1.85, 3: 1.6 };
+const CAM_STOP_ZOOM = 2.1;           // a single stop is tighter than the group shots
 let _finishCamHoldUntil = 0;         // set by triggerFinishCinematic while it owns the map
 function cinematicOwnsCamera(){
   return _soloZoomOn || Date.now() < _finishCamHoldUntil;
 }
 // Where CAM 2 / CAM 3 should point, in route coordinates — or null if there's nothing to see.
 function cameraTarget(){
+  // a pin camera outranks the three group cameras and needs no players to aim at
+  if(presCamStop !== null && ROUTE[presCamStop]){
+    return { x: ROUTE[presCamStop].x, y: ROUTE[presCamStop].y };
+  }
   const players = Object.values(state.players);
   if(!players.length) return null;
   if(presCam === 2){
@@ -4158,7 +4191,7 @@ function applyCamera(){
   const sw = document.getElementById('camSwitch');
   if(sw) sw.classList.toggle('cam-locked', cinematicOwnsCamera());
   if(!wrap || cinematicOwnsCamera()) return;
-  if(presCam === 1){
+  if(presCam === 1 && presCamStop === null){
     wrap.style.transformOrigin = '50% 50%';
     wrap.style.transform = 'scale(1)';
     return;
@@ -4166,16 +4199,29 @@ function applyCamera(){
   const target = cameraTarget();
   if(!target){ wrap.style.transformOrigin = '50% 50%'; wrap.style.transform = 'scale(1)'; return; }
   wrap.style.transformOrigin = (target.x/MAP_W*100)+'% '+(target.y/MAP_H*100)+'%';
-  wrap.style.transform = 'scale('+CAM_ZOOM[presCam]+')';
+  wrap.style.transform = 'scale('+(presCamStop!==null ? CAM_STOP_ZOOM : CAM_ZOOM[presCam])+')';
 }
 function setPresenterCam(n){
   presCam = n;
-  ['1','2','3'].forEach(k=>{
-    const b = document.getElementById('camBtn'+k);
-    if(b) b.classList.toggle('active', String(n)===k);
-  });
+  presCamStop = null;              // picking a group camera releases the pin camera
   if(n!==1 && !Object.keys(state.players).length) toast(t('cam.noPlayers'));
   else toast(t('cam.switched',{name:t('cam.'+n+'.tip')}));
+  syncCamButtons();
+  applyCamera();
+}
+/* Every stop doubles as a camera. Clicking the pin that is already the camera releases it and
+   goes back to the wide shot, so the host can get out with a second click on the same target
+   instead of hunting for CAM 1. */
+function setPresenterCamStop(idx){
+  if(!ROUTE[idx]) return;
+  if(presCamStop === idx){
+    presCamStop = null;
+    toast(t('cam.switched',{name:t('cam.1.tip')}));
+  } else {
+    presCamStop = idx;
+    toast(t('cam.stopped',{code:ROUTE[idx].code, city:ROUTE[idx].city}));
+  }
+  syncCamButtons();
   applyCamera();
 }
 function syncCamButtons(){
@@ -4184,7 +4230,12 @@ function syncCamButtons(){
     if(!b) return;
     b.textContent = t('cam.'+k);
     b.title = t('cam.'+k+'.tip');
-    b.classList.toggle('active', String(presCam)===k);
+    // while a pin is the camera, none of the three group cameras is the active one
+    b.classList.toggle('active', presCamStop===null && String(presCam)===k);
+  });
+  // ring the pin that is currently being filmed
+  document.querySelectorAll('#airportLayer .airport-node').forEach((el,i)=>{
+    el.classList.toggle('cam-on', presCamStop===i);
   });
 }
 
@@ -4616,6 +4667,60 @@ function routeHeadingAt(pos){
   const to   = (i >= ROUTE.length-1) ? ROUTE[ROUTE.length-1] : ROUTE[i+1];
   return Math.atan2(to.y-from.y, to.x-from.x) * 180 / Math.PI + 90;
 }
+// Bearing actually flown between two stops — used while an aircraft is in transit.
+function bearingBetween(a, b){
+  const A = ROUTE[Math.max(0,Math.min(a,ROUTE.length-1))];
+  const B = ROUTE[Math.max(0,Math.min(b,ROUTE.length-1))];
+  if(!A || !B || (A.x===B.x && A.y===B.y)) return null;
+  return Math.atan2(B.y-A.y, B.x-A.x) * 180 / Math.PI + 90;
+}
+
+/* ---------- flight speed and when an aircraft turns ----------
+   Two rules the room can actually read from the back:
+
+   TURNING: an aircraft holds the bearing of the leg it is flying for the whole glide, and only
+   swings onto the next leg once it has ARRIVED. Setting the heading straight from the new stop
+   (as before) made it pivot the instant it left, so it flew the yellow line sideways.
+
+   SPEED: the quickest answerer gets the quickest aircraft. Ranked by average answer time —
+   which lives on the progress node, so the presenter can read it without the answers tree —
+   the fastest flies FLIGHT_FAST_MS and each place back adds FLIGHT_STEP_MS, capped so the
+   tail never crawls. Everyone is a little slower than before, so the move reads as a flight
+   rather than a jump. */
+const FLIGHT_FAST_MS = 3400;   // the quickest aircraft on the board
+const FLIGHT_STEP_MS = 260;    // each place further back is this much slower
+const FLIGHT_SLOW_MS = 4700;   // nobody crawls past this
+function flightMsFor(p, order){
+  const idx = order.indexOf(p.id);
+  if(idx < 0) return FLIGHT_FAST_MS;
+  return Math.min(FLIGHT_SLOW_MS, FLIGHT_FAST_MS + idx*FLIGHT_STEP_MS);
+}
+// Player ids ordered quickest-answering first. Unanswered players sort last: with no time on
+// the board there is nothing to claim they are fast.
+function speedOrder(){
+  return Object.values(state.players)
+    .map(p=>({ id:p.id, avg: (p.answeredCount||0) > 0 ? (p.totalAnswerTime||0)/p.answeredCount : Infinity }))
+    .sort((a,b)=>a.avg-b.avg)
+    .map(x=>x.id);
+}
+// last displayed position per player, so a change can be recognised as a departure
+const _planeAt = {};
+const _planeTurnTimer = {};
+/* Last heading actually written per aircraft, kept UNWRAPPED (it may run past ±360 over a
+   race). atan2 returns -180..180, so +90 puts bearings in -90..270 — and CSS transitions the
+   raw number, not the direction. Going from -54deg to 257deg (which is the same bearing as
+   -103deg) would spin the aircraft 311 degrees the long way instead of turning 49. So each new
+   heading is rebased onto the shortest path from the previous one before it is applied. */
+const _planeHdg = {};
+function applyHeading(tok, id, deg){
+  const prev = _planeHdg[id];
+  let next = deg;
+  if(prev !== undefined){
+    next = prev + ((((deg - prev) % 360) + 540) % 360) - 180;
+  }
+  _planeHdg[id] = next;
+  tok.style.setProperty('--hdg', next.toFixed(1)+'deg');
+}
 function renderPresenterPlanes(){
   const layer = document.getElementById('planeLayer');
   const ranked = rankedPlayers();
@@ -4631,6 +4736,7 @@ function renderPresenterPlanes(){
     cinematicOvertakeId = null; cinematicFallenId = null; leaderCinematicUntil = 0;
   }
   const top5Ids = new Set(ranked.slice(0,5).map(p=>p.id));
+  const order = speedOrder();      // quickest answerer first — drives each aircraft's speed
   const byPos = {};
   Object.values(state.players).forEach(p=>{
     const pos = displayPosition(p);
@@ -4669,8 +4775,26 @@ function renderPresenterPlanes(){
       // brightest zone throws a one-shot lens flare (see maybeFlare)
       const lit = skyIsClear() ? sunlitAmount(node.x, node.y) : 0;
       tok.style.setProperty('--lit', lit.toFixed(3));
-      tok.style.setProperty('--hdg', routeHeadingAt(+pos).toFixed(1)+'deg');   // nose along the leg
       maybeFlare(p.id, node.x, node.y, lit);
+      /* Speed: quickest answerer, quickest aircraft. */
+      const flightMs = flightMsFor(p, order);
+      tok.style.setProperty('--fly', flightMs+'ms');
+      /* Turning: hold the bearing of the leg being flown for the whole glide, then swing onto
+         the next leg only once the aircraft has arrived. */
+      const was = _planeAt[p.id];
+      const posNum = +pos;
+      if(was === undefined){
+        applyHeading(tok, p.id, routeHeadingAt(posNum));
+      } else if(was !== posNum){
+        const travel = bearingBetween(was, posNum);
+        if(travel !== null) applyHeading(tok, p.id, travel);
+        clearTimeout(_planeTurnTimer[p.id]);
+        _planeTurnTimer[p.id] = setTimeout(()=>{
+          const el = presenterPlaneEls['p-'+p.id];
+          if(el) applyHeading(el, p.id, routeHeadingAt(posNum));
+        }, flightMs + 60);   // a beat after touchdown, so the turn reads as a separate move
+      }
+      _planeAt[p.id] = posNum;
       tok.innerHTML = `<div class="stack"><div class="icon">${avatarHTML(p.avatar,'1em','#FFFFFF')}</div><div class="pname">${escapeHtml(p.name)}</div></div><div class="flame-trail">🔥</div>`;
       stackIdx++;
     });
@@ -4679,7 +4803,7 @@ function renderPresenterPlanes(){
       tok.style.left = (node.x/MAP_W*100)+'%';
       tok.style.top = ((node.y/MAP_H*100) - stackIdx*4.2)+'%';
       tok.style.setProperty('--lit', (skyIsClear() ? sunlitAmount(node.x, node.y) : 0).toFixed(3));
-      tok.style.setProperty('--hdg', routeHeadingAt(+pos).toFixed(1)+'deg');
+      applyHeading(tok, 'agg-'+pos, routeHeadingAt(+pos));
       tok.innerHTML = `<div class="stack"><div class="icon">${planeSvg('#FFFFFF')}</div><div class="pname">+${othersHere.length}</div></div>`;
     }
   });
@@ -5580,8 +5704,13 @@ function resetPresenterCinematics(){
   finishCinematicPlayed = false;
   _soloZoomOn = false;
   _finishCamHoldUntil = 0;
+  presCamStop = null;          // a pin camera must not survive a reset
   _skyBumpedForLeg = null;
   Object.keys(_lastLitByPlayer).forEach(k=>delete _lastLitByPlayer[k]);
+  Object.keys(_planeAt).forEach(k=>delete _planeAt[k]);
+  Object.keys(_planeHdg).forEach(k=>delete _planeHdg[k]);
+  Object.values(_planeTurnTimer).forEach(clearTimeout);
+  Object.keys(_planeTurnTimer).forEach(k=>delete _planeTurnTimer[k]);
   const zoomWrap = document.getElementById('mapZoomWrap');
   if(zoomWrap) zoomWrap.style.transform = 'scale(1)';
   applyCamera();   // a reset drops any cinematic zoom back to the host's selected CAM
