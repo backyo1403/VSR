@@ -220,6 +220,10 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .avatar-opt.selected{border-color:var(--vna-gold); background:rgba(212,175,55,.16); box-shadow:0 0 0 3px rgba(212,175,55,.18);}
 .avatar-compose{display:inline-flex; align-items:center; justify-content:center; line-height:1;}
 .avatar-compose .plane-ico{display:inline-block; flex-shrink:0;}
+/* On the map an aircraft points along the leg it is flying, not permanently due north.
+   Scoped to .plane-token so the leaderboard and cabin ribbons keep their upright icons.
+   The glyph is drawn nose-up, so --hdg is the leg's compass bearing (see routeHeadingAt). */
+.plane-token .plane-ico{transform:rotate(var(--hdg, 0deg)); transition:transform 1.4s ease;}
 .avatar-compose .face-emoji{display:inline-block; line-height:1; transform:translateY(0.02em);}
 
 /* horizontal route map across the top of the player's phone.
@@ -301,8 +305,58 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .pres-body{display:grid; grid-template-columns:2.4fr 1fr; gap:22px; flex:1; min-height:0;}
 /* min-height:0 lets the map take exactly the height the flex row gives it — a fixed
    640px floor pushed the whole presenter past the bottom of a 800px-tall screen */
-.map-panel{border-radius:26px; padding:26px; position:relative; overflow:hidden; min-height:0;}
+/* No padding: the artwork runs right out to the panel's rounded border. */
+.map-panel{border-radius:26px; padding:0; position:relative; overflow:hidden; min-height:0;}
 .map-panel.glass{backdrop-filter:none; -webkit-backdrop-filter:none;}
+/* Clipping window — exactly the panel. */
+.map-stage{position:absolute; inset:0; overflow:hidden;}
+/* The illustrated island map itself, always at its true aspect ratio and sized by
+   fitMapStage() to COVER the window (so it reaches every edge; whatever spills past the
+   window is clipped). Never `background-size:cover` on the window directly — that would crop
+   the image while leaving the pin percentages measured against the uncropped box, and every
+   pin would slide off its landmark. Here the pins are percentages of this element, which is
+   the image, so they follow the crop exactly. */
+.map-canvas{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);}
+/* The artwork lives on the zoom wrapper, NOT on .map-canvas, because the camera transform is
+   applied to the wrapper: with the image one level up, switching to CAM 2/3 scaled the pins
+   and the route but left the background behind, and every pin slid off its landmark. Sharing
+   one element means the picture and the pins zoom as a single object. */
+.map-zoom-wrap{
+  background-image:url('vendor/route-bg.jpg');
+  background-size:100% 100%;   /* this element IS the image's aspect, so it never distorts */
+  background-position:center;
+}
+/* per-city mood wash, painted OVER the artwork but UNDER the route (which is z-index 2) */
+.map-scene-tint{position:absolute; inset:0; pointer-events:none; z-index:1; transition:background 1.6s ease;}
+.map-zoom-wrap{z-index:2;}
+
+/* ---------- LIVING MAP: drifting cloud, boats on the water, flocks of birds ----------
+   These sit inside the zoom wrapper, so the camera scales them along with the artwork and
+   they stay part of the scene rather than floating over it. They also sit BELOW the route
+   and the pins — nothing here may ever obscure a stop or an aircraft on an LED wall.
+   Everything animates `left` as a percentage of the map, so a boat keeps to its stretch of
+   water at any screen size; px-based motion would drift onto the islands. */
+.map-life{position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0;}
+.map-life > *{position:absolute; will-change:left, opacity;}
+@keyframes mvDrift{ from{left:var(--x0);} to{left:var(--x1);} }
+/* fades in and out at the ends of a run so a boat never pops into being mid-water */
+@keyframes mvFade{ 0%,100%{opacity:0;} 9%,91%{opacity:var(--op,.5);} }
+
+.mv-cloud{filter:blur(2px);}
+.mv-cloud svg{display:block;}
+/* boats ride a gentle swell as they go */
+.mv-boat{animation-name:mvDrift, mvFade, mvBob;}
+@keyframes mvBob{ 0%,100%{transform:translateY(0) rotate(-1.2deg) scaleX(var(--flip,1));}
+                  50%{transform:translateY(-1.5%) rotate(1.2deg) scaleX(var(--flip,1));} }
+.mv-cloud, .mv-birds{animation-name:mvDrift, mvFade;}
+.mv-boat svg, .mv-birds svg{display:block;}
+/* the flock beats its wings slightly out of step, which is what stops it reading as a decal */
+.mv-birds .bd{animation:mvFlap 1.1s ease-in-out infinite;}
+.mv-birds .bd:nth-child(2){animation-duration:1.35s; animation-delay:-.4s;}
+.mv-birds .bd:nth-child(3){animation-duration:.95s;  animation-delay:-.7s;}
+.mv-birds .bd:nth-child(4){animation-duration:1.5s;  animation-delay:-.2s;}
+.mv-birds .bd:nth-child(5){animation-duration:1.2s;  animation-delay:-.9s;}
+@keyframes mvFlap{ 0%,100%{transform:scaleY(1);} 50%{transform:scaleY(.45);} }
 .route-svg{width:100%; height:100%; display:block;}
 .leader-panel{border-radius:26px; padding:22px; display:flex; flex-direction:column;}
 .leader-panel h3{margin:0 0 16px; font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:rgba(255,255,255,.6); flex-shrink:0;}
@@ -377,7 +431,7 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 /* z-index:0, not 1 — this layer must paint BEHIND the route SVG and the airport labels.
    Above them, the sun wash greyed the stop names, which have to stay crisp from the back of
    the room. The aircraft tokens (z-index:5) still ride above the glow either way. */
-.sky-ambience{position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0; border-radius:26px;}
+.sky-ambience{position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0; border-radius:18px;}
 /* the sun itself sits just off the top-right corner, so only its glow is on screen */
 .sun-corner{
   position:absolute; top:-120px; right:-100px; width:420px; height:420px; border-radius:50%;
@@ -435,18 +489,18 @@ input[type=text]:focus{border-color:var(--vna-gold);}
   transition:opacity .8s ease; animation:sceneFloat 8s ease-in-out infinite;
 }
 @keyframes sceneFloat{0%,100%{transform:translateY(0) scale(1);} 50%{transform:translateY(-16px) scale(1.03);}}
-.map-panel.scene-cdg{background:linear-gradient(160deg, rgba(255,150,130,.18), rgba(120,70,150,.15));}
-.map-panel.scene-ams{background:linear-gradient(160deg, rgba(255,170,190,.16), rgba(110,200,150,.13));}
-.map-panel.scene-han{background:linear-gradient(160deg, rgba(255,190,90,.2), rgba(220,60,60,.13));}
-.map-panel.scene-muc{background:linear-gradient(160deg, rgba(255,190,80,.22), rgba(150,90,30,.15));}
-.map-panel.scene-mow{background:linear-gradient(160deg, rgba(180,220,255,.2), rgba(90,120,180,.15));}
-.map-panel.scene-spc{background:linear-gradient(160deg, rgba(255,215,120,.22), rgba(255,255,255,.1));}
-.map-panel.scene-lhr{background:linear-gradient(160deg, rgba(185,195,215,.17), rgba(200,70,70,.1));}
-.map-panel.scene-mxp{background:linear-gradient(160deg, rgba(190,150,255,.17), rgba(255,210,120,.13));}
-.map-panel.scene-cph{background:linear-gradient(160deg, rgba(100,220,210,.17), rgba(60,140,180,.15));}
-.map-panel.scene-sgn{background:linear-gradient(160deg, rgba(255,220,90,.2), rgba(80,200,120,.15));}
-.map-panel.scene-fra{background:linear-gradient(160deg, rgba(160,190,230,.17), rgba(100,120,160,.15));}
-.map-panel.scene-finish{background:linear-gradient(160deg, rgba(255,210,90,.24), rgba(255,255,255,.13));}
+.map-panel.scene-cdg .map-scene-tint{background:linear-gradient(160deg, rgba(255,150,130,.18), rgba(120,70,150,.15));}
+.map-panel.scene-ams .map-scene-tint{background:linear-gradient(160deg, rgba(255,170,190,.16), rgba(110,200,150,.13));}
+.map-panel.scene-han .map-scene-tint{background:linear-gradient(160deg, rgba(255,190,90,.2), rgba(220,60,60,.13));}
+.map-panel.scene-muc .map-scene-tint{background:linear-gradient(160deg, rgba(255,190,80,.22), rgba(150,90,30,.15));}
+.map-panel.scene-mow .map-scene-tint{background:linear-gradient(160deg, rgba(180,220,255,.2), rgba(90,120,180,.15));}
+.map-panel.scene-spc .map-scene-tint{background:linear-gradient(160deg, rgba(255,215,120,.22), rgba(255,255,255,.1));}
+.map-panel.scene-lhr .map-scene-tint{background:linear-gradient(160deg, rgba(185,195,215,.17), rgba(200,70,70,.1));}
+.map-panel.scene-mxp .map-scene-tint{background:linear-gradient(160deg, rgba(190,150,255,.17), rgba(255,210,120,.13));}
+.map-panel.scene-cph .map-scene-tint{background:linear-gradient(160deg, rgba(100,220,210,.17), rgba(60,140,180,.15));}
+.map-panel.scene-sgn .map-scene-tint{background:linear-gradient(160deg, rgba(255,220,90,.2), rgba(80,200,120,.15));}
+.map-panel.scene-fra .map-scene-tint{background:linear-gradient(160deg, rgba(160,190,230,.17), rgba(100,120,160,.15));}
+.map-panel.scene-finish .map-scene-tint{background:linear-gradient(160deg, rgba(255,210,90,.24), rgba(255,255,255,.13));}
 
 .q-status-card{margin-top:18px; border-radius:18px; padding:18px 20px;}
 
@@ -1226,12 +1280,22 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
     </div>
     <div class="pres-body">
       <div class="map-panel glass" id="mapPanel">
-        <div class="sky-ambience hidden" id="skyAmbience"><div class="sun-wash"></div><div class="sun-corner"></div></div>
-        <div class="scene-watermark" id="sceneWatermark"></div>
-        <div class="map-zoom-wrap" id="mapZoomWrap">
-          <svg class="route-svg" id="routeSvg" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet"></svg>
-          <div id="airportLayer"></div>
-          <div id="planeLayer"></div>
+        <!-- The stage is the illustrated island map. It is sized in JS (fitMapStage) to the
+             largest box of the artwork's own aspect ratio that fits the panel, so the route
+             pins — positioned as percentages of this element — stay welded to their
+             landmarks whatever shape the wall is. -->
+        <div class="map-stage" id="mapStage">
+          <div class="map-canvas" id="mapCanvas">
+            <div class="map-scene-tint" id="mapSceneTint"></div>
+            <div class="sky-ambience hidden" id="skyAmbience"><div class="sun-wash"></div><div class="sun-corner"></div></div>
+            <div class="scene-watermark" id="sceneWatermark"></div>
+            <div class="map-zoom-wrap" id="mapZoomWrap">
+              <div class="map-life" id="mapLife"></div>
+              <svg class="route-svg" id="routeSvg" viewBox="0 0 1000 666" preserveAspectRatio="none"></svg>
+              <div id="airportLayer"></div>
+              <div id="planeLayer"></div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="pres-side">
@@ -2248,52 +2312,40 @@ function setLang(l){
   if(typeof refreshEventFeed === 'function') refreshEventFeed(true);
   renderAll();
 }
-// True "S" route: x traces one sine period (bulge right, then bulge left) while y
-// climbs from START at the bottom to FINISH at the top. x/y below are placeholders —
-// layoutRouteOnSCurve() overwrites them with points spaced evenly by arc length along
-// that same curve, so every leg on the map is the same visual distance apart.
-// START / HAN / SPC / SGN / FINISH are the 5 big checkpoint nodes.
-// HAN (Turtle Tower) and SGN (Landmark 81) have no matching emoji, so they're inline SVGs.
+/* The route is pinned to the illustrated island map behind it (vendor/route-bg.jpg), so the
+   coordinates below are NOT generated — each one is the spot on that artwork where the stop's
+   landmark actually stands: START on the runway, CDG at the Eiffel Tower, MOW at St Basil's,
+   and so on. They are expressed in the MAP_W x MAP_H space defined below, which shares the
+   background's aspect ratio, and every consumer positions by percentage of that space — so
+   the pins stay welded to their landmarks at any screen size.
+   Editing note: to move a pin, read its pixel position off the artwork and scale by
+   MAP_W/imageWidth. Do not "tidy" these into a curve; they are survey data, not layout.
+   START / HAN / SPC / SGN / FINISH are the 5 big checkpoint nodes.
+   HAN (Turtle Tower) and SGN (Landmark 81) have no matching emoji, so they're inline SVGs. */
+const MAP_W = 1000, MAP_H = 666;   // 1.5015:1, matching vendor/route-bg.jpg (2400x1598)
 const ROUTE = [
-  {code:'START',  city:'Start',              icon:'🛫', checkpoint:true},
-  {code:'CDG',    city:'Paris',              icon:'🗼', checkpoint:false},
-  {code:'AMS',    city:'Amsterdam',          icon:'🌷', checkpoint:false},
-  {code:'HAN',    city:'Hanoi',              icon:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.12em"><rect x="7" y="14" width="10" height="7" rx="1" fill="#fff"/><rect x="9" y="8" width="6" height="6" fill="#fff"/><polygon points="12,3 16,8 8,8" fill="#fff"/><rect x="11.3" y="1" width="1.4" height="2.5" fill="#fff"/></svg>', checkpoint:true},
-  {code:'MUC',    city:'Munich',             icon:'🍺', checkpoint:false},
-  {code:'MOW',    city:'Moscow',             icon:'🐻', checkpoint:false},
-  {code:'SPC',    city:'Special Checkpoint', icon:'⭐', checkpoint:true},
-  {code:'LHR',    city:'London',             icon:'🎡', checkpoint:false},
-  {code:'MXP',    city:'Milan',              icon:'👗', checkpoint:false},
-  {code:'CPH',    city:'Copenhagen',         icon:'🧜‍♀️', checkpoint:false},
-  {code:'SGN',    city:'Ho Chi Minh City',   icon:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.12em"><rect x="4" y="14" width="2.3" height="8" fill="#fff"/><rect x="7" y="10" width="2.3" height="12" fill="#fff"/><rect x="10" y="6" width="2.3" height="16" fill="#fff"/><rect x="13" y="9" width="2.3" height="13" fill="#fff"/><rect x="16" y="12" width="2.3" height="10" fill="#fff"/><polygon points="11.15,2 12.3,6 10,6" fill="#fff"/></svg>', checkpoint:true},
-  {code:'FRA',    city:'Frankfurt',          icon:'🏦', checkpoint:false},
-  {code:'FINISH', city:'Finish',             icon:'🏁', checkpoint:true},
+  {code:'START',  city:'Start',              icon:'🛫', checkpoint:true,  x:208.1, y:582.9},
+  {code:'CDG',    city:'Paris',              icon:'🗼', checkpoint:false, x:457.3, y:525.2},
+  {code:'AMS',    city:'Amsterdam',          icon:'🌷', checkpoint:false, x:623.4, y:496.7},
+  {code:'HAN',    city:'Hanoi',              icon:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.12em"><rect x="7" y="14" width="10" height="7" rx="1" fill="#fff"/><rect x="9" y="8" width="6" height="6" fill="#fff"/><polygon points="12,3 16,8 8,8" fill="#fff"/><rect x="11.3" y="1" width="1.4" height="2.5" fill="#fff"/></svg>', checkpoint:true,  x:829.9, y:420.0},
+  {code:'MUC',    city:'Munich',             icon:'🍺', checkpoint:false, x:697.0, y:362.2},
+  {code:'MOW',    city:'Moscow',             icon:'🐻', checkpoint:false, x:593.4, y:283.9},
+  {code:'SPC',    city:'Special Checkpoint', icon:'⭐', checkpoint:true,  x:469.9, y:313.2},
+  {code:'LHR',    city:'London',             icon:'🎡', checkpoint:false, x:348.1, y:287.1},
+  {code:'MXP',    city:'Milan',              icon:'👗', checkpoint:false, x:198.6, y:261.8},
+  {code:'CPH',    city:'Copenhagen',         icon:'🧜‍♀️', checkpoint:false, x:125.0, y:200.9},
+  {code:'SGN',    city:'Ho Chi Minh City',   icon:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.12em"><rect x="4" y="14" width="2.3" height="8" fill="#fff"/><rect x="7" y="10" width="2.3" height="12" fill="#fff"/><rect x="10" y="6" width="2.3" height="16" fill="#fff"/><rect x="13" y="9" width="2.3" height="13" fill="#fff"/><rect x="16" y="12" width="2.3" height="10" fill="#fff"/><polygon points="11.15,2 12.3,6 10,6" fill="#fff"/></svg>', checkpoint:true,  x:300.6, y:117.1},
+  {code:'FRA',    city:'Frankfurt',          icon:'🏦', checkpoint:false, x:429.6, y:123.4},
+  {code:'FINISH', city:'Finish',             icon:'🏁', checkpoint:true,  x:563.3, y:101.2},
 ];
-(function layoutRouteOnSCurve(){
-  const AMPLITUDE = 280, CENTER_X = 500, Y_START = 480, Y_END = 95;
-  const curveX = t => CENTER_X + AMPLITUDE * Math.sin(2*Math.PI*t);
-  const curveY = t => Y_START + (Y_END - Y_START) * t;
-  const SAMPLES = 4000;
-  const cum = new Array(SAMPLES+1); cum[0] = 0;
-  let prevX = curveX(0), prevY = curveY(0);
-  for(let i=1;i<=SAMPLES;i++){
-    const t = i/SAMPLES, x = curveX(t), y = curveY(t);
-    cum[i] = cum[i-1] + Math.hypot(x-prevX, y-prevY);
-    prevX = x; prevY = y;
+/* No generated layout any more — the coordinates above are surveyed off the artwork.
+   This guard just fails loudly if a stop is ever added without them, rather than silently
+   stacking every unplaced pin in the top-left corner of the map. */
+ROUTE.forEach(n=>{
+  if(typeof n.x !== 'number' || typeof n.y !== 'number'){
+    console.error('[route] stop '+n.code+' has no map coordinates — see the ROUTE comment');
   }
-  const total = cum[SAMPLES];
-  function tAtArcLength(targetLen){
-    let lo=0, hi=SAMPLES;
-    while(lo<hi){ const mid=(lo+hi)>>1; if(cum[mid]<targetLen) lo=mid+1; else hi=mid; }
-    return lo/SAMPLES;
-  }
-  const n = ROUTE.length - 1;
-  ROUTE.forEach((node,i)=>{
-    const t = tAtArcLength((i/n)*total);
-    node.x = Math.round(curveX(t)*10)/10;
-    node.y = Math.round(curveY(t)*10)/10;
-  });
-})();
+});
 // Question bank — the 30 questions of "Question Viet.docx", in the file's own order and
 // numbering (id N == "Câu N"), asked one per round and never repeated (see
 // pickQuestionIndex). `explain` is the 🎤 Presenter Note the host reads aloud after the
@@ -3796,13 +3848,20 @@ function renderPlayer(){
    ============================================================ */
 function buildRouteSvg(){
   const svg = document.getElementById('routeSvg');
-  svg.setAttribute('viewBox','0 0 1000 560');
+  svg.setAttribute('viewBox','0 0 '+MAP_W+' '+MAP_H);
   const points = ROUTE.map(a=>`${a.x},${a.y}`).join(' ');
+  /* Two strokes, not one. The old 3px/gap-11 dotted line was tuned for a flat gradient
+     backdrop; over the illustrated map it disappeared entirely against bright water and
+     sand. A dark casing goes down first so the gold reads on light AND dark terrain, then
+     the bright dashed line on top, matching the reference artwork. */
   svg.innerHTML = `
     <defs>
       <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     </defs>
-    <polyline points="${points}" fill="none" stroke="#D4AF37" stroke-width="3" stroke-dasharray="3 11" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)" opacity="0.9"/>
+    <polyline points="${points}" fill="none" stroke="rgba(20,35,60,.55)" stroke-width="9"
+              stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="${points}" fill="none" stroke="#FFD54A" stroke-width="5" stroke-dasharray="11 13"
+              stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
   `;
 
   const airportLayer = document.getElementById('airportLayer');
@@ -3810,8 +3869,8 @@ function buildRouteSvg(){
   ROUTE.forEach((a,idx)=>{
     const node = document.createElement('div');
     node.className = 'airport-node' + (a.checkpoint ? ' checkpoint':'');
-    node.style.left = (a.x/1000*100)+'%';
-    node.style.top = (a.y/560*100)+'%';
+    node.style.left = (a.x/MAP_W*100)+'%';
+    node.style.top = (a.y/MAP_H*100)+'%';
     node.innerHTML = `<div class="airport-dot"><span class="airport-icon">${a.icon}</span></div><div class="airport-label"><div class="code">${a.code}</div><div class="city">${a.city}</div></div>`;
     node.addEventListener('mouseenter', ()=>{ presHoveredLeg = idx; renderPresenterLeaderboard(); });
     node.addEventListener('mouseleave', ()=>{ presHoveredLeg = null; renderPresenterLeaderboard(); });
@@ -3846,6 +3905,110 @@ const LOCATION_THEMES = {
 };
 const ALL_SCENE_CLASSES = Object.values(LOCATION_THEMES).map(t=>t.cls).filter(Boolean);
 
+/* Sizes the artwork so it COVERS the map panel — reaching all four edges of the rounded
+   border with no letterbox — while keeping its true aspect ratio. Whatever spills past the
+   panel is clipped by .map-stage.
+   Done in JS rather than with `background-size:cover` because the pins are positioned as
+   percentages of the artwork: cover-cropping the background alone would leave those
+   percentages measured against an uncropped box and slide every pin off its landmark. Sizing
+   the element itself keeps the pins and the image in the same coordinate space.
+   In practice the panel's aspect is within a couple of percent of the artwork's, so the crop
+   is slight — but this stays correct on any wall shape. Cheap enough for the render loop. */
+function fitMapStage(){
+  const panel  = document.getElementById('mapPanel');
+  const canvas = document.getElementById('mapCanvas');
+  if(!panel || !canvas) return;
+  const availW = panel.clientWidth, availH = panel.clientHeight;
+  if(!(availW > 0 && availH > 0)) return;
+  const ar = MAP_W / MAP_H;
+  let w = availW, h = availW / ar;
+  if(h < availH){ h = availH; w = availH * ar; }   // grow until BOTH axes are covered
+  const wpx = Math.ceil(w)+'px', hpx = Math.ceil(h)+'px';
+  if(canvas.style.width !== wpx)  canvas.style.width  = wpx;
+  if(canvas.style.height !== hpx) canvas.style.height = hpx;
+}
+window.addEventListener('resize', fitMapStage);
+
+/* ---------- LIVING MAP ----------
+   Sailing boats, flocks of birds and a few extra clouds, matched to the artwork so the island
+   world looks inhabited rather than painted. Built once; from then on it is pure CSS
+   animation, so it costs nothing per frame in JS.
+
+   SHIPPING_LANES are not guesses: the background was sampled on a 50x33 grid and classified
+   by pixel colour (blue clearly dominant, not near-white), and these are stretches that came
+   back as open water end to end. Anything eyeballed here would end up sailing over an island.
+   Coordinates are percentages of the map, so they hold at any wall size. */
+const SHIPPING_LANES = [
+  { top:91.5, x0:37, x1:63, secs:[150,210], scale:1.00 },  // wide bay along the bottom
+  { top:63.0, x0:45, x1:65, secs:[130,180], scale:0.92 },  // channel below the Special Checkpoint
+  { top:35.5, x0:29, x1:43, secs:[120,170], scale:0.85 },  // water between Milan and London
+  { top:83.5, x0:82, x1:95, secs:[140,190], scale:0.88 },  // eastern strait past Hanoi
+  { top: 4.5, x0:52, x1:77, secs:[190,260], scale:0.62 },  // far horizon, small with distance
+];
+function boatSvg(w){
+  return `<svg width="${w}" height="${Math.round(w*0.9)}" viewBox="0 0 40 36" aria-hidden="true">
+    <path d="M19 4 L19 23 L7 23 Z" fill="#fdfdfd" opacity=".95"/>
+    <path d="M21 9 L21 23 L31 23 Z" fill="#eef4fb" opacity=".9"/>
+    <path d="M4 24 L36 24 L31 30 L9 30 Z" fill="#2d3d55"/>
+    <rect x="18.4" y="3" width="1.2" height="21" fill="#4a5b74"/>
+  </svg>`;
+}
+function birdsSvg(n, w){
+  let g = '';
+  for(let i=0;i<n;i++){
+    const bx = i*w*0.85, by = (i%2 ? w*0.42 : 0) + (i===2 ? w*0.2 : 0);
+    g += `<path class="bd" d="M0 4 Q3 0 6 4 Q3 2.2 0 4Z" transform="translate(${bx.toFixed(1)},${by.toFixed(1)}) scale(${(w/7).toFixed(2)})" fill="rgba(38,52,74,.62)"/>`;
+  }
+  return `<svg width="${Math.round(n*w)}" height="${Math.round(w*1.6)}" viewBox="0 0 ${n*w} ${w*1.6}" aria-hidden="true">${g}</svg>`;
+}
+function initMapLife(){
+  const layer = document.getElementById('mapLife');
+  if(!layer || layer.dataset.built) return;
+  layer.dataset.built = '1';
+  const rnd = (a,b)=>a + Math.random()*(b-a);
+  const add = (cls, html, o)=>{
+    const el = document.createElement('div');
+    el.className = cls;
+    el.innerHTML = html;
+    el.style.top = o.top+'%';
+    el.style.setProperty('--x0', o.x0+'%');
+    el.style.setProperty('--x1', o.x1+'%');
+    el.style.setProperty('--op', o.op);
+    if(o.flip) el.style.setProperty('--flip', -1);
+    // one duration drives drift, fade and any bob/flap together, so they never desynchronise
+    el.style.animationDuration = o.secs+'s';
+    el.style.animationTimingFunction = 'linear';
+    el.style.animationIterationCount = 'infinite';
+    el.style.animationDelay = (-Math.random()*o.secs)+'s';
+    layer.appendChild(el);
+    return el;
+  };
+
+  // boats — one per lane, half of them sailing the other way
+  SHIPPING_LANES.forEach((ln, i)=>{
+    const back = i % 2 === 1;
+    add('mv-boat', boatSvg(Math.round(rnd(15,21)*ln.scale)), {
+      top: ln.top, x0: back?ln.x1:ln.x0, x1: back?ln.x0:ln.x1,
+      secs: rnd(ln.secs[0], ln.secs[1]), op: rnd(.55,.8), flip: back
+    });
+  });
+  // a couple of extra clouds drifting right across, low and slow
+  for(let i=0;i<3;i++){
+    const w = rnd(90,190);
+    add('mv-cloud',
+      `<svg width="${w}" height="${w*0.4}" viewBox="0 0 200 80"><ellipse cx="60" cy="50" rx="55" ry="26" fill="#fff"/><ellipse cx="112" cy="36" rx="46" ry="29" fill="#fff"/><ellipse cx="152" cy="52" rx="40" ry="23" fill="#fff"/></svg>`,
+      { top: rnd(4,68), x0:-22, x1:112, secs: rnd(150,260), op: rnd(.16,.3) });
+  }
+  // flocks, high up and unhurried
+  for(let i=0;i<3;i++){
+    const back = i === 1;
+    add('mv-birds', birdsSvg(Math.round(rnd(3,5)), rnd(6,10)), {
+      top: rnd(6,42), x0: back?106:-8, x1: back?-8:106,
+      secs: rnd(95,150), op: rnd(.4,.6), flip: back
+    });
+  }
+}
+
 /* ============================================================
    PRESENTER AMBIENCE — clear-skies daylight, tiny background life, camera
    Everything below is decoration on the presenter wall only. None of it touches game state,
@@ -3854,11 +4017,13 @@ const ALL_SCENE_CLASSES = Object.values(LOCATION_THEMES).map(t=>t.cls).filter(Bo
    ============================================================ */
 
 /* The sun sits off the top-right corner (see .sun-corner), so "sunlit" means high-x, low-y in
-   the 1000x560 route coordinate space. The falloff is normalised between two explicit
-   distances rather than from a single radius: the S-curve only ever comes within ~480 of the
+   the MAP_W x MAP_H route coordinate space. The falloff is normalised between two explicit
+   distances rather than from a single radius: the route only ever comes within ~480 of the
    sun and never goes past ~840, so a plain 1 - d/reach curve compressed every stop into the
    dim end of the range and nothing visibly caught the light. NEAR/FAR stretch that real band
-   across the full 0-1, which is what makes flying east actually look like flying into the sun. */
+   across the full 0-1, which is what makes flying east actually look like flying into the sun.
+   Re-checked against the island-map coordinates: the stops still spread 0.00 (START, MXP, CPH)
+   to 1.00 (FINISH), with HAN/MUC/MOW/FINISH bright enough to throw a flare. */
 const SUN_POINT = { x: 1010, y: -60 };
 const SUN_NEAR = 480;   // at or inside this distance: fully lit
 const SUN_FAR  = 840;   // at or beyond this distance: fully shaded
@@ -3907,8 +4072,8 @@ function maybeFlare(playerId, x, y, lit){
   if(!host || host.classList.contains('hidden')) return;
   const f = document.createElement('div');
   f.className = 'lens-flare';
-  f.style.left = (x/1000*100)+'%';
-  f.style.top  = (y/560*100)+'%';
+  f.style.left = (x/MAP_W*100)+'%';
+  f.style.top  = (y/MAP_H*100)+'%';
   f.innerHTML = '<div class="core"></div><div class="streak"></div>'
     + '<div class="ghost" style="left:38%; top:44%; width:13px; height:13px;"></div>'
     + '<div class="ghost" style="left:64%; top:58%; width:8px; height:8px; opacity:.6;"></div>';
@@ -4000,7 +4165,7 @@ function applyCamera(){
   }
   const target = cameraTarget();
   if(!target){ wrap.style.transformOrigin = '50% 50%'; wrap.style.transform = 'scale(1)'; return; }
-  wrap.style.transformOrigin = (target.x/1000*100)+'% '+(target.y/560*100)+'%';
+  wrap.style.transformOrigin = (target.x/MAP_W*100)+'% '+(target.y/MAP_H*100)+'%';
   wrap.style.transform = 'scale('+CAM_ZOOM[presCam]+')';
 }
 function setPresenterCam(n){
@@ -4347,7 +4512,7 @@ function triggerFinishCinematic(){
   const finishNode = ROUTE[ROUTE.length-1];
   _finishCamHoldUntil = Date.now() + 7000;   // the cinematic outranks the camera selector
   if(zoomWrap){
-    zoomWrap.style.transformOrigin = (finishNode.x/1000*100)+'% '+(finishNode.y/560*100)+'%';
+    zoomWrap.style.transformOrigin = (finishNode.x/MAP_W*100)+'% '+(finishNode.y/MAP_H*100)+'%';
     zoomWrap.style.transform = 'scale(2.1)';
   }
   playApplause(2800);
@@ -4433,7 +4598,7 @@ function updateFirstFinishZoom(){
   _soloZoomOn = want;
   if(want){
     const finishNode = ROUTE[ROUTE.length-1];
-    zoomWrap.style.transformOrigin = (finishNode.x/1000*100)+'% '+(finishNode.y/560*100)+'%';
+    zoomWrap.style.transformOrigin = (finishNode.x/MAP_W*100)+'% '+(finishNode.y/MAP_H*100)+'%';
     zoomWrap.style.transform = 'scale(1.9)';
     playApplause(2200);
   } else if(state.gameState!=='finished'){
@@ -4442,6 +4607,15 @@ function updateFirstFinishZoom(){
   }
 }
 
+/* Compass bearing of the leg an aircraft parked at `pos` is about to fly, in degrees for a
+   nose-up glyph. At FINISH there is no next leg, so it keeps the bearing it arrived on —
+   otherwise the winner would swing back to due north the moment they landed. */
+function routeHeadingAt(pos){
+  const i = Math.max(0, Math.min(pos, ROUTE.length-1));
+  const from = (i >= ROUTE.length-1) ? ROUTE[ROUTE.length-2] : ROUTE[i];
+  const to   = (i >= ROUTE.length-1) ? ROUTE[ROUTE.length-1] : ROUTE[i+1];
+  return Math.atan2(to.y-from.y, to.x-from.x) * 180 / Math.PI + 90;
+}
 function renderPresenterPlanes(){
   const layer = document.getElementById('planeLayer');
   const ranked = rankedPlayers();
@@ -4489,21 +4663,23 @@ function renderPresenterPlanes(){
         + (p.id===cinematicOvertakeId ? ' overtaking' : '')
         + (p.id===cinematicFallenId ? ' falling-behind' : '')
         + (finishFlourishIds.has(p.id) ? ' landing-flourish' : '');
-      tok.style.left = (node.x/1000*100)+'%';
-      tok.style.top = ((node.y/560*100) - stackIdx*4.2)+'%';
+      tok.style.left = (node.x/MAP_W*100)+'%';
+      tok.style.top = ((node.y/MAP_H*100) - stackIdx*4.2)+'%';
       // fuselage catches the sun as it moves toward the bright corner; crossing into the
       // brightest zone throws a one-shot lens flare (see maybeFlare)
       const lit = skyIsClear() ? sunlitAmount(node.x, node.y) : 0;
       tok.style.setProperty('--lit', lit.toFixed(3));
+      tok.style.setProperty('--hdg', routeHeadingAt(+pos).toFixed(1)+'deg');   // nose along the leg
       maybeFlare(p.id, node.x, node.y, lit);
       tok.innerHTML = `<div class="stack"><div class="icon">${avatarHTML(p.avatar,'1em','#FFFFFF')}</div><div class="pname">${escapeHtml(p.name)}</div></div><div class="flame-trail">🔥</div>`;
       stackIdx++;
     });
     if(othersHere.length>0){
       const tok = tokenFor('agg-'+pos);
-      tok.style.left = (node.x/1000*100)+'%';
-      tok.style.top = ((node.y/560*100) - stackIdx*4.2)+'%';
+      tok.style.left = (node.x/MAP_W*100)+'%';
+      tok.style.top = ((node.y/MAP_H*100) - stackIdx*4.2)+'%';
       tok.style.setProperty('--lit', (skyIsClear() ? sunlitAmount(node.x, node.y) : 0).toFixed(3));
+      tok.style.setProperty('--hdg', routeHeadingAt(+pos).toFixed(1)+'deg');
       tok.innerHTML = `<div class="stack"><div class="icon">${planeSvg('#FFFFFF')}</div><div class="pname">+${othersHere.length}</div></div>`;
     }
   });
@@ -4737,6 +4913,8 @@ document.addEventListener('webkitfullscreenchange', syncFullscreenBtn);
 function renderPresenter(){
   const pill = document.getElementById('presStatePill');
   pill.textContent = t('st.'+state.gameState);
+  fitMapStage();         // before anything positions itself against the artwork
+  initMapLife();         // boats/birds/clouds — builds once, then runs on CSS alone
   updateSkyAmbience();   // before the planes: their sunlight depends on whether the sky is clear
   tickSkyForTurbo();
   renderPresenterPlanes();

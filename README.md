@@ -107,6 +107,26 @@ Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng 
 
 **Màn presenter** — khi admin mở câu hỏi, màn LED hiện **câu hỏi + 4 đáp án + đồng hồ đếm ngược cỡ lớn** trên nền đặc (không blur, để đọc được từ cuối phòng), bảng xếp hạng vẫn hiện bên phải. Có nút **⛶ Fullscreen** ở góc trên.
 
+### Bản đồ đường đua
+
+Bản đồ chạy trên **tranh minh hoạ quần đảo** (`public/vendor/route-bg.jpg`). Mỗi điểm dừng được **ghim đúng vào công trình của nó** trên tranh — START ở đường băng, CDG ở tháp Eiffel, MOW ở nhà thờ Thánh Basil, HAN ở chùa, FINISH ở đường băng phía trên…
+
+Toạ độ 13 điểm trong `ROUTE` là **số đo lấy từ chính bức tranh**, không phải sinh ra bằng công thức (bản trước rải đều theo đường cong chữ S). Muốn dời một điểm thì đọc toạ độ pixel trên tranh rồi nhân với `MAP_W / chiều-rộng-ảnh`. **Đừng "nắn" lại cho thành đường cong đẹp** — đó là số đo, không phải bố cục.
+
+Tranh **phủ kín panel, sát tới viền bo ngoài** — không có dải trống nào — và **không bị kéo méo**: tranh được phóng đúng tỉ lệ gốc cho tới khi che kín cả hai chiều, phần thừa bị cắt bởi khung ngoài. Với tỉ lệ panel thực tế (~1,48–1,54) thì phần cắt chỉ khoảng 1–3%, không điểm nào bị cắt mất.
+
+> **Vì sao kích thước tranh do JS đặt** (`fitMapStage`), không phải `background-size:cover`: ghim được định vị bằng **phần trăm của bức tranh**. Nếu chỉ cho CSS cắt ảnh nền, phần trăm đó vẫn tính trên khung chưa cắt và **mọi ghim sẽ trôi khỏi công trình**. Đặt kích thước cho chính phần tử chứa tranh thì ghim và ảnh nằm chung một hệ toạ độ — đo thực tế độ lệch ghim là 0,00002 (tức bằng 0).
+
+> **Đường bay vàng vẽ hai nét chồng nhau**: một nét viền tối bên dưới rồi nét vàng đứt nét bên trên. Nét chấm mảnh của bản cũ hợp với nền gradient phẳng, nhưng đặt lên tranh thì mất hút giữa vùng nước sáng và bãi cát.
+
+**Bản đồ có sự sống** — vài chiếc thuyền buồm trôi chậm trên sông, dăm đàn chim bay ngang, và mấy đám mây trôi qua khung hình. Tất cả đều **rất chậm** (một lượt qua màn mất 90–260 giây) và **nằm dưới đường bay lẫn các điểm dừng** — không thứ gì được phép che một điểm dừng hay một máy bay trên màn LED.
+
+> **Tuyến thuyền không phải ước lượng bằng mắt.** Bức tranh được lấy mẫu trên lưới 50×33 và phân loại theo màu pixel (xanh dương trội rõ, không gần trắng); 5 tuyến trong `SHIPPING_LANES` là những dải cho kết quả "nước" từ đầu đến cuối. Bộ test kiểm lại từng tuyến trên chính bản đồ nước đó — lần chạy đầu đã bắt được một tuyến ở đường chân trời đi xuyên qua một hòn đảo nhỏ. Toạ độ tính theo phần trăm bản đồ nên thuyền giữ đúng luồng nước ở mọi kích thước màn.
+
+**Máy bay bay theo hướng đường vàng** — mỗi máy bay xoay theo đúng hướng chặng nó sắp bay, thay vì luôn chúc mũi lên trời. Về tới FINISH thì giữ nguyên hướng lúc hạ cánh chứ không quay ngược về hướng bắc. Icon trong bảng xếp hạng vẫn để thẳng đứng như cũ.
+
+⚠️ **File gốc `Background.png` (8000×5328, ~197 MB) không được commit** — GitHub chặn file trên 100 MB và nó sẽ phình repo vĩnh viễn. File này đã nằm trong `.gitignore`; giữ bản gốc trên ổ chia sẻ. Bản web `public/vendor/route-bg.jpg` (2400px, ~780 KB) mới là bản app dùng và **có** được commit. Muốn xuất lại bản web thì resize `Background.png` xuống 2400px, JPEG chất lượng ~82.
+
 ### Bầu trời trên màn presenter
 
 **Trời quang** — nắng nhẹ hắt từ **góc trên bên phải** bản đồ: một vầng sáng ấm cộng một lớp wash rộng, nên nửa trên bên phải sáng hơn hẳn góc dưới bên trái. Thân máy bay **bắt sáng theo vị trí** — càng bay về phía nắng càng sáng và có viền vàng nhẹ (HAN/MUC/FINISH là ba điểm sáng nhất, START/CPH tối nhất). Khi một máy bay lọt vào **vùng sáng nhất**, một **lens flare rất nhẹ** loé lên khoảng 1 giây rồi tắt. Cả ba hiệu ứng **tự tắt** khi có nhiễu động, bão hoặc Trời nắng đẹp — lúc đó theme thời tiết làm chủ màn hình.
@@ -138,6 +158,8 @@ Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng 
 CAM 2 và CAM 3 **tự bám theo** khi đội hình di chuyển. Nếu chưa có người chơi nào thì cả hai tự trả về góc rộng thay vì zoom vào chỗ trống.
 
 > **Cinematic luôn thắng camera.** Lúc máy bay đầu tiên hạ cánh (zoom solo) và lúc kết thúc cuộc đua (zoom vào FINISH), bản đồ do cinematic điều khiển; bộ chọn CAM mờ đi và không có tác dụng. Khi cinematic xong, camera **tự trả về đúng CAM mà MC đang chọn** — không nhảy về CAM 1.
+
+> **Zoom kéo theo cả nền tranh.** Tranh nền nằm trên đúng phần tử mà camera phóng to, nên tranh, đường bay và các điểm dừng phóng cùng nhau như một khối. Trước đây tranh nằm ở lớp trên nên chỉ điểm và đường bay phóng, còn nền đứng yên — mọi điểm lệch khỏi công trình khi đổi CAM.
 
 ### Thông báo Turbo Boost
 

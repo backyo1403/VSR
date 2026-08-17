@@ -5,3 +5,14 @@ node_modules/
 .env.local
 .env.*.local
 dist/
+
+# Full-resolution master artwork for the presenter map (8000x5328). Was a 197 MB PNG, now a
+# 14 MB JPEG — still far too heavy to serve or to carry in every clone forever, and a repo
+# never gets smaller once a big blob is in its history. The web-sized export the app actually
+# loads is public/vendor/route-bg.jpg (2400px, ~780 KB) and IS committed.
+# Extension-agnostic on purpose: the master has already changed format once, and a rule naming
+# only the old extension silently stops working the moment it does.
+Background.*
+
+# scratch copies used for cache-busted browser testing
+public/_t*.html
