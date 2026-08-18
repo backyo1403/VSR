@@ -17,7 +17,7 @@ VNA_Race/
 
 ## Luật chơi
 
-**Bản đồ:** 12 chặng, `START → CDG → AMS → HAN★ → MUC → MOW → SPC★ → LHR → MXP → CPH → SGN★ → FRA → FINISH★`
+**Bản đồ:** 16 chặng, `START → CDG → AMS → HAN★ → DAD → HUI → MUC → MOW → SPC★ → LHR → MXP → CPH → SGN★ → CXR → PQC → FRA → FINISH★` — DAD/HUI và CXR/PQC là bốn **điểm phụ**, xem mục *Chặng phụ tại HAN và SGN*.
 
 **Ngôn ngữ:** app có nút **VI/EN**, **mặc định tiếng Việt**. Nút nằm ở góc trên bên phải màn hình chính, và lặp lại ngay trên thẻ đăng ký của người chơi (khách quét QR vào thẳng `#player` nên không thấy màn hình chính). Toàn bộ giao diện — kể cả **câu hỏi, đáp án và ghi chú người dẫn** — đều đổi theo.
 
@@ -58,6 +58,10 @@ Mỗi thứ dùng **một lần cả ván**, hiển thị là 3 nút tròn dư�
 
 Bật Turbo/Seatbelt mà không bấm Nộp thì không bị phạt và không mất lượt.
 
+**Ba nút sống ngay khi câu hỏi hiện lên**, không phải chờ MC mở đáp án. Host stage câu hỏi trước — người chơi đọc đề trong lúc chưa có lựa chọn nào — và đó chính là lúc nên cân nhắc có đốt 50:50 hay không, nên cửa sổ bấm mở từ đúng thời điểm đó. Nó vẫn đóng lại khi bấm Nộp hoặc khi đồng hồ của chính người đó về 0. Trong 10 giây thẻ thời tiết (hoặc quãng chờ 4 giây khi trời quang) câu hỏi còn bị che thì các nút vẫn tắt — nút xuất hiện cùng lúc với chữ, không sớm hơn.
+
+**Nút đã chọn chuyển vàng đậm toàn nút**, glyph màu xanh đậm, có quầng sáng — nhìn từ xa cũng biết ngay mình đã lấy trợ giúp nào cho câu này. Khác hẳn với **đã dùng ở vòng trước**, vốn chỉ mờ đi. 50:50 tự khoá ngay khi đốt và Turbo/Seatbelt khoá khi nộp bài, nhưng cả ba vẫn giữ màu vàng đậm hết vòng (`.help-btn.armed:disabled` ghi đè `opacity` của `:disabled`) — khoá không có nghĩa là quên.
+
 **☀️ Trời nắng đẹp / Sunshine** — nút của admin, **một lần duy nhất cả ván**, bấm trước khi mở câu hỏi. Màn LED hiện ☀️ TRỜI NẮNG ĐẸP và **câu hỏi Sunshine riêng** được đưa ra thay cho câu thường. Người **trả lời đúng nhanh nhất** được **+2 chặng**, người đúng khác +1, người sai đứng nguyên. Không bật được trên chặng turbulence/storm. Huỷ trước khi mở câu thì được trả lại lượt. Cả ba trợ giúp bị khoá.
 
 **Turbulence** — tự động ở **chặng 6 và chặng 10**, cộng thêm **một lượt bất ngờ ngay sau khi máy bay đầu tiên tới SGN**. Màn LED chuyển theme mưa sấm chớp, badge đổi từ 🌈 Clear Skies sang 🌪 Turbulence. Trả lời đúng **đứng nguyên**, **không đúng thì lùi 1 chặng** (kể cả người không trả lời) — trừ khi bật 🔒 Fasten Seatbelt. 50:50 và Turbo bị khoá.
@@ -68,18 +72,21 @@ Bật Turbo/Seatbelt mà không bấm Nộp thì không bị phạt và không m
 
 **⛈ Storm** — tự động ở **chặng 8**. Màn LED đổi badge sang ⛈ Storm, theme tối/mưa nặng hơn turbulence. Chỉ **10 người trả lời đúng nhanh nhất** (tính theo thời gian riêng của câu này) được ATC cấp phép bay tiếp **+1 chặng**; tất cả người chơi còn lại đứng nguyên (kể cả đúng nhưng không lọt top 10). Turbo và Trời nắng đẹp đều bị khoá ở chặng này. Sau khi admin bấm Reveal, màn presenter hiện danh sách 10 người được bay tiếp trong 10 giây.
 
-**Kết thúc ván & Overtime** — ván đấu chỉ thực sự kết thúc (`FINISHED`) khi có **đủ 4 người chơi về tới FINISH**. Bản đồ chỉ có 12 chặng, nhưng nếu hết chặng 12 mà chưa đủ 4 người về đích, admin vẫn bấm **Next question →** để mở thêm câu hỏi — màn hình hiện **"Overtime round N"** thay vì số chặng. Ai về tới FINISH trước sẽ thấy ngay màn hình cá nhân báo thứ hạng + lời chúc, kể cả khi ván vẫn đang tiếp diễn cho người khác.
+**Kết thúc ván & Overtime** — ván đấu chỉ thực sự kết thúc (`FINISHED`) khi có **đủ 5 người chơi về tới FINISH**. Bản đồ chỉ có 16 chặng, nhưng nếu hết chặng 16 mà chưa đủ 5 người về đích, admin vẫn bấm **Next question →** để mở thêm câu hỏi — màn hình hiện **"Overtime round N"** thay vì số chặng. Ai về tới FINISH trước sẽ thấy ngay màn hình cá nhân báo thứ hạng + lời chúc, kể cả khi ván vẫn đang tiếp diễn cho người khác.
 
 **Thắng & giải thưởng:** ai tới FINISH trước. Nhiều người cùng tới trong một lượt thì xếp theo *số câu đúng → tổng thời gian trả lời*.
 
-| Hạng | Giải |
-|---|---|
-| 1 | 🏆 Cúp vô địch — 1 vé máy bay hạng Thương gia |
-| 2 | 🥇 Huy chương vàng — 1 vé máy bay hạng Phổ thông Đặc biệt |
-| 3 | 🥈 Huy chương bạc — 1 voucher nâng hạng lên Thương gia |
-| 4 | 🥉 Huy chương đồng — 1 vé máy bay hạng Phổ thông |
+| Hạng | Huy chương | Giải |
+|---|---|---|
+| 1 | 🏆 Cúp vô địch | hạng Thương gia + **voucher nâng hạng lên Thương gia** |
+| 2 | 🥇 Vàng | hạng Phổ thông Đặc biệt |
+| 3 | 🥈 Bạc | hạng Phổ thông |
+| 4 | 🥉 Đồng | **voucher kiện hành lý** |
+| 5 | 🥉 Đồng *(đồng hạng với hạng 4)* | **voucher kiện hành lý** |
 
 Cùng rất nhiều phần quà nhỏ hấp dẫn khác. Danh sách giải thưởng hiện ngay trong **Hướng dẫn** (trang 1).
+
+> Vì hạng 4 và hạng 5 **đồng hạng huy chương đồng**, cuộc đua chạy tới khi có **5 máy bay về đích** (trước là 4) — nếu dừng ở 4 thì không bao giờ có người thứ 5 để trao chiếc đồng thứ hai.
 
 Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng xếp hạng admin, màn hình cá nhân khi về đích và **lễ trao giải** (tên nhà vô địch hiện to nhất kèm cúp, ba người còn lại xếp thành hàng vàng–bạc–đồng).
 
@@ -93,11 +100,21 @@ Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng 
 
 **✈️ Cabin Bulletin** — ô ngay dưới leaderboard (cao bằng 1/2), viết theo giọng thông báo trên máy bay, tổng kết **câu vừa xong**: người trả lời đúng nhanh nhất 🥇, số người đúng ✅, tỉ lệ đúng 📊, người dẫn đầu đang ở chặng nào 👑, chặng đông máy bay nhất 🛬, và nhịp độ phòng 🚀/🧭/🐢 (theo thời gian trả lời trung bình: dưới 7s Fast, dưới 14s Steady, còn lại Slow).
 
-**Màn hình người chơi** hiện **route map nằm ngang** thay cho thanh tiến độ: 13 điểm dừng nối liền nhau, điểm đang đứng sáng vàng và to hơn kèm tên mã, điểm đã qua mờ đi, điểm phía trước mờ hơn nữa.
+**Màn hình người chơi** hiện **route map nằm ngang** thay cho thanh tiến độ: 17 điểm dừng nối liền nhau, điểm đang đứng sáng vàng và to hơn kèm tên mã, điểm đã qua mờ đi, điểm phía trước mờ hơn nữa.
 
 **📖 Hướng dẫn** có 5 trang: (1) luật chơi + giải thưởng, (2) **bản đồ hành trình vẽ tĩnh** — cùng đường cong chữ S và cùng toạ độ mà màn presenter dùng, để người chơi hình dung trước sa bàn sẽ đua, (3) các loại thời tiết, (4) ba trợ giúp, (5) tài liệu chương trình (Sales Kit tiếng Việt + tiếng Anh).
 
-**Nâng hạng khoang theo thứ hạng** — người **dẫn đầu** thấy màn hình chuyển sang **vàng Hạng Thương gia**, người **hạng nhì** sang **xanh ngọc Hạng Phổ thông Đặc biệt**. **Hạng ba và hạng tư** là **Hạng Phổ thông**, riêng hạng ba có thêm dòng *"Nâng lên hạng Thương gia nếu còn chỗ"*. Từ hạng năm trở xuống không có ruy-băng. Cả bốn hạng đầu đều kèm dòng báo ai đang bám sát phía sau và cách bao nhiêu chặng.
+**Khoang và voucher theo thứ hạng** — trên điện thoại người chơi:
+
+| Hạng | Khoang | Ruy-băng | Voucher hiện trên ruy-băng |
+|---|---|---|---|
+| 1 | Thương gia | nền **vàng** cả màn hình | 🎟 Voucher nâng hạng lên Thương gia |
+| 2 | Phổ thông Đặc biệt | nền **xanh ngọc** cả màn hình | — |
+| 3 | Phổ thông | ruy-băng xanh dương | — |
+| 4 | *(bình thường)* | ruy-băng xám | 🧳 Voucher kiện hành lý |
+| 5 | *(bình thường)* | ruy-băng xám | 🧳 Voucher kiện hành lý |
+
+Từ hạng sáu trở xuống không có ruy-băng. Cả năm hạng đầu đều kèm dòng báo ai đang bám sát phía sau và cách bao nhiêu chặng.
 
 > Chỉ hạng nhất và hạng nhì đổi cả nền màn hình; hạng ba/tư chỉ có ruy-băng — để khoang vàng và khoang xanh ngọc vẫn là thứ đáng để giành giật.
 
@@ -111,7 +128,13 @@ Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng 
 
 Bản đồ chạy trên **tranh minh hoạ quần đảo** (`public/vendor/route-bg.jpg`). Mỗi điểm dừng được **ghim đúng vào công trình của nó** trên tranh — START ở đường băng, CDG ở tháp Eiffel, MOW ở nhà thờ Thánh Basil, HAN ở chùa, FINISH ở đường băng phía trên…
 
-Toạ độ 13 điểm trong `ROUTE` là **số đo lấy từ chính bức tranh**, không phải sinh ra bằng công thức (bản trước rải đều theo đường cong chữ S). Muốn dời một điểm thì đọc toạ độ pixel trên tranh rồi nhân với `MAP_W / chiều-rộng-ảnh`. **Đừng "nắn" lại cho thành đường cong đẹp** — đó là số đo, không phải bố cục.
+**Chặng phụ tại HAN và SGN** — `HAN → DAD → HUI → MUC` và `SGN → CXR → PQC → FRA`. Vì mỗi câu đúng đi được một điểm, đây chính là luật **"phải trả lời đúng 3 câu mới rời được HAN hoặc SGN"** — không cần thêm dòng code chặn nào. Bốn điểm phụ vẽ **nhỏ hơn**, nằm **lệch khỏi trục chính** (cách 77–114 đơn vị) nên đọc ra là một vòng rẽ địa phương chứ không phải đường đi chính; đường vàng nối tới chúng cũng mảnh hơn.
+
+> Turbo Boost (+2 chặng) vẫn **đi tắt được** qua cụm này — đó là lợi thế có chủ đích của trợ giúp, không phải lỗ hổng. Nếu bạn muốn chặn Turbo trong cụm HAN/SGN thì báo tôi.
+
+> Vì MUC lùi từ vị trí 4 xuống **vị trí 6**, ba trợ giúp (mở khoá khi máy bay tới MUC) giờ cần **6 câu đúng** thay vì 4. Luật vẫn phát biểu theo địa điểm như cũ; nếu muốn giữ đúng 4 câu thì phải đổi mốc mở khoá sang một điểm khác.
+
+Toạ độ các điểm trong `ROUTE` là **số đo lấy từ chính bức tranh**, không phải sinh ra bằng công thức (bản trước rải đều theo đường cong chữ S). Muốn dời một điểm thì đọc toạ độ pixel trên tranh rồi nhân với `MAP_W / chiều-rộng-ảnh`. **Đừng "nắn" lại cho thành đường cong đẹp** — đó là số đo, không phải bố cục.
 
 Tranh **phủ kín panel, sát tới viền bo ngoài** — không có dải trống nào — và **không bị kéo méo**: tranh được phóng đúng tỉ lệ gốc cho tới khi che kín cả hai chiều, phần thừa bị cắt bởi khung ngoài. Với tỉ lệ panel thực tế (~1,48–1,54) thì phần cắt chỉ khoảng 1–3%, không điểm nào bị cắt mất.
 
@@ -300,7 +323,7 @@ Quyền do **database cưỡng chế**, không phải UI che đi. Gõ `#admin` v
 
 | Mốc | Việc |
 |---|---|
-| T‑7 | Dựng xong, deploy, tự chạy thử đủ 12 chặng |
+| T‑7 | Dựng xong, deploy, tự chạy thử đủ 16 chặng |
 | T‑2 | **Diễn tập với 8–10 điện thoại thật** — việc giá trị nhất trong danh sách |
 | T‑1 | Khoá code, không sửa gì nữa. In QR + bảng sự cố. Laptop dự phòng đăng nhập sẵn |
 | T‑0 | Đến sớm 45 phút, mở 3 màn hình, cho 2 máy join thử, chơi 1 câu rồi Reset |

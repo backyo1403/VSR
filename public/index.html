@@ -382,6 +382,13 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .airport-node.checkpoint .airport-icon{font-size:30px;}
 .airport-node:hover .airport-dot{transform:scale(1.12); box-shadow:0 0 0 6px rgba(255,255,255,.28);}
 .airport-node.checkpoint:hover .airport-dot{box-shadow:0 0 30px 10px rgba(212,175,55,.8);}
+/* Sub-stops (DAD/HUI off HAN, CXR/PQC off SGN) are local detours, not through-route stops:
+   smaller dot, smaller label, so twelve main stops still lead the eye. */
+.airport-node.sub .airport-dot{width:25px; height:25px; border-width:2px; background:rgba(11,113,199,.7);}
+.airport-node.sub .airport-icon{font-size:12px;}
+.airport-node.sub .airport-label{top:31px;}
+.airport-node.sub .airport-label .code{font-size:10px; color:rgba(255,255,255,.9);}
+.airport-node.sub .airport-label .city{font-size:8px;}
 /* the stop currently being used as the camera wears a pulsing white ring, so the host can see
    at a glance which pin the wide shot is pushed into */
 .airport-node.cam-on .airport-dot{animation:camOnPulse 1.5s ease-in-out infinite;}
@@ -864,8 +871,20 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
 .fifty-glyph{font-family:var(--font-display); font-weight:800; font-size:.72em; letter-spacing:-.03em; line-height:1;}
 .help-btn .lb{font-size:8px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; opacity:.8;}
 .help-btn:active{transform:scale(.94);}
-.help-btn.armed{border-color:var(--vna-gold); background:rgba(212,175,55,.24); box-shadow:0 0 0 4px rgba(212,175,55,.18);}
+/* CHOSEN: the whole button floods solid gold with a dark glyph, so from the back of the room
+   it is obvious at a glance which help this player has taken for the question in front of
+   them. It must beat :disabled — 50:50 disables itself the instant it is burned, and Turbo /
+   Seatbelt disable on submit, yet all three stay "chosen" for the rest of the round. */
+.help-btn.armed{
+  border-color:var(--vna-gold-light);
+  background:linear-gradient(160deg, var(--vna-gold-light), var(--vna-gold));
+  color:var(--vna-blue-deep);
+  box-shadow:0 0 0 4px rgba(212,175,55,.30), 0 6px 18px rgba(212,175,55,.38);
+}
+.help-btn.armed .ic{color:var(--vna-blue-deep);}
+.help-btn.armed .lb{opacity:1;}
 .help-btn:disabled{opacity:.3; cursor:not-allowed;}
+.help-btn.armed:disabled{opacity:1; cursor:default;}
 .help-btn.spent{opacity:.26;}
 .help-hint{text-align:center; font-size:11px; color:rgba(255,255,255,.5); margin-top:7px;}
 .opt-btn.eliminated{opacity:.22; text-decoration:line-through;}
@@ -933,6 +952,12 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
 .biz-ribbon.econ-ribbon{
   background:linear-gradient(120deg,#0B4C8C,#1877CC); color:#eaf3ff;
   box-shadow:0 10px 28px rgba(11,76,140,.35);
+}
+/* 4th and 5th: no cabin name, just their place and the baggage voucher — a plain slate
+   ribbon so it reads as "standard", clearly a step below the Economy blue */
+.biz-ribbon.std-ribbon{
+  background:linear-gradient(120deg,#3d4a5c,#5a6b81); color:#eef2f7;
+  box-shadow:0 10px 28px rgba(40,55,75,.35);
 }
 .biz-ribbon .up{
   display:inline-block; margin-top:3px; padding:2px 8px; border-radius:99px;
@@ -1488,16 +1513,16 @@ vi: {
   'rules.back':'← Quay lại',
   'rules.next':'Tiếp →',
   'rules.h.race':'Cuộc đua',
-  'rules.p.race1':'12 chặng từ START tới FINISH dọc theo tuyến đường hình chữ S. Mỗi chặng, tất cả cùng trả lời một câu hỏi trong <strong>20 giây</strong>. Đáp án được <strong>công bố tự động ngay khi hết giờ</strong>.',
-  'rules.p.race2':'Cuộc đua tiếp diễn cho tới khi có <strong>4 máy bay về tới FINISH</strong>. Về tới đích là bạn thấy ngay thứ hạng của mình, kể cả khi cuộc đua vẫn đang tiếp tục với những người khác.',
+  'rules.p.race1':'16 chặng từ START tới FINISH trên bản đồ quần đảo. Mỗi chặng, tất cả cùng trả lời một câu hỏi trong <strong>20 giây</strong>. Đáp án được <strong>công bố tự động ngay khi hết giờ</strong>.',
+  'rules.p.race2':'Cuộc đua tiếp diễn cho tới khi có <strong>5 máy bay về tới FINISH</strong>. Về tới đích là bạn thấy ngay thứ hạng của mình, kể cả khi cuộc đua vẫn đang tiếp tục với những người khác.',
   'rules.h.map':'🗺 Bản đồ hành trình',
-  'rules.p.mapPage':'Toàn bộ 12 chặng, từ <strong>START</strong> ở dưới lên <strong>FINISH</strong> ở trên. Năm điểm vàng là các chặng mốc.',
+  'rules.p.mapPage':'Toàn bộ hành trình, từ <strong>START</strong> tới <strong>FINISH</strong>. Năm điểm vàng là các chặng mốc; các điểm nhỏ <strong>DAD, HUI, CXR, PQC</strong> là chặng phụ rẽ khỏi HAN và SGN.',
   'rules.h.cp':'📍 Các chặng mốc',
-  'rules.p.cp':'Năm điểm vàng phía trên là các chặng mốc. Ai <strong>đầu tiên</strong> tới HAN, SPC hoặc SGN sẽ được gắn dấu mốc bên cạnh tên mình trong suốt phần còn lại của cuộc đua.',
+  'rules.p.cp':'Năm điểm vàng phía trên là các chặng mốc. Ai <strong>đầu tiên</strong> tới HAN, SPC hoặc SGN sẽ được gắn dấu mốc bên cạnh tên mình trong suốt phần còn lại của cuộc đua.<br><br>Tới <strong>HAN</strong> và <strong>SGN</strong> phải <strong>trả lời đúng 3 câu</strong> mới rời được: HAN đi qua <strong>DAD</strong> rồi <strong>HUI</strong>, SGN đi qua <strong>CXR</strong> rồi <strong>PQC</strong>, sau đó mới sang chặng chính tiếp theo.',
   'rules.h.win':'🏆 Chiến thắng',
   'rules.p.win':'Ai về FINISH trước sẽ thắng. Nếu nhiều máy bay cùng hạ cánh trong một lượt công bố, thứ tự xét theo <strong>số câu đúng</strong>, rồi tới <strong>tổng thời gian trả lời</strong> — nên trả lời nhanh rất quan trọng.',
   'rules.h.prizes':'🎁 Giải thưởng',
-  'rules.p.prizes':'<strong>🏆 Vô địch:</strong> 1 vé máy bay hạng Thương gia<br><strong>🥇 Hạng 2:</strong> 1 vé máy bay hạng Phổ thông Đặc biệt<br><strong>🥈 Hạng 3:</strong> 1 voucher nâng hạng lên Thương gia<br><strong>🥉 Hạng 4:</strong> 1 vé máy bay hạng Phổ thông<br><br>Cùng rất nhiều phần quà nhỏ hấp dẫn khác.',
+  'rules.p.prizes':'<strong>🏆 Vô địch:</strong> hạng Thương gia + voucher nâng hạng lên Thương gia<br><strong>🥇 Hạng 2:</strong> hạng Phổ thông Đặc biệt<br><strong>🥈 Hạng 3:</strong> hạng Phổ thông<br><strong>🥉 Hạng 4 &amp; 5 (đồng hạng):</strong> voucher kiện hành lý<br><br>Cùng rất nhiều phần quà nhỏ hấp dẫn khác.',
   'rules.h.clear':'🌈 Trời quang',
   'rules.p.clear':'Mặc định. Trả lời đúng tiến <strong>1 chặng</strong>; trả lời sai thì đứng nguyên — không bị phạt.',
   'rules.h.turb':'🌪 Nhiễu động',
@@ -1507,7 +1532,7 @@ vi: {
   'rules.h.power':'☀️ Trời nắng đẹp',
   'rules.p.power':'Lượt thưởng duy nhất cả ván của người điều phối, kích hoạt trước khi mở câu hỏi. Người <strong>trả lời đúng nhanh nhất</strong> được <strong>+2 chặng</strong>, những người đúng khác <strong>+1</strong>, trả lời sai đứng nguyên. Không kích hoạt được trên chặng Nhiễu động hay Bão, và cả ba trợ giúp đều bị khoá.',
   'rules.h.helps':'Ba trợ giúp của bạn',
-  'rules.p.helps':'Mỗi trợ giúp dùng được <strong>một lần cả ván</strong>. Cả ba — <strong>50:50</strong>, <strong>Turbo Boost</strong> và <strong>Thắt dây an toàn</strong> — mở khoá khi <strong>máy bay của chính bạn tới MUC</strong>, không phải khi cuộc đua tới MUC. Đã mở khoá thì <strong>giữ nguyên cả ván</strong>, kể cả khi bạn bị nhiễu động đẩy lùi lại phía sau MUC.',
+  'rules.p.helps':'Mỗi trợ giúp dùng được <strong>một lần cả ván</strong>. Cả ba — <strong>50:50</strong>, <strong>Turbo Boost</strong> và <strong>Thắt dây an toàn</strong> — mở khoá khi <strong>máy bay của chính bạn tới MUC</strong>, không phải khi cuộc đua tới MUC. Đã mở khoá thì <strong>giữ nguyên cả ván</strong>, kể cả khi bạn bị nhiễu động đẩy lùi lại phía sau MUC.<br><br>Ba nút bật <strong>ngay khi câu hỏi hiện lên</strong> — bạn không phải chờ đáp án mở ra mới bấm được. Nút bạn đã chọn sẽ <strong>chuyển vàng đậm toàn nút</strong>.',
   'rules.help.fifty':'50:50',
   'rules.help.fiftyDesc':'Loại bỏ hai đáp án sai, chỉ còn đáp án đúng và một đáp án nhiễu. Bị khoá trong Nhiễu động, Bão và Trời nắng đẹp.',
   'rules.help.turbo':'Turbo Boost',
@@ -1585,6 +1610,7 @@ vi: {
   'p.prize2':'Bạn giành Huy chương Vàng 🥇!',
   'p.prize3':'Bạn giành Huy chương Bạc 🥈!',
   'p.prize4':'Bạn giành Huy chương Đồng 🥉!',
+  'p.prize5':'Bạn giành Huy chương Đồng 🥉!',
   'p.congratsPodium':'Xin chúc mừng — một chuyến bay tuyệt vời. Mời bạn lên sân khấu nhận giải.',
   'p.congratsOther':'Cảm ơn bạn đã đồng hành cùng chúng tôi hôm nay — mỗi chặng bạn bay đều là một phần của cuộc đua.',
   'p.wish':'Chúc bạn một hội nghị đầy cảm hứng, những kết nối ý nghĩa và một trải nghiệm thật trọn vẹn trong suốt sự kiện hôm nay.',
@@ -1634,8 +1660,10 @@ vi: {
   'biz.title':'Hạng Thương gia · Hạng {n}',
   'prem.title':'Hạng Phổ thông Đặc biệt · Hạng {n}',
   'econ.title':'Hạng Phổ thông · Hạng {n}',
-  'econ.upgrade':'Nâng lên hạng Thương gia nếu còn chỗ',
-  'biz.place1':'nhất', 'biz.place2':'nhì', 'biz.place3':'ba', 'biz.place4':'tư',
+  'std.title':'Hạng {n}',
+  'voucher.upgrade':'Voucher nâng hạng lên Thương gia',
+  'voucher.baggage':'Voucher kiện hành lý',
+  'biz.place1':'nhất', 'biz.place2':'nhì', 'biz.place3':'ba', 'biz.place4':'tư', 'biz.place5':'năm',
   'biz.chasing':'{name} đang bám sát bạn — {gap}',
   'biz.level':'ngang bằng bạn',
   'biz.oneLeg':'kém 1 chặng',
@@ -1802,7 +1830,7 @@ vi: {
   'a.presenterNotes':'🎤 Ghi chú người dẫn',
   'a.noNotes':'Câu hỏi này chưa có ghi chú người dẫn.',
   'a.winner':'Người thắng cuộc',
-  'a.winnerNote':'Khi cuộc đua đã kết thúc (4 máy bay về đích), hiện màn hình "Xin chúc mừng!" toàn màn hình kèm pháo giấy trên màn hình lớn. Màn này vẫn ẩn cho tới khi bạn bấm nút — về tới đích không tự động hiện.',
+  'a.winnerNote':'Khi cuộc đua đã kết thúc (5 máy bay về đích), hiện màn hình "Xin chúc mừng!" toàn màn hình kèm pháo giấy trên màn hình lớn. Màn này vẫn ẩn cho tới khi bạn bấm nút — về tới đích không tự động hiện.',
   'a.showCongrats':'🎉 Hiện Chúc mừng',
   'a.hideCongrats':'Ẩn chúc mừng',
   'a.awardTitle':'Lễ trao giải',
@@ -1904,16 +1932,16 @@ en: {
   'rules.back':'← Back',
   'rules.next':'Next →',
   'rules.h.race':'The race',
-  'rules.p.race1':'12 legs from START to FINISH along an S-shaped route. Each leg, everyone answers one question within <strong>20 seconds</strong>. The answer is revealed <strong>automatically the moment the countdown ends</strong>.',
-  'rules.p.race2':'The race keeps going until at least <strong>4 aircraft land on FINISH</strong>. Reaching FINISH shows you your own placing right away, even while the race continues for everyone else.',
+  'rules.p.race1':'16 legs from START to FINISH across the island map. Each leg, everyone answers one question within <strong>20 seconds</strong>. The answer is revealed <strong>automatically the moment the countdown ends</strong>.',
+  'rules.p.race2':'The race keeps going until at least <strong>5 aircraft land on FINISH</strong>. Reaching FINISH shows you your own placing right away, even while the race continues for everyone else.',
   'rules.h.map':'🗺 Route map',
-  'rules.p.mapPage':'All 12 legs, from <strong>START</strong> at the bottom up to <strong>FINISH</strong> at the top. The five gold stops are the checkpoints.',
+  'rules.p.mapPage':'The whole journey, from <strong>START</strong> to <strong>FINISH</strong>. The five gold stops are the checkpoints; the small stops <strong>DAD, HUI, CXR, PQC</strong> are the local detours off HAN and SGN.',
   'rules.h.cp':'📍 Checkpoints',
-  'rules.p.cp':'The five gold stops above are checkpoints. Whoever is <strong>first</strong> to reach HAN, SPC or SGN earns a milestone marker next to their name for the rest of the race.',
+  'rules.p.cp':'The five gold stops above are checkpoints. Whoever is <strong>first</strong> to reach HAN, SPC or SGN earns a milestone marker next to their name for the rest of the race.<br><br>Leaving <strong>HAN</strong> and <strong>SGN</strong> takes <strong>three correct answers</strong>: HAN routes through <strong>DAD</strong> then <strong>HUI</strong>, SGN through <strong>CXR</strong> then <strong>PQC</strong>, before the next main stop.',
   'rules.h.win':'🏆 Winning',
   'rules.p.win':'First to FINISH wins. If several aircraft land on the same reveal, they\'re ranked by <strong>correct answers</strong>, then by <strong>total answer time</strong> — so answering fast matters.',
   'rules.h.prizes':'🎁 Prizes',
-  'rules.p.prizes':'<strong>🏆 Champion:</strong> one Business Class ticket<br><strong>🥇 2nd:</strong> one Premium Economy ticket<br><strong>🥈 3rd:</strong> one upgrade voucher to Business Class<br><strong>🥉 4th:</strong> one Economy Class ticket<br><br>Plus plenty of other great smaller prizes.',
+  'rules.p.prizes':'<strong>🏆 Champion:</strong> Business Class + a Business Class upgrade voucher<br><strong>🥇 2nd:</strong> Premium Economy<br><strong>🥈 3rd:</strong> Economy Class<br><strong>🥉 4th &amp; 5th (joint):</strong> an extra baggage voucher<br><br>Plus plenty of other great smaller prizes.',
   'rules.h.clear':'🌈 Clear Skies',
   'rules.p.clear':'The default. Correct answer advances you <strong>1 leg</strong>; a wrong answer holds your position — no penalty.',
   'rules.h.turb':'🌪 Turbulence',
@@ -1923,7 +1951,7 @@ en: {
   'rules.h.power':'☀️ Sunshine',
   'rules.p.power':'The host\'s one-time bonus round for the whole game, armed before the question opens. The <strong>fastest correct</strong> answer gets <strong>+2 legs</strong>, every other correct answer <strong>+1</strong>, wrong answers hold. Can\'t be armed on a Turbulence or Storm leg, and all three helps are disabled.',
   'rules.h.helps':'Your three helps',
-  'rules.p.helps':'Each one can be used <strong>once per game</strong>. All three — <strong>50:50</strong>, <strong>Turbo Boost</strong> and <strong>Fasten Seatbelt</strong> — unlock the moment <strong>your own aircraft reaches MUC</strong>, not when the race reaches MUC. Once unlocked they <strong>stay unlocked for the rest of the game</strong>, even if turbulence pushes you back behind MUC.',
+  'rules.p.helps':'Each one can be used <strong>once per game</strong>. All three — <strong>50:50</strong>, <strong>Turbo Boost</strong> and <strong>Fasten Seatbelt</strong> — unlock the moment <strong>your own aircraft reaches MUC</strong>, not when the race reaches MUC. Once unlocked they <strong>stay unlocked for the rest of the game</strong>, even if turbulence pushes you back behind MUC.<br><br>All three go live <strong>the moment the question appears</strong> — you don\'t have to wait for the answers to open. The one you pick turns <strong>solid gold</strong>.',
   'rules.help.fifty':'50:50',
   'rules.help.fiftyDesc':'Removes two wrong answers, leaving the correct one and a single decoy. Disabled during Turbulence, Storm and Sunshine.',
   'rules.help.turbo':'Turbo Boost',
@@ -1998,6 +2026,7 @@ en: {
   'p.prize2':'You win the Gold Medal 🥇!',
   'p.prize3':'You win the Silver Medal 🥈!',
   'p.prize4':'You win the Bronze Medal 🥉!',
+  'p.prize5':'You win the Bronze Medal 🥉!',
   'p.congratsPodium':'Congratulations — a superb flight. Please come up to the stage to collect your award.',
   'p.congratsOther':'Thank you for flying with us today — every leg you flew was part of the race.',
   'p.wish':'We wish you an inspiring conference, meaningful connections, and an enjoyable experience throughout today\'s event.',
@@ -2044,8 +2073,10 @@ en: {
   'biz.title':'Business Class · {n} place',
   'prem.title':'Premium Economy · {n} place',
   'econ.title':'Economy Class · {n} place',
-  'econ.upgrade':'Upgrade to Business if available',
-  'biz.place1':'1st','biz.place2':'2nd','biz.place3':'3rd','biz.place4':'4th',
+  'std.title':'{n} place',
+  'voucher.upgrade':'Business Class upgrade voucher',
+  'voucher.baggage':'Extra baggage voucher',
+  'biz.place1':'1st','biz.place2':'2nd','biz.place3':'3rd','biz.place4':'4th','biz.place5':'5th',
   'biz.chasing':'{name} is chasing you — {gap}',
   'biz.level':'level with you',
   'biz.oneLeg':'1 leg behind',
@@ -2208,7 +2239,7 @@ en: {
   'a.presenterNotes':'🎤 Presenter Notes',
   'a.noNotes':'No presenter notes for this question.',
   'a.winner':'Race winner',
-  'a.winnerNote':'Once the race has finished (4 aircraft landed), show the full-screen "Congratulations!" overlay with confetti on the presenter screen. It stays hidden until you press this — reaching FINISH does not show it automatically.',
+  'a.winnerNote':'Once the race has finished (5 aircraft landed), show the full-screen "Congratulations!" overlay with confetti on the presenter screen. It stays hidden until you press this — reaching FINISH does not show it automatically.',
   'a.showCongrats':'🎉 Show Congratulations',
   'a.hideCongrats':'Hide congratulations',
   'a.awardTitle':'Award ceremony',
@@ -2338,13 +2369,23 @@ function setLang(l){
    Editing note: to move a pin, read its pixel position off the artwork and scale by
    MAP_W/imageWidth. Do not "tidy" these into a curve; they are survey data, not layout.
    START / HAN / SPC / SGN / FINISH are the 5 big checkpoint nodes.
-   HAN (Turtle Tower) and SGN (Landmark 81) have no matching emoji, so they're inline SVGs. */
+   HAN (Turtle Tower) and SGN (Landmark 81) have no matching emoji, so they're inline SVGs.
+
+   SUB-STOPS (sub:true) — DAD/HUI hang off HAN, CXR/PQC off SGN. They are ordinary stops in
+   this list, which is exactly what makes the "three correct answers to leave HAN or SGN"
+   rule work without any special-case code: one correct answer moves one stop, and there are
+   now three hops from HAN to MUC (HAN→DAD→HUI→MUC) and three from SGN to FRA
+   (SGN→CXR→PQC→FRA). Their coordinates sit deliberately OFF the main line so the detour
+   reads as a local loop rather than part of the through-route, and they draw smaller
+   (.airport-node.sub) so they never compete with the twelve main stops. */
 const MAP_W = 1000, MAP_H = 666;   // 1.5015:1, matching vendor/route-bg.jpg (2400x1598)
 const ROUTE = [
   {code:'START',  city:'Start',              icon:'🛫', checkpoint:true,  x:208.1, y:582.9},
   {code:'CDG',    city:'Paris',              icon:'🗼', checkpoint:false, x:457.3, y:525.2},
   {code:'AMS',    city:'Amsterdam',          icon:'🌷', checkpoint:false, x:623.4, y:496.7},
   {code:'HAN',    city:'Hanoi',              icon:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.12em"><rect x="7" y="14" width="10" height="7" rx="1" fill="#fff"/><rect x="9" y="8" width="6" height="6" fill="#fff"/><polygon points="12,3 16,8 8,8" fill="#fff"/><rect x="11.3" y="1" width="1.4" height="2.5" fill="#fff"/></svg>', checkpoint:true,  x:829.9, y:420.0},
+  {code:'DAD',    city:'Da Nang',            icon:'🌉', checkpoint:false, sub:true, x:905.0, y:462.0},
+  {code:'HUI',    city:'Hue',                icon:'🏯', checkpoint:false, sub:true, x:935.0, y:375.0},
   {code:'MUC',    city:'Munich',             icon:'🍺', checkpoint:false, x:697.0, y:362.2},
   {code:'MOW',    city:'Moscow',             icon:'🐻', checkpoint:false, x:593.4, y:283.9},
   {code:'SPC',    city:'Special Checkpoint', icon:'⭐', checkpoint:true,  x:469.9, y:313.2},
@@ -2352,6 +2393,8 @@ const ROUTE = [
   {code:'MXP',    city:'Milan',              icon:'👗', checkpoint:false, x:198.6, y:261.8},
   {code:'CPH',    city:'Copenhagen',         icon:'🧜‍♀️', checkpoint:false, x:125.0, y:200.9},
   {code:'SGN',    city:'Ho Chi Minh City',   icon:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.12em"><rect x="4" y="14" width="2.3" height="8" fill="#fff"/><rect x="7" y="10" width="2.3" height="12" fill="#fff"/><rect x="10" y="6" width="2.3" height="16" fill="#fff"/><rect x="13" y="9" width="2.3" height="13" fill="#fff"/><rect x="16" y="12" width="2.3" height="10" fill="#fff"/><polygon points="11.15,2 12.3,6 10,6" fill="#fff"/></svg>', checkpoint:true,  x:300.6, y:117.1},
+  {code:'CXR',    city:'Nha Trang',          icon:'🏖', checkpoint:false, sub:true, x:245.0, y:182.0},
+  {code:'PQC',    city:'Phu Quoc',           icon:'🏝', checkpoint:false, sub:true, x:345.0, y:196.0},
   {code:'FRA',    city:'Frankfurt',          icon:'🏦', checkpoint:false, x:429.6, y:123.4},
   {code:'FINISH', city:'Finish',             icon:'🏁', checkpoint:true,  x:563.3, y:101.2},
 ];
@@ -2689,8 +2732,8 @@ function questionPreviewReady(){
   if(!state.legAnnouncedAt) return true; // never staged (e.g. state from an older build)
   return (Date.now() - state.legAnnouncedAt) >= legStageWait();
 }
-// The map only has 12 legs, but the race keeps asking questions past leg 12 whenever
-// fewer than 4 aircraft have reached FINISH yet, so latecomers still get a chance to
+// The map has a fixed number of legs, but the race keeps asking questions past the last one whenever
+// fewer than FINISHERS_TO_END aircraft have reached FINISH yet, so latecomers still get a chance to
 // land — those extra rounds are labelled "Overtime" instead of a leg number that would
 // read as past the end of the board (e.g. "Leg 13 of 12").
 function legLabel(legIndex){
@@ -2719,7 +2762,9 @@ const URGENT_SECONDS = 5;         // countdown turns red and pulses for the fina
 const WEATHER_ANNOUNCE_MS = 10000; // the big turbulence/storm/power card runs this long after "Next question"
 const QUESTION_DELAY_MS = 2000;    // beat between staging a normal leg and the question appearing
 const FIRST_FINISH_SOLO_MS = 5000; // the first aircraft to land flies in alone, zoomed, before the rest move
-const FINISHERS_TO_END = 4;       // the race is decided once this many aircraft have landed (🏆 🥇 🥈 🥉)
+/* The race is decided once this many aircraft have landed. Five, not four: 4th and 5th now
+   share the bronze, so the podium is not complete until a fifth aircraft is down. */
+const FINISHERS_TO_END = 5;       // 🏆 🥇 🥈 🥉 🥉
 const STORAGE_KEY = "vna_sky_race_state_v1";
 let bc = null;
 try { bc = new BroadcastChannel('vna-sky-race'); } catch(e) { bc = null; }
@@ -3134,8 +3179,9 @@ function buildRulesRouteMap(){
   if(!wrap) return;
   const pts = ROUTE.map(a=>`${a.x},${a.y}`).join(' ');
   const nodes = ROUTE.map((a,i)=>{
-    const r = a.checkpoint ? 19 : 12;
-    const fill = a.checkpoint ? 'var(--vna-gold)' : 'rgba(11,113,199,.95)';
+    // sub-stops draw smaller here too, so the guide matches the wall
+    const r = a.checkpoint ? 19 : (a.sub ? 8 : 12);
+    const fill = a.checkpoint ? 'var(--vna-gold)' : (a.sub ? 'rgba(11,113,199,.65)' : 'rgba(11,113,199,.95)');
     const stroke = a.checkpoint ? '#F0D678' : 'rgba(255,255,255,.75)';
     // labels alternate above/below the node so neighbouring codes never collide
     const labelY = a.y + (i % 2 ? -(r + 12) : (r + 26));
@@ -3403,12 +3449,24 @@ function boostBlockedReason(what){
   if(state.powerQuestionActive) return t('h.blockPower',{what:what});
   return t('h.blockLocked',{what:what});
 }
-// true while the player can still change their mind about this leg
+/* true while the player can still change their mind about this leg.
+   This opens the moment the QUESTION appears, not when the answers do: the host stages the
+   question first and only later opens the options, and a player reading the question should
+   already be able to burn 50:50 or arm Turbo. So the window is the staged preview plus the
+   open question, and it closes on submit or on their own clock running out. */
 function canActNow(){
   const me = state.players[myPlayerId];
   if(!me) return false;
   const a = me.answers[state.currentQ];
-  return state.gameState==='question' && !myTimeUp() && !(a && a.submitted);
+  if(a && a.submitted) return false;
+  if(state.gameState==='question') return !myTimeUp();
+  if(state.gameState==='lobby') return questionStagedOnScreen();
+  return false;
+}
+// the staged-but-not-yet-open window: question text is on the phone, options are not
+function questionStagedOnScreen(){
+  const qid = state.currentQuestionIndex;
+  return qid!==null && qid!==undefined && !!QUESTIONS_BY_ID[qid] && questionPreviewReady();
 }
 function myAnswerDraft(){
   const me = state.players[myPlayerId];
@@ -3586,18 +3644,21 @@ function renderBizRibbon(me){
   const view = document.getElementById('view-player');
   const ranked = rankedPlayers();
   const idx = ranked.findIndex(p=>p.id===myPlayerId);
-  // Cabin by standing: the leader flies Business (gold), 2nd Premium Economy (the jade of
-  // that cabin), 3rd and 4th Economy. Only the top two get a full-screen skin — the gold and
-  // jade cabins are meant to look worth defending — so Economy is the ribbon alone.
-  // 3rd carries the "upgrade to Business if available" line; 4th is plain Economy.
+  /* Cabin and prize by standing:
+       1st  Business (gold skin)        + Business upgrade voucher
+       2nd  Premium Economy (jade skin) — the cabin is the prize
+       3rd  Economy (ribbon only)
+       4th  standard (ribbon only)      + extra-baggage voucher
+       5th  standard (ribbon only)      + extra-baggage voucher
+     Only the top two get a full-screen skin — the gold and jade cabins are meant to look
+     worth defending — so everything below is the ribbon alone. */
   const enoughPlayers = ranked.length >= 2;
   const tier = !enoughPlayers ? null
-    : (idx===0 ? 'biz' : idx===1 ? 'prem' : idx===2 ? 'econUp' : idx===3 ? 'econ' : null);
+    : (idx===0 ? 'biz' : idx===1 ? 'prem' : idx===2 ? 'econ' : (idx===3 || idx===4) ? 'std' : null);
   view.classList.toggle('biz-gold', tier==='biz');
   view.classList.toggle('cabin-premium', tier==='prem');
   if(!tier){ wrap.innerHTML = ''; wrap.dataset.sig = ''; return; }
-  const isEcon = tier==='econUp' || tier==='econ';
-  const medal = RANK_TROPHY[idx];
+  const medal = RANK_TROPHY[idx] || '✈️';
   const place = t('biz.place'+(idx+1));
   const chaser = ranked[idx+1];
   let sub;
@@ -3608,12 +3669,18 @@ function renderBizRibbon(me){
   } else {
     sub = t('biz.alone');
   }
-  const titleKey = isEcon ? 'econ.title' : (tier==='prem' ? 'prem.title' : 'biz.title');
-  const cls = isEcon ? 'econ-ribbon' : (tier==='prem' ? 'prem-ribbon' : '');
-  const upgrade = tier==='econUp' ? `<div class="up">⬆ ${t('econ.upgrade')}</div>` : '';
+  const titleKey = tier==='biz' ? 'biz.title'
+                 : tier==='prem' ? 'prem.title'
+                 : tier==='econ' ? 'econ.title' : 'std.title';
+  const cls = tier==='prem' ? 'prem-ribbon'
+            : tier==='econ' ? 'econ-ribbon'
+            : tier==='std'  ? 'std-ribbon' : '';
+  // the voucher each place actually wins, shown on the ribbon
+  const voucher = tier==='biz'  ? `<div class="up">🎟 ${t('voucher.upgrade')}</div>`
+                : tier==='std'  ? `<div class="up">🧳 ${t('voucher.baggage')}</div>` : '';
   const html = `<div class="biz-ribbon ${cls}">
     <div class="medal">${medal}</div>
-    <div><div class="tt">${t(titleKey,{n:place})}</div><div class="sb">${sub}</div>${upgrade}</div>
+    <div><div class="tt">${t(titleKey,{n:place})}</div><div class="sb">${sub}</div>${voucher}</div>
   </div>`;
   // Only touch the DOM when the ribbon actually changed. renderPlayer runs every second, and
   // rewriting innerHTML each time would restart the arrival animation on every tick.
@@ -3634,13 +3701,19 @@ function renderHelps(me, myAns){
   const live = canActNow();
   const armedTurbo = !!(myAns && myAns.turbo);
   const armedBelt = !!(myAns && myAns.seatbelt);
-  const fiftyGone = !!me.fiftyUsed || !!(myAns && myAns.fifty);
+  const armedFifty = !!(myAns && myAns.fifty);   // burned on THIS question
+  const fiftyGone = !!me.fiftyUsed || armedFifty;
   const boostOk = live && !boostsBlocked();
   const beltOk = live && rankHelps && me_turbulenceActive();
+  /* Two different "off" looks, and they must not be confused: `armed` means the player
+     picked this help for the question in front of them — the whole button goes solid gold so
+     the choice is unmistakable at arm's length. `spent` means it was used in an earlier
+     round and is gone for the rest of the game — faded out. A help chosen this round is
+     always drawn armed, even once the answer is submitted and the used-flag has gone up. */
   const btn = (ic, lb, spent, armed, disabled, title, fn)=>
-    `<button class="help-btn${spent?' spent':(armed?' armed':'')}" ${disabled?'disabled':''} title="${title}" onclick="${fn}"><span class="ic">${ic}</span><span class="lb">${lb}</span></button>`;
+    `<button class="help-btn${armed?' armed':(spent?' spent':'')}" ${disabled?'disabled':''} title="${title}" onclick="${fn}"><span class="ic">${ic}</span><span class="lb">${lb}</span></button>`;
   wrap.innerHTML = `<div class="help-row">
-    ${btn(HELP_ICONS.fifty,t('h.fifty'), fiftyGone, false, fiftyGone || !rankHelps || !boostOk,
+    ${btn(HELP_ICONS.fifty,t('h.fifty'), fiftyGone, armedFifty, fiftyGone || !rankHelps || !boostOk,
         fiftyGone?t('h.fiftyUsed'):t('h.fiftyTip'), 'playerUseFifty()')}
     ${btn(HELP_ICONS.turbo,t('h.turbo'), !!me.turboUsed, armedTurbo, !!me.turboUsed || !rankHelps || !boostOk,
         me.turboUsed?t('h.turboUsed'):t('h.turboTip'), 'playerToggleTurbo()')}
@@ -3737,7 +3810,7 @@ function renderPlayer(){
   }
 
   // Reaching FINISH is a personal milestone shown the moment it happens — the race
-  // itself keeps going for everyone else until at least 4 aircraft have landed.
+  // itself keeps going for everyone else until at least FINISHERS_TO_END aircraft have landed.
   if(me.finishRank){
     const medal = RANK_TROPHY[me.finishRank-1] || '🏅';
     eyebrow.textContent = t('p.finished');
@@ -3753,8 +3826,7 @@ function renderPlayer(){
     // Staged but not opened: everyone reads the question first, with no options and no
     // clock, until the host opens the answers. During the 10s weather card, the card
     // above is the whole message and the question stays hidden.
-    const staged = state.currentQuestionIndex!==null && state.currentQuestionIndex!==undefined
-                   && QUESTIONS_BY_ID[state.currentQuestionIndex] && questionPreviewReady();
+    const staged = questionStagedOnScreen();
     if(staged){
       eyebrow.textContent = roundLabel(state.currentQ);
       qText.textContent = QUESTIONS_BY_ID[state.currentQuestionIndex].q;
@@ -3770,7 +3842,9 @@ function renderPlayer(){
     bannerEl.classList.add('hidden'); clearTimer();
     if(powerNoteEl) powerNoteEl.classList.add('hidden');
     if(stormNoteEl) stormNoteEl.classList.add('hidden');
-    if(helpsWrap) helpsWrap.innerHTML='';
+    // the helps come up with the question, so they are already live while it is being read
+    if(staged) renderHelps(me, me.answers[state.currentQ]);
+    else if(helpsWrap) helpsWrap.innerHTML='';
     return;
   }
   if(state.currentQuestionIndex===null || state.currentQuestionIndex===undefined){
@@ -3872,26 +3946,37 @@ function renderPlayer(){
 function buildRouteSvg(){
   const svg = document.getElementById('routeSvg');
   svg.setAttribute('viewBox','0 0 '+MAP_W+' '+MAP_H);
-  const points = ROUTE.map(a=>`${a.x},${a.y}`).join(' ');
   /* Two strokes, not one. The old 3px/gap-11 dotted line was tuned for a flat gradient
      backdrop; over the illustrated map it disappeared entirely against bright water and
      sand. A dark casing goes down first so the gold reads on light AND dark terrain, then
-     the bright dashed line on top, matching the reference artwork. */
+     the bright dashed line on top, matching the reference artwork.
+     The route is drawn leg by leg rather than as one polyline so the HAN and SGN detours
+     (any leg touching a sub-stop) can be drawn thinner — the eye should still follow the
+     main line around the islands and read the spurs as local hops off it. */
+  let legs = '';
+  for(let i=0;i<ROUTE.length-1;i++){
+    const a = ROUTE[i], b = ROUTE[i+1];
+    const spur = a.sub || b.sub;
+    const w = spur ? 3.4 : 5;
+    const dash = spur ? '7 9' : '11 13';
+    legs += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="rgba(20,35,60,.55)"
+               stroke-width="${spur ? 6.5 : 9}" stroke-linecap="round"/>`;
+    legs += `<line class="leg-gold" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#FFD54A"
+               stroke-width="${w}" stroke-dasharray="${dash}" stroke-linecap="round" filter="url(#glow)"
+               opacity="${spur ? .85 : 1}"/>`;
+  }
   svg.innerHTML = `
     <defs>
       <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     </defs>
-    <polyline points="${points}" fill="none" stroke="rgba(20,35,60,.55)" stroke-width="9"
-              stroke-linecap="round" stroke-linejoin="round"/>
-    <polyline points="${points}" fill="none" stroke="#FFD54A" stroke-width="5" stroke-dasharray="11 13"
-              stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+    ${legs}
   `;
 
   const airportLayer = document.getElementById('airportLayer');
   airportLayer.innerHTML = '';
   ROUTE.forEach((a,idx)=>{
     const node = document.createElement('div');
-    node.className = 'airport-node' + (a.checkpoint ? ' checkpoint':'');
+    node.className = 'airport-node' + (a.checkpoint ? ' checkpoint':'') + (a.sub ? ' sub':'');
     node.style.left = (a.x/MAP_W*100)+'%';
     node.style.top = (a.y/MAP_H*100)+'%';
     node.innerHTML = `<div class="airport-dot"><span class="airport-icon">${a.icon}</span></div><div class="airport-label"><div class="code">${a.code}</div><div class="city">${a.city}</div></div>`;
@@ -4870,7 +4955,7 @@ function renderPresenterLeaderboard(){
     const accuracy = p.answeredCount ? Math.round((p.correctCount||0)/p.answeredCount*100) : 0;
     row.className = 'lead-row' + (i===0?' top1':'');
     row.innerHTML = `
-      <div class="rank">${i<4?RANK_TROPHY[i]:('#'+(i+1))}</div>
+      <div class="rank">${i<RANK_TROPHY.length?RANK_TROPHY[i]:('#'+(i+1))}</div>
       <div class="av">${avatarHTML(p.avatar,'1em','#FFFFFF')}</div>
       <div class="nm">${onFire?'<span class="fire-tag">🔥</span> ':''}${escapeHtml(p.name)}${milestoneDotsFor(p.id)}
         <div class="sub">${ROUTE[p.position].code} · ${ROUTE[p.position].city} · ⏱ ${formatTime(p.totalAnswerTime)}</div>
@@ -4990,7 +5075,10 @@ function rankedPlayers(){
     return b.position - a.position || (a.totalAnswerTime||0) - (b.totalAnswerTime||0);
   });
 }
-const RANK_TROPHY = ['🏆','🥇','🥈','🥉']; // champion's cup, then gold-silver-bronze for 2nd-4th
+/* Champion's cup, then gold / silver, then bronze SHARED by 4th and 5th — the two of them
+   finish level on the podium, so the array has five entries and the last two match. Index by
+   finishRank-1. Anything past 5th has no medal (callers fall back to a plain marker). */
+const RANK_TROPHY = ['🏆','🥇','🥈','🥉','🥉'];
 function formatTime(ms){
   ms = ms || 0;
   return (ms/1000).toFixed(1)+'s';
@@ -5245,11 +5333,11 @@ function renderPresenter(){
       document.getElementById('view-presenter').appendChild(awardOverlay);
       fireConfettiLight();
     }
-    // 1st takes the champion's cup on its own, at the top and biggest; 2nd/3rd/4th line up
-    // below with gold, silver and bronze
+    // 1st takes the champion's cup on its own, at the top and biggest; 2nd/3rd/4th/5th line
+    // up below with gold, silver and the two shared bronzes
     const podium = rankedPlayers().slice(0,FINISHERS_TO_END);
     const champion = podium[0];
-    const medallists = podium.slice(1,4);
+    const medallists = podium.slice(1, FINISHERS_TO_END);
     const milestoneRows = ['HAN','SPC','SGN'].map(code=>{
       const pid = state.milestones[code];
       const p = pid ? state.players[pid] : null;
@@ -5604,7 +5692,7 @@ function adminUndoReveal(){
 }
 function adminNextQuestion(){
   if(state.gameState==='finished'){ toast(t('a.t.finished')); return; }
-  // The map only has 12 legs, but with fewer than 4 aircraft landed there's no "last leg" —
+  // The map has a fixed number of legs, but with fewer than FINISHERS_TO_END aircraft landed there's no "last leg" —
   // the race keeps going into overtime rounds (see legLabel()) until 3 have reached FINISH.
   // armed but the leg was never scored -> hand the Power Question charge back
   if(state.powerQuestionActive && !(state.revealedLegs && state.revealedLegs[state.currentQ])){
@@ -5913,7 +6001,7 @@ function renderLeaderTable(){
   if(ranked.length===0){ tbody.innerHTML = `<tr><td colspan="6" style="color:rgba(255,255,255,.45);">${t('a.noPlayers')}</td></tr>`; return; }
   tbody.innerHTML = ranked.map((p,i)=>`
     <tr>
-      <td class="mono">${i<4?RANK_TROPHY[i]:('#'+(i+1))}</td>
+      <td class="mono">${i<RANK_TROPHY.length?RANK_TROPHY[i]:('#'+(i+1))}</td>
       <td>${avatarHTML(p.avatar)}</td>
       <td>${escapeHtml(p.name)}${milestoneDotsFor(p.id)}</td>
       <td class="mono">${ROUTE[p.position].code}</td>
