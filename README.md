@@ -104,6 +104,10 @@ Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng 
 
 **Màn hình người chơi** hiện **route map chia 2 hàng** thay cho thanh tiến độ: 17 điểm dừng nối liền nhau, điểm đang đứng sáng vàng và to hơn kèm tên mã, điểm đã qua mờ đi, điểm phía trước mờ hơn nữa.
 
+**Đứng trong cụm thì cả cụm sáng vàng thành MỘT vùng.** Ở bất kỳ đâu trong HAN/DAD/HUI, cả ba ô cùng đổ một dải vàng liền mạch (tương tự SGN/CXR/PQC), kèm dòng chữ *"Vùng HAN — một chặng mốc, ba câu hỏi"*. Trên điện thoại ba ô đó **không được đọc ra là ba chặng đang bò qua**: đó là một chặng mốc hỏi ba câu, và dải vàng là thứ nói điều đó. Dải vẽ bằng nền của từng ô, không bo góc hai bên trong, nên các ô cạnh nhau dính liền thành một vùng — chỉ hai đầu dải mới bo tròn.
+
+> Với 9 cột, HAN/DAD/HUI rơi vào ô 3-4-5 và SGN/CXR/PQC vào ô 3-4-5 của hàng dưới, nên **không cụm nào bị cắt ngang chỗ xuống dòng** — bộ test kiểm đúng điều này, vì nếu một cụm vắt qua hai hàng thì dải vàng sẽ đứt làm đôi. Phòng xa, hai đầu dải cũng bo tròn lại ở chỗ xuống dòng nên dải bị chia vẫn trông gọn chứ không như bị cắt cụt.
+
 > **Hai hàng chứ không phải một hàng cuộn ngang.** Ở 17 điểm dừng thì tuyến cần ~430px mà không điện thoại nào có — bản cũ tràn ra khỏi thẻ và giấu nửa cuối sau một thanh cuộn không ai nghĩ tới việc kéo. Nay là grid `--rs-cols` cột (bằng `ceil(ROUTE.length/2)`, tức 9 + 8), **số cột do JS đặt** nên thêm điểm dừng vào `ROUTE` thì hai hàng tự cân lại thay vì lại tràn ra ngoài. Đoạn nối chặng vẽ ngược về điểm trước, nên **điểm đầu của MỖI hàng** phải tắt nó đi (`.rs-rowstart`) — không thì có một vạch thò ra mép thẻ.
 
 **📖 Hướng dẫn** có 5 trang: (1) luật chơi + giải thưởng, (2) **bản đồ hành trình vẽ tĩnh** — cùng đường cong chữ S và cùng toạ độ mà màn presenter dùng, để người chơi hình dung trước sa bàn sẽ đua, (3) các loại thời tiết, (4) ba trợ giúp, (5) tài liệu chương trình (Sales Kit tiếng Việt + tiếng Anh).
@@ -132,7 +136,7 @@ Từ hạng sáu trở xuống không có ruy-băng. Cả năm hạng đầu đ�
 
 Bản đồ chạy trên **tranh minh hoạ quần đảo** (`public/vendor/route-bg.jpg`). Mỗi điểm dừng được **ghim đúng vào công trình của nó** trên tranh — START ở đường băng, CDG ở tháp Eiffel, MOW ở nhà thờ Thánh Basil, HAN ở chùa, FINISH ở đường băng phía trên…
 
-**Chặng phụ tại HAN và SGN** — `HAN → DAD → HUI → MUC` và `SGN → CXR → PQC → FRA`. Vì mỗi câu đúng đi được một điểm, đây chính là luật **"phải trả lời đúng 3 câu mới rời được HAN hoặc SGN"** — không cần thêm dòng code chặn nào. Bốn điểm phụ vẽ **nhỏ hơn**, nằm **lệch khỏi trục chính** (cách 77–114 đơn vị) nên đọc ra là một vòng rẽ địa phương chứ không phải đường đi chính; đường vàng nối tới chúng cũng mảnh hơn.
+**Chặng phụ tại HAN và SGN** — `HAN → DAD → HUI → MUC` và `SGN → CXR → PQC → FRA`. Trên màn hình, ba điểm này là **một cụm** chứ không phải ba chặng rời: xem *Cụm chặng mốc khép kín thành vòng* (presenter) và *Đứng trong cụm thì cả cụm sáng vàng* (player). Máy tính game **không biết** có cụm nào cả — với nó vẫn là sáu chặng bình thường, và đó chính là thứ giữ cho luật "3 câu đúng" chạy mà không cần một dòng đặc cách nào. Vì mỗi câu đúng đi được một điểm, đây chính là luật **"phải trả lời đúng 3 câu mới rời được HAN hoặc SGN"** — không cần thêm dòng code chặn nào. Bốn điểm phụ vẽ **nhỏ hơn**, nằm **lệch khỏi trục chính** (cách 77–114 đơn vị) nên đọc ra là một vòng rẽ địa phương chứ không phải đường đi chính; đường vàng nối tới chúng cũng mảnh hơn.
 
 > Turbo Boost (+2 chặng) vẫn **đi tắt được** qua cụm này — đó là lợi thế có chủ đích của trợ giúp, không phải lỗ hổng. Nếu bạn muốn chặn Turbo trong cụm HAN/SGN thì báo tôi.
 
@@ -145,6 +149,12 @@ Tranh **phủ kín panel, sát tới viền bo ngoài** — không có dải tr�
 > **Vì sao kích thước tranh do JS đặt** (`fitMapStage`), không phải `background-size:cover`: ghim được định vị bằng **phần trăm của bức tranh**. Nếu chỉ cho CSS cắt ảnh nền, phần trăm đó vẫn tính trên khung chưa cắt và **mọi ghim sẽ trôi khỏi công trình**. Đặt kích thước cho chính phần tử chứa tranh thì ghim và ảnh nằm chung một hệ toạ độ — đo thực tế độ lệch ghim là 0,00002 (tức bằng 0).
 
 > **Đường bay vàng vẽ hai nét chồng nhau**: một nét viền tối bên dưới rồi nét vàng đứt nét bên trên. Nét chấm mảnh của bản cũ hợp với nền gradient phẳng, nhưng đặt lên tranh thì mất hút giữa vùng nước sáng và bãi cát.
+
+**Cụm chặng mốc khép kín thành vòng.** Điểm phụ cuối không cắt thẳng sang chặng chính tiếp theo: HUI→MUC vẽ thành **HUI→HAN rồi HAN→MUC**, PQC→FRA thành **PQC→SGN rồi SGN→FRA**. Chính đoạn quay về đó biến ba cái ghim nằm gần nhau thành **một cụm treo bên cạnh HAN** — một vòng nhỏ đi ra rồi về — thay vì trông như tuyến chính vòng qua hai thị trấn lạ. Bao quanh cụm là một **quầng vàng bo tròn** (`.cluster-halo`) vẽ trước đường bay và ghim, nên nó nằm dưới chứ không che gì.
+
+> **Máy bay bay đúng cái vòng đó.** `hopWaypoint()` nói cụm chỉ có **một cửa là điểm đầu**: ra thì HUI→HAN→MUC, vào thì (nhiễu động đẩy lùi) MUC→HAN→HUI, kể cả cú Turbo +2 nhảy thẳng vào giữa cụm. Đường bay được chia làm hai chặng CSS nối tiếp (40% / 60%) nên máy bay lượn theo đúng nét vàng chứ không cắt chéo qua quầng. Di chuyển **bên trong** cụm (HAN→DAD→HUI) không cần điểm trung chuyển — đó chính là cái vòng.
+
+> `renderPresenterPlanes` chạy theo tick, mà ghi lại `left/top` giữa chừng sẽ **búng máy bay thẳng tới đích và bỏ qua điểm trung chuyển**. Nên trong lúc bay hai chặng, token thuộc quyền hai cái timer của chính cú bay đó (`_planeHopUntil`), tick không được đụng vào — trừ khi người chơi thật sự di chuyển tiếp, lúc đó cú bay cũ bị huỷ.
 
 **Mỗi chặng là một cung cong nhẹ**, không phải đường kẻ thước — đường bay vẽ trên bản đồ phải trông như *đã bay*, không phải như *đã đo*. Bézier bậc hai, điểm điều khiển đẩy vuông góc `BOW_K` (10%) chiều dài chặng và **luôn về cùng một bên**, nên cả tuyến nghiêng đều như đường great-circle chứ không lượn sóng ngẫu nhiên.
 

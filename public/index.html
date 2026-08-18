@@ -267,6 +267,32 @@ input[type=text]:focus{border-color:var(--vna-gold);}
   box-shadow:0 0 13px rgba(212,175,55,.85);
 }
 .rs-stop.here .rs-code{font-size:9px; font-weight:800; color:var(--vna-gold-light);}
+
+/* ---------- CHECKPOINT ZONE ----------
+   HAN+DAD+HUI is one place with three questions, not three places, and standing anywhere in
+   it floods all three cells with a single gold band. Painted per cell with no gaps and no
+   side radius, so neighbouring cells fuse into one continuous region; only the two ends of
+   the run get rounded. Sits behind the dots via a pseudo-element, never over them. */
+.rs-stop.rs-zone{position:relative;}
+.rs-stop.rs-zone::after{
+  content:''; position:absolute; left:-1px; right:-1px; top:-2px; bottom:-2px; z-index:0;
+  background:linear-gradient(180deg, rgba(212,175,55,.34), rgba(212,175,55,.17));
+  border-top:1.5px solid rgba(240,214,120,.6); border-bottom:1.5px solid rgba(240,214,120,.6);
+  pointer-events:none;
+}
+.rs-stop.rs-zone-a::after{left:-3px; border-left:1.5px solid rgba(240,214,120,.6); border-radius:11px 0 0 11px;}
+.rs-stop.rs-zone-z::after{right:-3px; border-right:1.5px solid rgba(240,214,120,.6); border-radius:0 11px 11px 0;}
+.rs-stop.rs-zone-a.rs-zone-z::after{border-radius:11px;}
+/* inside the zone even the stops not yet reached are part of where you are standing */
+.rs-stop.rs-zone.ahead, .rs-stop.rs-zone.done{opacity:.92;}
+.rs-stop.rs-zone .rs-slot, .rs-stop.rs-zone .rs-code{position:relative; z-index:1;}
+.rs-stop.rs-zone .rs-code{color:var(--vna-gold-light);}
+.route-zone-note{
+  margin:-4px 0 8px; font-size:10.5px; line-height:1.45; text-align:center;
+  color:rgba(255,255,255,.72);
+}
+.route-zone-note strong{color:var(--vna-gold-light);}
+
 /* the lit dot is a fixed pixel size inside a 1fr column, so on the narrowest phones it has
    to come down or it spills over its neighbours — a grid cannot shrink it for us */
 @media (max-width:400px){
@@ -1303,6 +1329,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
     <div id="pGame" class="hidden" style="display:flex; flex-direction:column; flex:1;">
       <div id="pBizRibbon"></div>
       <div class="route-strip" id="pRouteStrip"></div>
+      <div class="route-zone-note hidden" id="pRouteZoneNote"></div>
 
       <div class="timer-ring-wrap"><div class="p-badge timer-num mono" id="pTimer">--</div></div>
 
@@ -1609,6 +1636,7 @@ vi: {
   'p.aircraft':'Máy bay',
   'p.of':'trên {n}',
   'p.powerNote':'☀️ Trời nắng đẹp — đúng <strong>nhanh nhất +2 chặng</strong>, các câu đúng khác <strong>+1</strong>, sai đứng nguyên.',
+  'p.zoneNote':'📍 Vùng <strong>{code}</strong> ({codes}) — <strong>một chặng mốc, ba câu hỏi</strong>. Đúng cả ba mới rời được {code}.',
   'p.stormNote':'⛈ Bão — chỉ <strong>10 người trả lời đúng nhanh nhất</strong> được ATC cấp phép bay tiếp. Những người còn lại đứng nguyên.',
   'p.waitStart':'ĐANG CHỜ BẮT ĐẦU',
   'p.waitStartMsg':'Câu hỏi sẽ mở ngay thôi. Sẵn sàng cất cánh!',
@@ -2025,6 +2053,7 @@ en: {
   'p.aircraft':'Aircraft',
   'p.of':'of {n}',
   'p.powerNote':'☀️ Sunshine — <strong>fastest correct +2 legs</strong>, every other correct <strong>+1</strong>, wrong answers hold.',
+  'p.zoneNote':'📍 The <strong>{code}</strong> zone ({codes}) — <strong>one checkpoint, three questions</strong>. Get all three right to leave {code}.',
   'p.stormNote':'⛈ Storm — only the <strong>10 fastest correct answers</strong> get ATC clearance to continue. Everyone else holds position.',
   'p.waitStart':'WAITING FOR GAME TO START',
   'p.waitStartMsg':'Question will be open shortly. Get ready for takeoff!',
@@ -2413,8 +2442,8 @@ const ROUTE = [
   {code:'CDG',    city:'Paris',              icon:'🗼', checkpoint:false, x:457.3, y:525.2},
   {code:'AMS',    city:'Amsterdam',          icon:'🌷', checkpoint:false, x:623.4, y:496.7},
   {code:'HAN',    city:'Hanoi',              icon:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.12em"><rect x="7" y="14" width="10" height="7" rx="1" fill="#fff"/><rect x="9" y="8" width="6" height="6" fill="#fff"/><polygon points="12,3 16,8 8,8" fill="#fff"/><rect x="11.3" y="1" width="1.4" height="2.5" fill="#fff"/></svg>', checkpoint:true,  x:829.9, y:420.0},
-  {code:'DAD',    city:'Da Nang',            icon:'🌉', checkpoint:false, sub:true, x:905.0, y:462.0},
-  {code:'HUI',    city:'Hue',                icon:'🏯', checkpoint:false, sub:true, x:935.0, y:375.0},
+  {code:'DAD',    city:'Da Nang',            icon:'🌉', checkpoint:false, sub:true, parent:'HAN', x:905.0, y:462.0},
+  {code:'HUI',    city:'Hue',                icon:'🏯', checkpoint:false, sub:true, parent:'HAN', x:935.0, y:375.0},
   {code:'MUC',    city:'Munich',             icon:'🍺', checkpoint:false, x:697.0, y:362.2},
   {code:'MOW',    city:'Moscow',             icon:'🐻', checkpoint:false, x:593.4, y:283.9},
   {code:'SPC',    city:'Special Checkpoint', icon:'⭐', checkpoint:true,  x:469.9, y:313.2},
@@ -2422,8 +2451,8 @@ const ROUTE = [
   {code:'MXP',    city:'Milan',              icon:'👗', checkpoint:false, x:198.6, y:261.8},
   {code:'CPH',    city:'Copenhagen',         icon:'🧜‍♀️', checkpoint:false, x:125.0, y:200.9},
   {code:'SGN',    city:'Ho Chi Minh City',   icon:'<svg viewBox="0 0 24 24" width="1em" height="1em" style="vertical-align:-0.12em"><rect x="4" y="14" width="2.3" height="8" fill="#fff"/><rect x="7" y="10" width="2.3" height="12" fill="#fff"/><rect x="10" y="6" width="2.3" height="16" fill="#fff"/><rect x="13" y="9" width="2.3" height="13" fill="#fff"/><rect x="16" y="12" width="2.3" height="10" fill="#fff"/><polygon points="11.15,2 12.3,6 10,6" fill="#fff"/></svg>', checkpoint:true,  x:300.6, y:117.1},
-  {code:'CXR',    city:'Nha Trang',          icon:'🏖', checkpoint:false, sub:true, x:245.0, y:182.0},
-  {code:'PQC',    city:'Phu Quoc',           icon:'🏝', checkpoint:false, sub:true, x:345.0, y:196.0},
+  {code:'CXR',    city:'Nha Trang',          icon:'🏖', checkpoint:false, sub:true, parent:'SGN', x:245.0, y:182.0},
+  {code:'PQC',    city:'Phu Quoc',           icon:'🏝', checkpoint:false, sub:true, parent:'SGN', x:345.0, y:196.0},
   {code:'FRA',    city:'Frankfurt',          icon:'🏦', checkpoint:false, x:429.6, y:123.4},
   {code:'FINISH', city:'Finish',             icon:'🏁', checkpoint:true,  x:563.3, y:101.2},
 ];
@@ -2435,6 +2464,42 @@ ROUTE.forEach(n=>{
     console.error('[route] stop '+n.code+' has no map coordinates — see the ROUTE comment');
   }
 });
+
+/* ---------- CHECKPOINT CLUSTERS ----------
+   HAN+DAD+HUI is ONE place that asks three questions, and so is SGN+CXR+PQC. The game
+   engine does not know that and must not: to it they are six ordinary stops, which is what
+   keeps "three correct answers to leave HAN" working with no special-case rule. Everything
+   below is presentation — how the two clusters are drawn on the wall and on the phone.
+   Derived from ROUTE rather than written out, so moving a stop or renaming one cannot leave
+   a second list quietly disagreeing with the first. */
+const CLUSTERS = (function(){
+  const byHead = {};
+  ROUTE.forEach((n,i)=>{
+    if(!n.sub || !n.parent) return;
+    const h = ROUTE.findIndex(r=>r.code===n.parent);
+    if(h < 0){ console.error('[route] sub-stop '+n.code+' names a parent that does not exist: '+n.parent); return; }
+    (byHead[n.parent] = byHead[n.parent] || { head:n.parent, headIdx:h, idx:[h] }).idx.push(i);
+  });
+  return Object.values(byHead);
+})();
+const CLUSTER_OF = (function(){
+  const m = {};
+  CLUSTERS.forEach(c=>c.idx.forEach(i=>{ m[i] = c; }));
+  return m;
+})();
+// the cluster a position belongs to, or null for an ordinary stop
+function clusterAt(pos){ return CLUSTER_OF[pos] || null; }
+/* A cluster has one door, its head, and everything in or out goes through it: HUI→MUC is
+   really HUI→HAN→MUC, and a turbulence knock from MUC back to HUI is MUC→HAN→HUI. Returns
+   the index to route through, or null when the hop is a straight line.
+   Moves WITHIN a cluster (HAN→DAD→HUI) need no waypoint — they are the loop itself. */
+function hopWaypoint(from, to){
+  const cFrom = clusterAt(from), cTo = clusterAt(to);
+  if(cFrom === cTo) return null;                              // inside one cluster, or outside both
+  if(cFrom && from !== cFrom.headIdx) return cFrom.headIdx;   // out through the door
+  if(cTo   && to   !== cTo.headIdx)   return cTo.headIdx;     // in through the door
+  return null;
+}
 // Question bank — the 30 questions of "Question Viet.docx", in the file's own order and
 // numbering (id N == "Câu N"), asked one per round and never repeated (see
 // pickQuestionIndex). `explain` is the 🎤 Presenter Note the host reads aloud after the
@@ -3656,14 +3721,39 @@ function renderPlayerRouteStrip(me){
      instead of pushing them off the phone again. */
   const cols = Math.ceil(ROUTE.length / 2);
   strip.style.setProperty('--rs-cols', cols);
+  /* Standing anywhere in HAN/DAD/HUI lights all three as ONE gold zone, and the same for
+     SGN/CXR/PQC. On the phone these must not read as three stops the player is crawling
+     between — it is one checkpoint that happens to ask three questions, and the band is what
+     says so. The band is built from a per-cell background rather than one absolutely
+     positioned box, so it survives the grid re-flowing at any phone width. */
+  const active = clusterAt(pos);
   strip.innerHTML = ROUTE.map((node,i)=>{
     const cls = i===pos ? 'here' : (i<pos ? 'done' : 'ahead');
     const rowStart = (i % cols) === 0;
-    return `<div class="rs-stop ${cls}${node.checkpoint?' cp':''}${rowStart?' rs-rowstart':''}">
+    let band = '';
+    if(active && active.idx.indexOf(i) >= 0){
+      const first = i === Math.min.apply(null, active.idx);
+      const last  = i === Math.max.apply(null, active.idx);
+      // the band's rounded ends are also redrawn at a row break, so a split band still
+      // looks finished at both edges rather than sliced off
+      band = ' rs-zone'
+        + ((first || rowStart) ? ' rs-zone-a' : '')
+        + ((last || (i % cols) === cols-1) ? ' rs-zone-z' : '');
+    }
+    return `<div class="rs-stop ${cls}${node.checkpoint?' cp':''}${rowStart?' rs-rowstart':''}${band}">
       <div class="rs-slot"><div class="rs-dot">${node.icon}</div></div>
       <div class="rs-code">${node.code}</div>
     </div>`;
   }).join('');
+  // spell the grouping out in words too — the band alone does not say WHY they are grouped
+  const note = document.getElementById('pRouteZoneNote');
+  if(note){
+    note.classList.toggle('hidden', !active);
+    if(active) note.innerHTML = t('p.zoneNote', {
+      code: active.head,
+      codes: active.idx.map(i=>ROUTE[i].code).join(' · ')
+    });
+  }
 }
 
 /* Top 3 fly business class: the whole phone turns Vietnam Airlines gold, and they're told
@@ -4004,24 +4094,50 @@ function buildRouteSvg(){
      the bright dashed line on top, matching the reference artwork.
      The route is drawn leg by leg rather than as one polyline so the HAN and SGN detours
      (any leg touching a sub-stop) can be drawn thinner — the eye should still follow the
-     main line around the islands and read the spurs as local hops off it. */
+     main line around the islands and read the spurs as local hops off it.
+
+     CLUSTERS CLOSE THE LOOP. The last sub-stop does not cut straight across to the next main
+     stop: HUI→MUC is drawn as HUI→HAN then HAN→MUC, and PQC→FRA as PQC→SGN then SGN→FRA.
+     That return leg is what turns three pins near each other into one visible cluster hanging
+     off HAN — a little loop out and back — instead of the through-route taking a detour
+     through two random towns. It is also exactly what the aircraft now fly (see hopWaypoint),
+     so line and plane agree. */
   let legs = '';
-  for(let i=0;i<ROUTE.length-1;i++){
-    const a = ROUTE[i], b = ROUTE[i+1];
-    const spur = a.sub || b.sub;
-    const w = spur ? 3.4 : 5;
-    const dash = spur ? '7 9' : '11 13';
+  const drawLeg = (a, b, spur)=>{
     const d = legPath(a, b);
     legs += `<path d="${d}" fill="none" stroke="rgba(20,35,60,.55)"
                stroke-width="${spur ? 6.5 : 9}" stroke-linecap="round"/>`;
     legs += `<path class="leg-gold" d="${d}" fill="none" stroke="#FFD54A"
-               stroke-width="${w}" stroke-dasharray="${dash}" stroke-linecap="round" filter="url(#glow)"
-               opacity="${spur ? .85 : 1}"/>`;
+               stroke-width="${spur ? 3.4 : 5}" stroke-dasharray="${spur ? '7 9' : '11 13'}"
+               stroke-linecap="round" filter="url(#glow)" opacity="${spur ? .85 : 1}"/>`;
+  };
+  for(let i=0;i<ROUTE.length-1;i++){
+    const a = ROUTE[i], b = ROUTE[i+1];
+    const via = hopWaypoint(i, i+1);
+    if(via !== null){
+      drawLeg(a, ROUTE[via], true);        // back into the head — still a spur
+      drawLeg(ROUTE[via], b, false);       // and on out along the main line
+    } else {
+      drawLeg(a, b, a.sub || b.sub);
+    }
   }
+  /* The halo that says "these three are one place". A rounded triangle hull over the cluster's
+     pins, drawn first so route and pins sit on top of it. Fill plus a thick round-joined
+     stroke of the same colour is what rounds the corners off — a plain polygon would read as
+     a diagram, not a region. */
+  const halos = CLUSTERS.map(c=>{
+    const pts = c.idx.map(i=>`${ROUTE[i].x} ${ROUTE[i].y}`).join(' L ');
+    return `<path class="cluster-halo" d="M ${pts} Z" fill="rgba(212,175,55,.13)"
+              stroke="rgba(212,175,55,.13)" stroke-width="74" stroke-linejoin="round"/>
+            <path class="cluster-ring" d="M ${pts} Z" fill="none"
+              stroke="rgba(255,213,74,.34)" stroke-width="2.5" stroke-linejoin="round"
+              stroke-dasharray="6 8"/>`;
+  }).join('');
   svg.innerHTML = `
     <defs>
       <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     </defs>
+    ${halos}
     ${legs}
   `;
 
@@ -4899,6 +5015,10 @@ function speedOrder(){
 // last displayed position per player, so a change can be recognised as a departure
 const _planeAt = {};
 const _planeTurnTimer = {};
+// a cluster exit/entry is flown in two stages via the cluster's head; these hold the second
+// stage's timer and the window during which the per-tick re-render must not touch the token
+const _planeHopTimer = {};
+const _planeHopUntil = {};
 /* Last heading actually written per aircraft, kept UNWRAPPED (it may run past ±360 over a
    race). atan2 returns -180..180, so +90 puts bearings in -90..270 — and CSS transitions the
    raw number, not the direction. Going from -54deg to 257deg (which is the same bearing as
@@ -4962,8 +5082,6 @@ function renderPresenterPlanes(){
         + (p.id===cinematicOvertakeId ? ' overtaking' : '')
         + (p.id===cinematicFallenId ? ' falling-behind' : '')
         + (finishFlourishIds.has(p.id) ? ' landing-flourish' : '');
-      tok.style.left = (node.x/MAP_W*100)+'%';
-      tok.style.top = ((node.y/MAP_H*100) - stackIdx*4.2)+'%';
       // fuselage catches the sun as it moves toward the bright corner; crossing into the
       // brightest zone throws a one-shot lens flare (see maybeFlare)
       const lit = skyIsClear() ? sunlitAmount(node.x, node.y) : 0;
@@ -4971,21 +5089,62 @@ function renderPresenterPlanes(){
       maybeFlare(p.id, node.x, node.y, lit);
       /* Speed: quickest answerer, quickest aircraft. */
       const flightMs = flightMsFor(p, order);
-      tok.style.setProperty('--fly', flightMs+'ms');
-      /* Turning: hold the bearing of the leg being flown for the whole glide, then swing onto
-         the next leg only once the aircraft has arrived. */
       const was = _planeAt[p.id];
       const posNum = +pos;
-      if(was === undefined){
-        applyHeading(tok, p.id, routeHeadingAt(posNum));
-      } else if(was !== posNum){
-        const travel = bearingBetween(was, posNum);
-        if(travel !== null) applyHeading(tok, p.id, travel);
+      const moved = was !== undefined && was !== posNum;
+      const leftPct = (node.x/MAP_W*100)+'%';
+      const topPct  = ((node.y/MAP_H*100) - stackIdx*4.2)+'%';
+      const via = moved ? hopWaypoint(was, posNum) : null;
+      const turnOnArrival = (ms)=>{
         clearTimeout(_planeTurnTimer[p.id]);
         _planeTurnTimer[p.id] = setTimeout(()=>{
           const el = presenterPlaneEls['p-'+p.id];
           if(el) applyHeading(el, p.id, routeHeadingAt(posNum));
-        }, flightMs + 60);   // a beat after touchdown, so the turn reads as a separate move
+        }, ms);   // a beat after touchdown, so the turn reads as a separate move
+      };
+
+      if(!moved && (_planeHopUntil[p.id]||0) > Date.now()){
+        /* Mid-hop re-render. renderPresenterPlanes runs on a tick, and writing left/top again
+           here would snap the aircraft to its destination and skip the waypoint entirely.
+           The hop's own timers own this token's position until they are done. */
+      } else if(via !== null){
+        /* Leaving (or entering) a cluster: route through its head rather than cutting the
+           corner, so the aircraft traces the same loop the gold line draws. Two chained CSS
+           transitions — the return leg is the shorter of the two, because flying back out to
+           HAN should read as a short hop and HAN→MUC as the real departure. */
+        clearTimeout(_planeHopTimer[p.id]);
+        const legA = Math.round(flightMs * 0.4), legB = flightMs - legA;
+        const hub = ROUTE[via];
+        tok.style.setProperty('--fly', legA+'ms');
+        tok.style.left = (hub.x/MAP_W*100)+'%';
+        tok.style.top  = ((hub.y/MAP_H*100) - stackIdx*4.2)+'%';
+        const b1 = bearingBetween(was, via);
+        if(b1 !== null) applyHeading(tok, p.id, b1);
+        _planeHopUntil[p.id] = Date.now() + flightMs + 60;
+        _planeHopTimer[p.id] = setTimeout(()=>{
+          const el = presenterPlaneEls['p-'+p.id];
+          if(!el) return;
+          el.style.setProperty('--fly', legB+'ms');
+          el.style.left = leftPct;
+          el.style.top  = topPct;
+          const b2 = bearingBetween(via, posNum);
+          if(b2 !== null) applyHeading(el, p.id, b2);
+        }, legA + 20);
+        turnOnArrival(flightMs + 80);
+      } else {
+        _planeHopUntil[p.id] = 0;
+        tok.style.left = leftPct;
+        tok.style.top  = topPct;
+        tok.style.setProperty('--fly', flightMs+'ms');
+        /* Turning: hold the bearing of the leg being flown for the whole glide, then swing
+           onto the next leg only once the aircraft has arrived. */
+        if(was === undefined){
+          applyHeading(tok, p.id, routeHeadingAt(posNum));
+        } else if(moved){
+          const travel = bearingBetween(was, posNum);
+          if(travel !== null) applyHeading(tok, p.id, travel);
+          turnOnArrival(flightMs + 60);
+        }
       }
       _planeAt[p.id] = posNum;
       tok.innerHTML = `<div class="stack"><div class="icon">${avatarHTML(p.avatar,'1em','#FFFFFF')}</div><div class="pname">${escapeHtml(p.name)}</div></div><div class="flame-trail">🔥</div>`;
@@ -5907,6 +6066,9 @@ function resetPresenterCinematics(){
   Object.keys(_planeHdg).forEach(k=>delete _planeHdg[k]);
   Object.values(_planeTurnTimer).forEach(clearTimeout);
   Object.keys(_planeTurnTimer).forEach(k=>delete _planeTurnTimer[k]);
+  Object.values(_planeHopTimer).forEach(clearTimeout);
+  Object.keys(_planeHopTimer).forEach(k=>delete _planeHopTimer[k]);
+  Object.keys(_planeHopUntil).forEach(k=>delete _planeHopUntil[k]);
   const zoomWrap = document.getElementById('mapZoomWrap');
   if(zoomWrap) zoomWrap.style.transform = 'scale(1)';
   applyCamera();   // a reset drops any cinematic zoom back to the host's selected CAM
