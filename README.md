@@ -23,9 +23,11 @@ VNA_Race/
 
 Lựa chọn ngôn ngữ lưu **theo từng thiết bị** (`localStorage`), không đồng bộ: MC có thể chạy màn LED tiếng Việt trong khi một khách nước ngoài đọc điện thoại tiếng Anh. Hai bên vẫn thấy **cùng một chữ cái ứng với cùng một đáp án**, vì thứ tự xáo đáp án chỉ phụ thuộc id câu hỏi chứ không phụ thuộc ngôn ngữ.
 
-> ⚠️ File gốc `Question Viet.docx` trộn cả câu tiếng Việt lẫn câu tiếng Anh, còn `Question Viet addon.docx` thuần tiếng Việt. Câu nào thiếu ngôn ngữ nào thì **đã được dịch bổ sung** để nút VI/EN đổi được toàn bộ. Bản dịch **nên được người của Vietnam Airlines rà lại trước sự kiện** — MC sẽ đọc trước các đại lý du lịch và nội dung có nhiều thuật ngữ ngành. Các tên riêng sản phẩm (LotusMiles, Transit Tour, Tour Series, Business FOC, Gold Agent, Premium Economy…) được giữ nguyên tiếng Anh theo cách gọi thông dụng trong ngành.
+> ⚠️ File gốc `Question Viet - 17Aug.docx` trộn cả câu tiếng Việt lẫn câu tiếng Anh (câu 19, 20, 21 là tiếng Anh). Câu nào thiếu ngôn ngữ nào thì **đã được dịch bổ sung** để nút VI/EN đổi được toàn bộ. Bản dịch **nên được người của Vietnam Airlines rà lại trước sự kiện** — MC sẽ đọc trước các đại lý du lịch và nội dung có nhiều thuật ngữ ngành. Các tên riêng sản phẩm (LotusMiles, Transit Tour, Tour Series, Business FOC, Gold Agent, Premium Economy…) được giữ nguyên tiếng Anh theo cách gọi thông dụng trong ngành.
 
-**Ngân hàng câu hỏi:** 30 câu thường từ `Question Viet.docx`, **đánh số đúng theo file** (id N = "Câu N"). Hỏi **lần lượt theo đúng thứ tự** đó, mỗi lượt một câu, **câu đã dùng không bao giờ lặp lại**. Hết 30 câu thì admin không mở thêm được câu mới.
+**Ngân hàng câu hỏi:** 37 câu thường từ `Question Viet - 17Aug.docx`, **đánh số đúng theo file** (id N = "Câu N"). Hỏi **lần lượt theo đúng thứ tự** đó, mỗi lượt một câu, **câu đã dùng không bao giờ lặp lại**. Hết 37 câu thì admin không mở thêm được câu mới.
+
+> **Đáp án được đối chiếu ngược lại với chính file .docx.** Bộ test bung file gốc ra, quét lấy 38 dòng đáp án theo đúng thứ tự, rồi so từng chữ cái với `correct` trong `QUESTION_BANK`. Gõ tay 38 câu × 4 lựa chọn × 2 ngôn ngữ thì sai một chữ cái là chuyện sớm muộn — mà sai kiểu đó **không lộ ra khi nhìn**: MC đọc một đáp án còn game chấm một đáp án khác, giữa lúc đang chạy sự kiện. Test cũng bắt luôn: câu trùng nhau, lựa chọn trùng trong cùng một câu (làm phép xáo sinh ra hai đáp án đúng), và mục nào quên dịch (chữ `vi` bị copy sang `en`).
 
 > **Đáp án đúng giữ nguyên 100% theo file** — chỉ **vị trí A/B/C/D bị xáo**. Muốn cập nhật ngân hàng câu hỏi thì sửa `QUESTION_BANK` trong `public/index.html`: mỗi mục có `id` (số câu trong file), `correct` (chỉ số 0-3 của đáp án đúng **theo thứ tự gốc trong file**, trước khi xáo), và hai khối `vi` / `en`.
 
@@ -39,6 +41,12 @@ Lựa chọn ngôn ngữ lưu **theo từng thiết bị** (`localStorage`), kh�
 2. **Open answers & start clock**: 4 đáp án hiện lên và đồng hồ **20 giây** bắt đầu chạy.
 
 **Đếm ngược & reveal:** đồng hồ đồng bộ trên cả 3 màn hình (player, presenter, admin) — cùng một bộ đếm, sai lệch tối đa 0,2 giây. Đồng hồ **chuyển đỏ và nháy to ở 5 giây cuối**. Hết giờ đáp án **tự động được reveal**, admin không cần bấm gì — màn presenter hiện đáp án đúng (tô xanh) trong **5 giây**, **máy bay chỉ bắt đầu di chuyển sau khi hết 5 giây đó**.
+
+**Tiếng tích tắc đồng hồ** chạy suốt lúc đếm ngược, **to dần ở những giây cuối**: nền đều đều cho tới giây thứ 10, rồi phình lên theo đường bình phương nên mấy giây chót bật hẳn ra thay vì lớn tuyến tính. Hai tiếng cao thấp xen kẽ (1560Hz / 1180Hz) qua bộ lọc bandpass — một cao độ lặp đi lặp lại nghe ra chuông báo cháy chứ không phải đồng hồ.
+
+> **Chỉ kêu ở màn presenter.** Năm mươi cái điện thoại tích tắc lệch nhau vài phần trăm giây là tạp âm, không phải sự hồi hộp — màn LED mới là tiếng của cả phòng. Muốn cho kêu cả trên điện thoại thì báo tôi.
+
+> Âm thanh tổng hợp bằng Web Audio, **không phải file** — app đóng gói thành một file HTML chạy offline, nhét một file WAV đủ hay vào base64 sẽ nặng hơn toàn bộ phần còn lại. Dùng chung `getAudioCtx()` với tiếng vỗ tay: trình duyệt giới hạn số AudioContext mỗi trang, mở thêm cái thứ hai là rò rỉ dần suốt buổi. Có **nút loa 🔊 cạnh nút camera** để tắt — âm thanh mà MC không tắt được giữa chừng là một rủi ro, nếu dàn loa hội trường làm nó ù lên thì phải có đúng một nút bấm, không phải reload trang.
 
 **Chọn rồi mà không bấm Nộp:** hết giờ hệ thống **tự khoá đáp án đang chọn** — vẫn được tính bình thường. Chỉ mất lợi thế về thời gian: đáp án tự khoá được ghi nhận bằng **trọn 20 giây**.
 
@@ -88,6 +96,8 @@ Bật Turbo/Seatbelt mà không bấm Nộp thì không bị phạt và không m
 
 Cùng rất nhiều phần quà nhỏ hấp dẫn khác. Danh sách giải thưởng hiện ngay trong **Hướng dẫn** (trang 1).
 
+**Bản đồ trong Hướng dẫn vẽ bằng đúng những mảnh của màn presenter** — cùng hàm cung cong, cùng cụm khép vòng qua HAN/SGN, cùng quầng vàng. Trước đó nó là một `polyline` chạy thẳng qua `ROUTE` theo thứ tự, tức là cắt thẳng HUI→MUC và PQC→FRA: bản đồ hướng dẫn **mâu thuẫn với cả màn LED lẫn chính dòng chú thích ngay bên dưới nó**. Nhãn của các điểm phụ cũng đổi: thay vì so le trên/dưới theo chỉ số, chúng bám về **phía xa điểm đầu cụm** — kiểu so le cũ đặt nhãn CXR ngay dưới nhãn SGN.
+
 > Vì hạng 4 và hạng 5 **đồng hạng huy chương đồng**, cuộc đua chạy tới khi có **5 máy bay về đích** (trước là 4) — nếu dừng ở 4 thì không bao giờ có người thứ 5 để trao chiếc đồng thứ hai.
 
 Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng xếp hạng admin, màn hình cá nhân khi về đích và **lễ trao giải** (tên nhà vô địch hiện to nhất kèm cúp, ba người còn lại xếp thành hàng vàng–bạc–đồng).
@@ -103,6 +113,10 @@ Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng 
 **✈️ Cabin Bulletin** — ô ngay dưới leaderboard (cao bằng 1/2), viết theo giọng thông báo trên máy bay, tổng kết **câu vừa xong**: người trả lời đúng nhanh nhất 🥇, số người đúng ✅, tỉ lệ đúng 📊, người dẫn đầu đang ở chặng nào 👑, chặng đông máy bay nhất 🛬, và nhịp độ phòng 🚀/🧭/🐢 (theo thời gian trả lời trung bình: dưới 7s Fast, dưới 14s Steady, còn lại Slow).
 
 **Màn hình người chơi** hiện **route map chia 2 hàng** thay cho thanh tiến độ: 17 điểm dừng nối liền nhau, điểm đang đứng sáng vàng và to hơn kèm tên mã, điểm đã qua mờ đi, điểm phía trước mờ hơn nữa.
+
+> **Dải vàng ôm lấy HÀNG TRÒN, không phải cả ô.** Bản đầu tôi cắt dải theo chiều cao ô — tức là từ trên hình tròn xuống dưới cả dòng chữ mã sân bay. Kết quả: vòng tròn đang sáng có **4px hở phía trên nhưng 16px phía dưới**, nhìn ra ngay là bị lệch trong chính vùng vàng của nó. Nay dải neo vào chiều cao cố định của hàng tròn (`--rs-slot-h`) nên vòng tròn nằm chính giữa, hở đều 6px hai bên, và dải cao bằng nhau ở cả ba ô — trước đó ô đang sáng có dòng chữ to hơn một cỡ nên dải cao hơn 1px đúng tại ô đó, thành một bậc thang nhìn thấy được dọc theo mép.
+
+> Nhân tiện: vòng tròn sáng giảm từ 30px xuống **28px** và quầng sáng từ 13px xuống 9px. Một cột chỉ rộng ~36px trên điện thoại thường, nên ở 30px cộng quầng 13px thì vòng tròn lấp kín ô từ mép này sang mép kia và loang cả sang hai ô bên cạnh.
 
 **Đứng trong cụm thì cả cụm sáng vàng thành MỘT vùng.** Ở bất kỳ đâu trong HAN/DAD/HUI, cả ba ô cùng đổ một dải vàng liền mạch (tương tự SGN/CXR/PQC), kèm dòng chữ *"Vùng HAN — một chặng mốc, ba câu hỏi"*. Trên điện thoại ba ô đó **không được đọc ra là ba chặng đang bò qua**: đó là một chặng mốc hỏi ba câu, và dải vàng là thứ nói điều đó. Dải vẽ bằng nền của từng ô, không bo góc hai bên trong, nên các ô cạnh nhau dính liền thành một vùng — chỉ hai đầu dải mới bo tròn.
 
