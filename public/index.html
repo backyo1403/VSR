@@ -232,17 +232,22 @@ input[type=text]:focus{border-color:var(--vna-gold);}
    overflow-x:auto makes the browser compute overflow-y to auto as well, so anything the
    lit stop paints outside the strip box gets clipped. Hence: no translateY lift, a soft
    glow instead of a solid ring, and vertical padding to give that glow somewhere to go. */
+/* Two rows, not one scrolling line. At 17 stops the route needs ~430px and no phone has it,
+   so it used to run off the card and hide the far end behind a scroll nobody thinks to try.
+   A grid of --rs-cols columns wraps it into two readable rows instead; JS sets the column
+   count from ROUTE.length so the two can never disagree. */
 .route-strip{
-  display:flex; align-items:flex-start; gap:1px; margin:14px 0 10px; padding:3px 0 2px;
-  overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch;
+  display:grid; grid-template-columns:repeat(var(--rs-cols,9), 1fr);
+  align-items:start; gap:7px 1px; margin:14px 0 10px; padding:3px 0 2px;
 }
-.route-strip::-webkit-scrollbar{display:none;}
-.rs-stop{flex:1 0 auto; min-width:25px; display:flex; flex-direction:column; align-items:center; gap:2px; transition:opacity .3s ease;}
+.rs-stop{min-width:0; display:flex; flex-direction:column; align-items:center; gap:2px; transition:opacity .3s ease;}
 /* fixed-height slot centres every dot on one line, whatever size the dot is — the leg
    line then sits at 50% and stays aligned with the enlarged "here" dot too */
 .rs-slot{position:relative; width:100%; height:36px; display:flex; align-items:center; justify-content:center;}
 .rs-slot::before{content:''; position:absolute; top:50%; margin-top:-1px; right:50%; width:100%; height:2px; background:rgba(255,255,255,.18);}
-.rs-stop:first-child .rs-slot::before{display:none;}
+/* the leg line reaches back to the previous stop, so the first stop of EACH row has nothing
+   to its left — drawing it there would trail a line off the edge of the card */
+.rs-stop.rs-rowstart .rs-slot::before{display:none;}
 .rs-stop.done .rs-slot::before, .rs-stop.here .rs-slot::before{background:var(--vna-gold);}
 .rs-dot{
   width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center;
@@ -255,14 +260,21 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .rs-stop.done{opacity:.55;}
 .rs-stop.done .rs-dot{background:rgba(212,175,55,.3); border-color:rgba(212,175,55,.6);}
 .rs-stop.ahead{opacity:.32;}
-/* where the player's aircraft actually is — lit, enlarged and named. The wider min-width
-   reserves room for the bigger dot so it never sits on top of its neighbours. */
-.rs-stop.here{opacity:1; min-width:38px;}
+/* where the player's aircraft actually is — lit, enlarged and named */
+.rs-stop.here{opacity:1;}
 .rs-stop.here .rs-dot{
   width:30px; height:30px; font-size:15px; background:var(--vna-gold); border-color:var(--vna-gold-light); color:#261a00;
   box-shadow:0 0 13px rgba(212,175,55,.85);
 }
 .rs-stop.here .rs-code{font-size:9px; font-weight:800; color:var(--vna-gold-light);}
+/* the lit dot is a fixed pixel size inside a 1fr column, so on the narrowest phones it has
+   to come down or it spills over its neighbours — a grid cannot shrink it for us */
+@media (max-width:400px){
+  .rs-dot{width:19px; height:19px; font-size:10px;}
+  .rs-stop.here .rs-dot{width:26px; height:26px; font-size:13px;}
+  .rs-code{font-size:7px;}
+  .rs-stop.here .rs-code{font-size:8.5px;}
+}
 
 .timer-ring-wrap{display:flex; justify-content:center; margin:10px 0 18px;}
 .timer-num{font-family:var(--font-mono); font-weight:700; font-size:15px;}
@@ -359,6 +371,22 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .mv-birds .bd:nth-child(4){animation-duration:1.5s;  animation-delay:-.2s;}
 .mv-birds .bd:nth-child(5){animation-duration:1.2s;  animation-delay:-.9s;}
 @keyframes mvFlap{ 0%,100%{transform:scaleY(1);} 50%{transform:scaleY(.45);} }
+
+/* ---------- cloud passing IN FRONT of the route ----------
+   The .map-life clouds sit behind everything, which is safe but flat: nothing ever crosses
+   an aircraft, so the sky has no depth. These pass over the top instead, and that single
+   overlap is what sells volume. They stay faint and heavily blurred on purpose — a plane
+   has to stay readable straight through one on an LED wall, so this layer is atmosphere,
+   never an occluder. z-index clears the pins and ordinary aircraft but stays under the
+   landing flourish (25), so nobody's arrival is ever fogged out. */
+.map-fog{position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:12;}
+.map-fog > *{position:absolute; will-change:left, opacity; animation-name:mvDrift, mvFade;}
+.map-fog svg{display:block;}
+/* depth is blur plus size plus speed, all set together — near cloud is big, quick and well
+   out of focus because it is close to the lens; far cloud is small, slow and nearly sharp */
+.mv-fog.depth-far {filter:blur(3.5px);}
+.mv-fog.depth-mid {filter:blur(7px);}
+.mv-fog.depth-near{filter:blur(13px);}
 .route-svg{width:100%; height:100%; display:block;}
 .leader-panel{border-radius:26px; padding:22px; display:flex; flex-direction:column;}
 .leader-panel h3{margin:0 0 16px; font-size:14px; text-transform:uppercase; letter-spacing:.06em; color:rgba(255,255,255,.6); flex-shrink:0;}
@@ -1332,6 +1360,7 @@ td{padding:10px; border-bottom:1px solid rgba(255,255,255,.06);}
               <svg class="route-svg" id="routeSvg" viewBox="0 0 1000 666" preserveAspectRatio="none"></svg>
               <div id="airportLayer"></div>
               <div id="planeLayer"></div>
+              <div class="map-fog" id="mapFog"></div>
             </div>
           </div>
         </div>
@@ -1522,7 +1551,7 @@ vi: {
   'rules.h.win':'🏆 Chiến thắng',
   'rules.p.win':'Ai về FINISH trước sẽ thắng. Nếu nhiều máy bay cùng hạ cánh trong một lượt công bố, thứ tự xét theo <strong>số câu đúng</strong>, rồi tới <strong>tổng thời gian trả lời</strong> — nên trả lời nhanh rất quan trọng.',
   'rules.h.prizes':'🎁 Giải thưởng',
-  'rules.p.prizes':'<strong>🏆 Vô địch:</strong> hạng Thương gia + voucher nâng hạng lên Thương gia<br><strong>🥇 Hạng 2:</strong> hạng Phổ thông Đặc biệt<br><strong>🥈 Hạng 3:</strong> hạng Phổ thông<br><strong>🥉 Hạng 4 &amp; 5 (đồng hạng):</strong> voucher kiện hành lý<br><br>Cùng rất nhiều phần quà nhỏ hấp dẫn khác.',
+  'rules.p.prizes':'<strong>🏆 Vô địch:</strong> 1 voucher nâng hạng Thương gia<br><strong>🥇 Hạng 2:</strong> 1 vé máy bay hạng Phổ thông Đặc biệt<br><strong>🥈 Hạng 3:</strong> 1 vé máy bay hạng Phổ thông<br><strong>🥉 Hạng 4 &amp; 5 (đồng hạng):</strong> voucher 1 kiện hành lý<br><br>Cùng rất nhiều phần quà nhỏ hấp dẫn khác.',
   'rules.h.clear':'🌈 Trời quang',
   'rules.p.clear':'Mặc định. Trả lời đúng tiến <strong>1 chặng</strong>; trả lời sai thì đứng nguyên — không bị phạt.',
   'rules.h.turb':'🌪 Nhiễu động',
@@ -1579,7 +1608,7 @@ vi: {
   'p.total':'Tổng thời gian',
   'p.aircraft':'Máy bay',
   'p.of':'trên {n}',
-  'p.powerNote':'☀️ Trời nắng đẹp — trả lời đúng để được <strong>+2 chặng</strong>!',
+  'p.powerNote':'☀️ Trời nắng đẹp — đúng <strong>nhanh nhất +2 chặng</strong>, các câu đúng khác <strong>+1</strong>, sai đứng nguyên.',
   'p.stormNote':'⛈ Bão — chỉ <strong>10 người trả lời đúng nhanh nhất</strong> được ATC cấp phép bay tiếp. Những người còn lại đứng nguyên.',
   'p.waitStart':'ĐANG CHỜ BẮT ĐẦU',
   'p.waitStartMsg':'Câu hỏi sẽ mở ngay thôi. Sẵn sàng cất cánh!',
@@ -1661,8 +1690,8 @@ vi: {
   'prem.title':'Hạng Phổ thông Đặc biệt · Hạng {n}',
   'econ.title':'Hạng Phổ thông · Hạng {n}',
   'std.title':'Hạng {n}',
-  'voucher.upgrade':'Voucher nâng hạng lên Thương gia',
-  'voucher.baggage':'Voucher kiện hành lý',
+  'voucher.upgrade':'Voucher nâng hạng Thương gia',
+  'voucher.baggage':'Voucher 1 kiện hành lý',
   'biz.place1':'nhất', 'biz.place2':'nhì', 'biz.place3':'ba', 'biz.place4':'tư', 'biz.place5':'năm',
   'biz.chasing':'{name} đang bám sát bạn — {gap}',
   'biz.level':'ngang bằng bạn',
@@ -1941,7 +1970,7 @@ en: {
   'rules.h.win':'🏆 Winning',
   'rules.p.win':'First to FINISH wins. If several aircraft land on the same reveal, they\'re ranked by <strong>correct answers</strong>, then by <strong>total answer time</strong> — so answering fast matters.',
   'rules.h.prizes':'🎁 Prizes',
-  'rules.p.prizes':'<strong>🏆 Champion:</strong> Business Class + a Business Class upgrade voucher<br><strong>🥇 2nd:</strong> Premium Economy<br><strong>🥈 3rd:</strong> Economy Class<br><strong>🥉 4th &amp; 5th (joint):</strong> an extra baggage voucher<br><br>Plus plenty of other great smaller prizes.',
+  'rules.p.prizes':'<strong>🏆 Champion:</strong> one Business Class upgrade voucher<br><strong>🥇 2nd:</strong> one Premium Economy ticket<br><strong>🥈 3rd:</strong> one Economy Class ticket<br><strong>🥉 4th &amp; 5th (joint):</strong> one extra-baggage voucher<br><br>Plus plenty of other great smaller prizes.',
   'rules.h.clear':'🌈 Clear Skies',
   'rules.p.clear':'The default. Correct answer advances you <strong>1 leg</strong>; a wrong answer holds your position — no penalty.',
   'rules.h.turb':'🌪 Turbulence',
@@ -1995,7 +2024,7 @@ en: {
   'p.total':'Total time',
   'p.aircraft':'Aircraft',
   'p.of':'of {n}',
-  'p.powerNote':'☀️ Sunshine — answer correctly for <strong>+2 legs</strong>!',
+  'p.powerNote':'☀️ Sunshine — <strong>fastest correct +2 legs</strong>, every other correct <strong>+1</strong>, wrong answers hold.',
   'p.stormNote':'⛈ Storm — only the <strong>10 fastest correct answers</strong> get ATC clearance to continue. Everyone else holds position.',
   'p.waitStart':'WAITING FOR GAME TO START',
   'p.waitStartMsg':'Question will be open shortly. Get ready for takeoff!',
@@ -2075,7 +2104,7 @@ en: {
   'econ.title':'Economy Class · {n} place',
   'std.title':'{n} place',
   'voucher.upgrade':'Business Class upgrade voucher',
-  'voucher.baggage':'Extra baggage voucher',
+  'voucher.baggage':'One extra-baggage voucher',
   'biz.place1':'1st','biz.place2':'2nd','biz.place3':'3rd','biz.place4':'4th','biz.place5':'5th',
   'biz.chasing':'{name} is chasing you — {gap}',
   'biz.level':'level with you',
@@ -3621,18 +3650,20 @@ function renderPlayerRouteStrip(me){
   const strip = document.getElementById('pRouteStrip');
   if(!strip) return;
   const pos = me.position;
+  /* Split across two rows. Half the stops per row, rounded up, so 17 reads 9 + 8 and the
+     rows stay near enough the same length to look deliberate. The column count goes to CSS
+     rather than being hard-coded there, so adding stops to ROUTE re-balances the rows
+     instead of pushing them off the phone again. */
+  const cols = Math.ceil(ROUTE.length / 2);
+  strip.style.setProperty('--rs-cols', cols);
   strip.innerHTML = ROUTE.map((node,i)=>{
     const cls = i===pos ? 'here' : (i<pos ? 'done' : 'ahead');
-    return `<div class="rs-stop ${cls}${node.checkpoint?' cp':''}">
+    const rowStart = (i % cols) === 0;
+    return `<div class="rs-stop ${cls}${node.checkpoint?' cp':''}${rowStart?' rs-rowstart':''}">
       <div class="rs-slot"><div class="rs-dot">${node.icon}</div></div>
       <div class="rs-code">${node.code}</div>
     </div>`;
   }).join('');
-  // keep the lit stop in view once the route runs wider than the phone
-  const here = strip.querySelector('.rs-stop.here');
-  if(here && strip.scrollWidth > strip.clientWidth){
-    strip.scrollLeft = here.offsetLeft - strip.clientWidth/2 + here.offsetWidth/2;
-  }
 }
 
 /* Top 3 fly business class: the whole phone turns Vietnam Airlines gold, and they're told
@@ -3943,6 +3974,27 @@ function renderPlayer(){
 /* ============================================================
    PRESENTER VIEW
    ============================================================ */
+/* A leg is a shallow arc, not a ruled line — a route drawn on a map should look flown, not
+   surveyed. Quadratic Bézier with the control point pushed BOW_K of the leg length
+   perpendicular to travel, always to the same side, which is what gives the whole route its
+   consistent great-circle lean instead of a random wobble.
+   The bow is deliberately shallow and capped. Aircraft still travel stop-to-stop in a
+   straight CSS transition, so the curve's midpoint is the furthest a plane can appear from
+   its own route line — half the control offset. At these numbers that is ~13 map units,
+   around a third of an aircraft icon on a wall-sized screen. Any deeper and the planes would
+   visibly cut the corner. */
+const BOW_K = 0.10;      // control-point offset as a fraction of leg length
+const BOW_MAX = 26;      // ...but never more than this many map units, so long legs stay sane
+function legPath(a, b){
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len = Math.hypot(dx, dy);
+  if(len < 1) return `M ${a.x} ${a.y} L ${b.x} ${b.y}`;
+  const off = Math.min(len * BOW_K, BOW_MAX);
+  // unit normal, right of travel
+  const nx = -dy / len, ny = dx / len;
+  const cx = (a.x + b.x)/2 + nx*off, cy = (a.y + b.y)/2 + ny*off;
+  return `M ${a.x} ${a.y} Q ${cx.toFixed(1)} ${cy.toFixed(1)} ${b.x} ${b.y}`;
+}
 function buildRouteSvg(){
   const svg = document.getElementById('routeSvg');
   svg.setAttribute('viewBox','0 0 '+MAP_W+' '+MAP_H);
@@ -3959,9 +4011,10 @@ function buildRouteSvg(){
     const spur = a.sub || b.sub;
     const w = spur ? 3.4 : 5;
     const dash = spur ? '7 9' : '11 13';
-    legs += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="rgba(20,35,60,.55)"
+    const d = legPath(a, b);
+    legs += `<path d="${d}" fill="none" stroke="rgba(20,35,60,.55)"
                stroke-width="${spur ? 6.5 : 9}" stroke-linecap="round"/>`;
-    legs += `<line class="leg-gold" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="#FFD54A"
+    legs += `<path class="leg-gold" d="${d}" fill="none" stroke="#FFD54A"
                stroke-width="${w}" stroke-dasharray="${dash}" stroke-linecap="round" filter="url(#glow)"
                opacity="${spur ? .85 : 1}"/>`;
   }
@@ -4072,6 +4125,19 @@ function birdsSvg(n, w){
   }
   return `<svg width="${Math.round(n*w)}" height="${Math.round(w*1.6)}" viewBox="0 0 ${n*w} ${w*1.6}" aria-hidden="true">${g}</svg>`;
 }
+/* One cloud, drawn as overlapping lobes. `tone` is what makes a cloud read as heavy or
+   wispy: a pale grey-blue fill is a rain-bearing cloud seen from above, near-white is a thin
+   one catching the sun. Both are needed — a sky of identical white puffs looks like a
+   pattern, not weather. */
+function cloudSvg(w, tone){
+  const h = Math.round(w*0.42);
+  return `<svg width="${Math.round(w)}" height="${h}" viewBox="0 0 200 80" aria-hidden="true">
+    <ellipse cx="58"  cy="52" rx="56" ry="25" fill="${tone}"/>
+    <ellipse cx="108" cy="35" rx="47" ry="30" fill="${tone}"/>
+    <ellipse cx="150" cy="53" rx="42" ry="24" fill="${tone}"/>
+    <ellipse cx="88"  cy="58" rx="52" ry="21" fill="${tone}"/>
+  </svg>`;
+}
 function initMapLife(){
   const layer = document.getElementById('mapLife');
   if(!layer || layer.dataset.built) return;
@@ -4105,9 +4171,7 @@ function initMapLife(){
   });
   // a couple of extra clouds drifting right across, low and slow
   for(let i=0;i<3;i++){
-    const w = rnd(90,190);
-    add('mv-cloud',
-      `<svg width="${w}" height="${w*0.4}" viewBox="0 0 200 80"><ellipse cx="60" cy="50" rx="55" ry="26" fill="#fff"/><ellipse cx="112" cy="36" rx="46" ry="29" fill="#fff"/><ellipse cx="152" cy="52" rx="40" ry="23" fill="#fff"/></svg>`,
+    add('mv-cloud', cloudSvg(rnd(90,190), '#fff'),
       { top: rnd(4,68), x0:-22, x1:112, secs: rnd(150,260), op: rnd(.16,.3) });
   }
   // flocks, high up and unhurried
@@ -4118,6 +4182,50 @@ function initMapLife(){
       secs: rnd(95,150), op: rnd(.4,.6), flip: back
     });
   }
+  buildForegroundCloud();
+}
+
+/* Cloud that drifts over the top of the route.
+   Three bands, and every property moves together with the band: the near one is wide, quick,
+   badly out of focus and the most opaque; the far one is small, slow, almost sharp and
+   barely there. That is what reads as distance — vary only size, or only speed, and the eye
+   reads a flat sheet sliding past instead of a sky with depth in it.
+   Tones alternate heavy grey-blue / light white so the bank looks like weather rather than
+   a repeated sprite. Even the near band tops out around a fifth opacity: this passes over
+   aircraft and pins, so it has to stay something you see THROUGH. */
+const FOG_BANDS = [
+  { cls:'depth-far',  n:3, w:[110,170], secs:[210,300], op:[.08,.13], top:[2,70] },
+  { cls:'depth-mid',  n:3, w:[190,280], secs:[140,205], op:[.12,.17], top:[0,72] },
+  { cls:'depth-near', n:2, w:[330,470], secs:[78,115],  op:[.15,.22], top:[-6,66] },
+];
+const FOG_TONES = ['#ffffff', '#dce6f2', '#ffffff', '#c9d6e8'];   // light, heavy, light, heavier
+function buildForegroundCloud(){
+  const layer = document.getElementById('mapFog');
+  if(!layer || layer.dataset.built) return;
+  layer.dataset.built = '1';
+  const rnd = (a,b)=>a + Math.random()*(b-a);
+  let k = 0;
+  FOG_BANDS.forEach(band=>{
+    for(let i=0;i<band.n;i++){
+      const back = (k % 3) === 2;          // one in three drifts the other way
+      const w = rnd(band.w[0], band.w[1]);
+      const el = document.createElement('div');
+      el.className = 'mv-fog ' + band.cls;
+      el.innerHTML = cloudSvg(w, FOG_TONES[k % FOG_TONES.length]);
+      el.style.top = rnd(band.top[0], band.top[1]) + '%';
+      // start and finish clear of the frame, so a cloud is never seen to appear or vanish
+      el.style.setProperty('--x0', (back ? 118 : -34) + '%');
+      el.style.setProperty('--x1', (back ? -34 : 118) + '%');
+      el.style.setProperty('--op', rnd(band.op[0], band.op[1]).toFixed(3));
+      const secs = rnd(band.secs[0], band.secs[1]);
+      el.style.animationDuration = secs + 's';
+      el.style.animationTimingFunction = 'linear';
+      el.style.animationIterationCount = 'infinite';
+      el.style.animationDelay = (-Math.random()*secs) + 's';   // mid-flight on the first frame
+      layer.appendChild(el);
+      k++;
+    }
+  });
 }
 
 /* ============================================================

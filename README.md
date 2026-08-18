@@ -64,6 +64,8 @@ Bật Turbo/Seatbelt mà không bấm Nộp thì không bị phạt và không m
 
 **☀️ Trời nắng đẹp / Sunshine** — nút của admin, **một lần duy nhất cả ván**, bấm trước khi mở câu hỏi. Màn LED hiện ☀️ TRỜI NẮNG ĐẸP và **câu hỏi Sunshine riêng** được đưa ra thay cho câu thường. Người **trả lời đúng nhanh nhất** được **+2 chặng**, người đúng khác +1, người sai đứng nguyên. Không bật được trên chặng turbulence/storm. Huỷ trước khi mở câu thì được trả lại lượt. Cả ba trợ giúp bị khoá.
 
+> Dòng nhắc trên điện thoại người chơi trước đây ghi "trả lời đúng để được **+2 chặng**", tức là **hứa +2 cho mọi người trả lời đúng** trong khi luật thật chỉ cho người nhanh nhất +2, còn lại +1. Nay dòng đó ghi đúng luật, khớp với trang Hướng dẫn và với `adminRevealAnswer`.
+
 **Turbulence** — tự động ở **chặng 6 và chặng 10**, cộng thêm **một lượt bất ngờ ngay sau khi máy bay đầu tiên tới SGN**. Màn LED chuyển theme mưa sấm chớp, badge đổi từ 🌈 Clear Skies sang 🌪 Turbulence. Trả lời đúng **đứng nguyên**, **không đúng thì lùi 1 chặng** (kể cả người không trả lời) — trừ khi bật 🔒 Fasten Seatbelt. 50:50 và Turbo bị khoá.
 
 > Lượt nhiễu động theo SGN được tính bằng **vị trí ≥ SGN** chứ không phải "hạ cánh đúng ở SGN", vì một cú Turbo (+2 chặng) có thể đưa máy bay vượt thẳng qua SGN mà không dừng lại. Nếu lượt kế tiếp đã có thời tiết riêng (chặng 6/10 hoặc chặng Storm) thì nó tự đẩy sang lượt sau để không chồng lên nhau. Bấm *Undo* sẽ trả lại trạng thái trước khi lượt này được kích hoạt.
@@ -78,11 +80,11 @@ Bật Turbo/Seatbelt mà không bấm Nộp thì không bị phạt và không m
 
 | Hạng | Huy chương | Giải |
 |---|---|---|
-| 1 | 🏆 Cúp vô địch | hạng Thương gia + **voucher nâng hạng lên Thương gia** |
-| 2 | 🥇 Vàng | hạng Phổ thông Đặc biệt |
-| 3 | 🥈 Bạc | hạng Phổ thông |
-| 4 | 🥉 Đồng | **voucher kiện hành lý** |
-| 5 | 🥉 Đồng *(đồng hạng với hạng 4)* | **voucher kiện hành lý** |
+| 1 | 🏆 Cúp vô địch | 1 voucher nâng hạng Thương gia |
+| 2 | 🥇 Vàng | 1 vé máy bay hạng Phổ thông Đặc biệt |
+| 3 | 🥈 Bạc | 1 vé máy bay hạng Phổ thông |
+| 4 | 🥉 Đồng | voucher 1 kiện hành lý |
+| 5 | 🥉 Đồng *(đồng hạng với hạng 4)* | voucher 1 kiện hành lý |
 
 Cùng rất nhiều phần quà nhỏ hấp dẫn khác. Danh sách giải thưởng hiện ngay trong **Hướng dẫn** (trang 1).
 
@@ -100,7 +102,9 @@ Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng 
 
 **✈️ Cabin Bulletin** — ô ngay dưới leaderboard (cao bằng 1/2), viết theo giọng thông báo trên máy bay, tổng kết **câu vừa xong**: người trả lời đúng nhanh nhất 🥇, số người đúng ✅, tỉ lệ đúng 📊, người dẫn đầu đang ở chặng nào 👑, chặng đông máy bay nhất 🛬, và nhịp độ phòng 🚀/🧭/🐢 (theo thời gian trả lời trung bình: dưới 7s Fast, dưới 14s Steady, còn lại Slow).
 
-**Màn hình người chơi** hiện **route map nằm ngang** thay cho thanh tiến độ: 17 điểm dừng nối liền nhau, điểm đang đứng sáng vàng và to hơn kèm tên mã, điểm đã qua mờ đi, điểm phía trước mờ hơn nữa.
+**Màn hình người chơi** hiện **route map chia 2 hàng** thay cho thanh tiến độ: 17 điểm dừng nối liền nhau, điểm đang đứng sáng vàng và to hơn kèm tên mã, điểm đã qua mờ đi, điểm phía trước mờ hơn nữa.
+
+> **Hai hàng chứ không phải một hàng cuộn ngang.** Ở 17 điểm dừng thì tuyến cần ~430px mà không điện thoại nào có — bản cũ tràn ra khỏi thẻ và giấu nửa cuối sau một thanh cuộn không ai nghĩ tới việc kéo. Nay là grid `--rs-cols` cột (bằng `ceil(ROUTE.length/2)`, tức 9 + 8), **số cột do JS đặt** nên thêm điểm dừng vào `ROUTE` thì hai hàng tự cân lại thay vì lại tràn ra ngoài. Đoạn nối chặng vẽ ngược về điểm trước, nên **điểm đầu của MỖI hàng** phải tắt nó đi (`.rs-rowstart`) — không thì có một vạch thò ra mép thẻ.
 
 **📖 Hướng dẫn** có 5 trang: (1) luật chơi + giải thưởng, (2) **bản đồ hành trình vẽ tĩnh** — cùng đường cong chữ S và cùng toạ độ mà màn presenter dùng, để người chơi hình dung trước sa bàn sẽ đua, (3) các loại thời tiết, (4) ba trợ giúp, (5) tài liệu chương trình (Sales Kit tiếng Việt + tiếng Anh).
 
@@ -108,11 +112,11 @@ Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng 
 
 | Hạng | Khoang | Ruy-băng | Voucher hiện trên ruy-băng |
 |---|---|---|---|
-| 1 | Thương gia | nền **vàng** cả màn hình | 🎟 Voucher nâng hạng lên Thương gia |
+| 1 | Thương gia | nền **vàng** cả màn hình | 🎟 Voucher nâng hạng Thương gia |
 | 2 | Phổ thông Đặc biệt | nền **xanh ngọc** cả màn hình | — |
 | 3 | Phổ thông | ruy-băng xanh dương | — |
-| 4 | *(bình thường)* | ruy-băng xám | 🧳 Voucher kiện hành lý |
-| 5 | *(bình thường)* | ruy-băng xám | 🧳 Voucher kiện hành lý |
+| 4 | *(bình thường)* | ruy-băng xám | 🧳 Voucher 1 kiện hành lý |
+| 5 | *(bình thường)* | ruy-băng xám | 🧳 Voucher 1 kiện hành lý |
 
 Từ hạng sáu trở xuống không có ruy-băng. Cả năm hạng đầu đều kèm dòng báo ai đang bám sát phía sau và cách bao nhiêu chặng.
 
@@ -142,7 +146,23 @@ Tranh **phủ kín panel, sát tới viền bo ngoài** — không có dải tr�
 
 > **Đường bay vàng vẽ hai nét chồng nhau**: một nét viền tối bên dưới rồi nét vàng đứt nét bên trên. Nét chấm mảnh của bản cũ hợp với nền gradient phẳng, nhưng đặt lên tranh thì mất hút giữa vùng nước sáng và bãi cát.
 
+**Mỗi chặng là một cung cong nhẹ**, không phải đường kẻ thước — đường bay vẽ trên bản đồ phải trông như *đã bay*, không phải như *đã đo*. Bézier bậc hai, điểm điều khiển đẩy vuông góc `BOW_K` (10%) chiều dài chặng và **luôn về cùng một bên**, nên cả tuyến nghiêng đều như đường great-circle chứ không lượn sóng ngẫu nhiên.
+
+> **Độ cong bị chặn có chủ đích.** Máy bay vẫn bay thẳng điểm-tới-điểm bằng CSS transition, nên **điểm giữa cung là chỗ máy bay lệch xa đường bay của chính nó nhất** — đúng bằng một nửa độ đẩy, khoảng 13 đơn vị bản đồ, chừng một phần ba icon máy bay trên màn LED. Cong sâu hơn là thấy rõ máy bay cắt cua. Muốn cong hẳn thì phải chuyển máy bay sang `offset-path` bám theo chính đường cong đó.
+
 **Bản đồ có sự sống** — vài chiếc thuyền buồm trôi chậm trên sông, dăm đàn chim bay ngang, và mấy đám mây trôi qua khung hình. Tất cả đều **rất chậm** (một lượt qua màn mất 90–260 giây) và **nằm dưới đường bay lẫn các điểm dừng** — không thứ gì được phép che một điểm dừng hay một máy bay trên màn LED.
+
+**Mây trôi phía TRƯỚC bản đồ** — lớp `.map-fog` nằm *trên* điểm dừng và máy bay, khác hẳn lớp `.map-life` ở trên. Đây mới là thứ tạo chiều sâu: có vật thể **đi ngang qua trước mặt máy bay** thì mắt mới đọc ra bầu trời có khối, chứ mây chỉ chạy phía sau thì khung hình vẫn phẳng.
+
+| Dải | Số mây | Kích thước | Một vòng qua màn | Độ mờ | Blur |
+|---|---|---|---|---|---|
+| Xa | 3 | 110–170px | 210–300s | .08–.13 | 3,5px |
+| Giữa | 3 | 190–280px | 140–205s | .12–.17 | 7px |
+| Gần | 2 | 330–470px | 78–115s | .15–.22 | 13px |
+
+Bốn thứ đổi **cùng nhau** theo dải — to hơn, nhanh hơn, mờ ống kính hơn, đậm hơn. Chỉ đổi kích thước hoặc chỉ đổi tốc độ thì mắt đọc ra một tấm phông trượt ngang, không phải bầu trời. Tông màu xen kẽ trắng sáng / xanh xám nặng (`FOG_TONES`) để cụm mây không thành một sprite lặp. Một trong ba đám trôi ngược chiều.
+
+> **Ngay cả dải gần cũng chỉ tới ~22% đục.** Lớp này đi qua trước máy bay và điểm dừng nên bắt buộc phải là thứ **nhìn xuyên qua được** — nó là không khí, không bao giờ là vật che. `z-index:12` vượt lên trên pin và máy bay thường nhưng vẫn **nằm dưới hiệu ứng hạ cánh (25)**, nên khoảnh khắc về đích của ai không bao giờ bị mây phủ.
 
 > **Tuyến thuyền không phải ước lượng bằng mắt.** Bức tranh được lấy mẫu trên lưới 50×33 và phân loại theo màu pixel (xanh dương trội rõ, không gần trắng); 5 tuyến trong `SHIPPING_LANES` là những dải cho kết quả "nước" từ đầu đến cuối. Bộ test kiểm lại từng tuyến trên chính bản đồ nước đó — lần chạy đầu đã bắt được một tuyến ở đường chân trời đi xuyên qua một hòn đảo nhỏ. Toạ độ tính theo phần trăm bản đồ nên thuyền giữ đúng luồng nước ở mọi kích thước màn.
 
