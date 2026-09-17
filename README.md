@@ -54,7 +54,7 @@ File nằm ở `public/vendor/music/`. **Chỉ phát ở trình duyệt đang m�
 
 | Khi nào | File | Cách phát |
 |---|---|---|
-| **Câu hỏi hiện lên** (sau *Next question*, trước khi mở đáp án) | `question.mp3` (0:05) | một lần, vol 0.85 |
+| **Câu hỏi hiện lên** (sau *Next question*, trước khi mở đáp án) | `question.mp3` (1:02) | một lần, vol 0.85 |
 | Đồng hồ chạy, **lượt 1–7** | `q1.mp3` (3:01) | lặp, vol 0.55 |
 | Đồng hồ chạy, **lượt 8–14** | `q2.mp3` (2:15) | lặp, vol 0.55 |
 | Đồng hồ chạy, **lượt 15–18** | `q3.mp3` (0:27) | lặp, vol 0.55 |
@@ -65,7 +65,9 @@ File nằm ở `public/vendor/music/`. **Chỉ phát ở trình duyệt đang m�
 
 Nhạc vào đúng lúc đồng hồ bắt đầu và ra đúng lúc đồng hồ dừng (fade 550ms — cắt phựt nghe như hỏng máy). Chọn bài theo **số lượt chơi** (`state.currentQ + 1`), **không phải id câu hỏi**: id nhảy lên 99 ở lượt Trời nắng đẹp và sẽ làm lệch cả mạch nhạc. Tất cả đều **lặp**, vì `q3.mp3` chỉ dài 27 giây, ngắn hơn một câu hỏi 20 giây cộng thời gian đọc đề.
 
-> **Nhạc câu hỏi vào đúng lúc chữ hiện ra.** Dùng lại `questionStagedOnScreen()` — hàm đã chờ hết thẻ thời tiết 10 giây (hoặc quãng chờ 4 giây khi trời quang) — nên sting không bao giờ vang lên trước khi có gì để đọc. Khoá theo `currentQ + legAnnouncedAt + id câu hỏi` để render lại cùng một câu đang stage không kích hoạt lại.
+> **Nhạc câu hỏi vào đúng lúc chữ hiện ra.** Dùng lại `questionStagedOnScreen()` — hàm đã chờ hết thẻ thời tiết 10 giây (hoặc quãng chờ 4 giây khi trời quang) — nên nhạc không bao giờ vang lên trước khi có gì để đọc. Khoá theo `currentQ + legAnnouncedAt + id câu hỏi` để render lại cùng một câu đang stage không kích hoạt lại.
+
+> Bài này dài **1 phút**, còn MC mở đáp án lúc nào là tuỳ họ — nên bình thường nó **vẫn đang chạy** khi đồng hồ bắt đầu. `updateRoundMusic` fade nó ra khi nhạc nền của lượt vào, thay vì để hai bài chồng lên nhau.
 
 > **Tiếng khoá đáp án đúng lúc đồng hồ về 0.** Nhạc nền của lượt đó đang fade ra trong cùng một nhịp (`updateRoundMusic` nhận `false` ở chính tick ấy), nên sting rơi lên trên nền nhạc đang lịm đi — nghe ra tiếng một cánh cửa đóng lại. `secondsRemaining()` kẹp ở 0 và **giữ nguyên 0 suốt nhiều tick** trong lúc chờ admin reveal, nên phải có cờ một-lần; cờ đó khoá theo `questionOpenedAt` chứ không theo số lượt, để host lùi lại và mở lại đúng câu đó vẫn có sting riêng. Ở giây 0 **không có tiếng tích tắc** — nhịp đó thuộc về sting.
 

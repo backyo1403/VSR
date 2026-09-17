@@ -3734,6 +3734,10 @@ function updateRoundMusic(clockRunning){
   const want = clockRunning ? roundMusicFile((state.currentQ||0) + 1) : null;
   if(want === _roundMusicFile) return;
   if(_roundMusicFile) fadeOutMusic(_roundMusicFile);
+  /* The reading-the-question track runs a full minute, and the host opens the answers
+     whenever they are ready — so it is normally still playing when the clock starts. Hand
+     over to the round soundtrack rather than letting the two stack on top of each other. */
+  if(want) fadeOutMusic(MUSIC_QUESTION, 400);
   _roundMusicFile = want;
   // loops, because a 20s question can outlast a short track (q3 is only ~20s of audio)
   if(want) startMusic(want, MUSIC_VOL.round, { loop:true });
