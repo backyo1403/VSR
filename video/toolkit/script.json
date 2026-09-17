@@ -1,0 +1,366 @@
+[
+  {
+    "id": "01_open",
+    "minDur": 7600,
+    "segments": []
+  },
+  {
+    "id": "02_gioithieu",
+    "segments": [
+      {
+        "t": "Kính chào Quý đại lý!",
+        "gap": 240
+      },
+      {
+        "t": "Chào mừng đến với VNA Sky Race — đường đua bầu trời của Vietnam Airlines.",
+        "gap": 260,
+        "cue": "MOVE1"
+      },
+      {
+        "t": "Cả hội trường cùng đua trên một bản đồ chung, Quý vị chỉ cần chiếc điện thoại.",
+        "gap": 220,
+        "cue": "MOVE2"
+      },
+      {
+        "t": "Mỗi câu đúng đưa máy bay tiến thêm một chặng.",
+        "gap": 160,
+        "cue": "MOVE3"
+      }
+    ]
+  },
+  {
+    "id": "03_batdau",
+    "minDur": 14500,
+    "segments": [
+      {
+        "t": "Bắt đầu rất đơn giản.",
+        "gap": 260
+      },
+      {
+        "t": "Quét mã QR trên màn hình,",
+        "gap": 340,
+        "cue": "S1"
+      },
+      {
+        "t": "nhập tên của mình,",
+        "gap": 700,
+        "cue": "S2"
+      },
+      {
+        "t": "chọn một chiếc máy bay,",
+        "gap": 560,
+        "cue": "S3"
+      },
+      {
+        "t": "rồi bấm Lên máy bay.",
+        "gap": 380,
+        "cue": "S4"
+      },
+      {
+        "t": "Thế là Quý vị đã ở trên đường băng.",
+        "gap": 160,
+        "cue": "S5"
+      }
+    ]
+  },
+  {
+    "id": "04_bando",
+    "segments": [
+      {
+        "t": "Xuất phát từ đường băng,",
+        "cue": "START",
+        "gap": 140
+      },
+      {
+        "t": "bay qua Paris,",
+        "cue": "CDG",
+        "gap": 60
+      },
+      {
+        "t": "Amsterdam,",
+        "cue": "AMS",
+        "gap": 60
+      },
+      {
+        "t": "Hà Nội,",
+        "cue": "HAN",
+        "gap": 60
+      },
+      {
+        "t": "Munich,",
+        "cue": "MUC",
+        "gap": 60
+      },
+      {
+        "t": "Moscow,",
+        "cue": "MOW",
+        "gap": 60
+      },
+      {
+        "t": "London,",
+        "cue": "LHR",
+        "gap": 60
+      },
+      {
+        "t": "Milan,",
+        "cue": "MXP",
+        "gap": 60
+      },
+      {
+        "t": "Copenhagen,",
+        "cue": "CPH",
+        "gap": 60
+      },
+      {
+        "t": "Hồ Chí Minh,",
+        "cue": "SGN",
+        "gap": 60
+      },
+      {
+        "t": "Frankfurt,",
+        "cue": "FRA",
+        "gap": 140
+      },
+      {
+        "t": "rồi về đích.",
+        "cue": "FINISH"
+      }
+    ]
+  },
+  {
+    "id": "05_checkpoint",
+    "segments": [
+      {
+        "t": "Bốn điểm mốc:",
+        "gap": 220
+      },
+      {
+        "t": "Hà Nội,",
+        "cue": "HAN",
+        "gap": 120
+      },
+      {
+        "t": "Special Checkpoint,",
+        "cue": "SPC",
+        "gap": 120
+      },
+      {
+        "t": "Hồ Chí Minh,",
+        "cue": "SGN",
+        "gap": 120
+      },
+      {
+        "t": "và vạch đích.",
+        "cue": "FINISH",
+        "gap": 380
+      },
+      {
+        "t": "Tại Hà Nội và Hồ Chí Minh,",
+        "cue": "ZOOM",
+        "gap": 140
+      },
+      {
+        "t": "phải trả lời đúng ba câu mới rời được cụm.",
+        "cue": "CLUSTER"
+      }
+    ]
+  },
+  {
+    "id": "06_nhipchoi",
+    "minDur": 15500,
+    "segments": [
+      {
+        "t": "Mỗi chặng là một câu hỏi.",
+        "cue": "SHOWQ",
+        "gap": 280
+      },
+      {
+        "t": "Cả phòng cùng đọc đề trước,",
+        "gap": 220
+      },
+      {
+        "t": "rồi bốn đáp án mở ra cùng đồng hồ hai mươi giây.",
+        "cue": "OPEN",
+        "gap": 1300
+      },
+      {
+        "t": "Trả lời đúng, máy bay lập tức cất cánh tới chặng kế tiếp.",
+        "cue": "REVEAL"
+      }
+    ]
+  },
+  {
+    "id": "07_wx_clear",
+    "minDur": 9200,
+    "segments": [
+      {
+        "t": "Bầu trời không phải lúc nào cũng đẹp.",
+        "gap": 300
+      },
+      {
+        "t": "Trời quang: trả lời đúng, máy bay tiến một chặng.",
+        "cue": "MOVE",
+        "gap": 300
+      },
+      {
+        "t": "Trả lời sai thì đứng nguyên."
+      }
+    ]
+  },
+  {
+    "id": "08_wx_turb",
+    "minDur": 9500,
+    "segments": [
+      {
+        "t": "Nhiễu động thì khắc nghiệt hơn.",
+        "gap": 260
+      },
+      {
+        "t": "Đúng chỉ giữ được vị trí,",
+        "gap": 200
+      },
+      {
+        "t": "sai là bị đẩy lùi một chặng.",
+        "cue": "MOVE"
+      }
+    ]
+  },
+  {
+    "id": "09_wx_storm",
+    "minDur": 11800,
+    "segments": [
+      {
+        "t": "Gặp bão, cả đội hình phải xin phép đài không lưu.",
+        "gap": 280
+      },
+      {
+        "t": "Chỉ mười người đúng nhanh nhất được bay tiếp.",
+        "cue": "ATC",
+        "gap": 1100
+      },
+      {
+        "t": "Số còn lại phải chờ tại chỗ.",
+        "cue": "MOVE"
+      }
+    ]
+  },
+  {
+    "id": "10_wx_sun",
+    "minDur": 12500,
+    "segments": [
+      {
+        "t": "Trời nắng đẹp là cơ hội vàng.",
+        "gap": 280
+      },
+      {
+        "t": "Một câu hỏi đặc biệt:",
+        "gap": 200
+      },
+      {
+        "t": "trả lời đúng được tiến một chặng,",
+        "cue": "PLUS1",
+        "gap": 650
+      },
+      {
+        "t": "người đúng nhanh nhất bay liền hai chặng.",
+        "cue": "PLUS2"
+      }
+    ]
+  },
+  {
+    "id": "11_trogiup",
+    "minDur": 17500,
+    "segments": [
+      {
+        "t": "Tới Munich, ba trợ giúp được mở khoá, mỗi thứ một lần duy nhất.",
+        "gap": 420,
+        "cue": "UNLOCK"
+      },
+      {
+        "t": "Năm mươi năm mươi: loại bỏ hai đáp án sai.",
+        "gap": 650,
+        "cue": "FIFTY"
+      },
+      {
+        "t": "Turbo Boost: đúng tiến hai chặng, sai lùi một chặng.",
+        "gap": 650,
+        "cue": "TURBO"
+      },
+      {
+        "t": "Thắt dây an toàn: không bị lùi khi gặp nhiễu động.",
+        "gap": 160,
+        "cue": "BELT"
+      }
+    ]
+  },
+  {
+    "id": "12_vedich",
+    "minDur": 12500,
+    "segments": [
+      {
+        "t": "Chặng cuối cùng.",
+        "cue": "FLY",
+        "gap": 380
+      },
+      {
+        "t": "Cuộc đua khép lại khi có năm máy bay về đích.",
+        "gap": 220
+      },
+      {
+        "t": "Ai hạ cánh trước sẽ thắng.",
+        "cue": "LAND"
+      }
+    ]
+  },
+  {
+    "id": "13_giaithuong",
+    "segments": [
+      {
+        "t": "Và phần thưởng:",
+        "gap": 340
+      },
+      {
+        "t": "Vô địch: voucher nâng hạng Thương gia.",
+        "gap": 320,
+        "cue": "P1"
+      },
+      {
+        "t": "Hạng nhì: vé hạng Phổ thông Đặc biệt.",
+        "gap": 300,
+        "cue": "P2"
+      },
+      {
+        "t": "Hạng ba: vé hạng Phổ thông.",
+        "gap": 300,
+        "cue": "P3"
+      },
+      {
+        "t": "Hạng tư và hạng năm: voucher hành lý.",
+        "gap": 300,
+        "cue": "P4"
+      },
+      {
+        "t": "Cùng nhiều phần quà hấp dẫn khác.",
+        "gap": 160,
+        "cue": "P5"
+      }
+    ]
+  },
+  {
+    "id": "14_loichuc",
+    "minDur": 11000,
+    "segments": [
+      {
+        "t": "Chúc Quý đại lý một đường bay thuận lợi và thật nhiều may mắn.",
+        "gap": 300
+      },
+      {
+        "t": "Vietnam Airlines hân hạnh đồng hành cùng Quý vị.",
+        "gap": 300
+      },
+      {
+        "t": "Hẹn gặp trên đường đua!"
+      }
+    ]
+  }
+]

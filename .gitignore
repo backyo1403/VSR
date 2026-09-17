@@ -16,3 +16,9 @@ Background.*
 
 # scratch copies used for cache-busted browser testing
 public/_t*.html
+
+# Rendered promo video (53 MB). Same reasoning as Background.* above: a repo never gets
+# smaller once a big blob is in its history. The toolkit in video/toolkit/ IS committed and
+# rebuilds the file from public/index.html in a couple of minutes.
+video/*.mp4
+video/*.wav

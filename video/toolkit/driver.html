@@ -1,0 +1,885 @@
+<style>
+/* ===================================================================
+   VIDEO STAGE — overlay chrome and scene choreography.
+   Every inner class is v- prefixed: the app already owns .tag, .sub,
+   .rule, .num, .nm and .medal, and an unprefixed name silently inherits
+   its font and colour.
+   =================================================================== */
+#vidRoot, .vid-copy, .vid-phone-wrap{font-family:var(--font-body);}
+#vidRoot{position:fixed; inset:0; z-index:9000; pointer-events:none;}
+.vid-hide{display:none !important;}
+
+/* Page.captureScreenshot waits for a compositor commit. Once the ambient layers were
+   frozen for render speed, the phone scenes had nothing animating at all — so no frame
+   was produced until something changed, and the first DOM change then deadlocked the
+   capture (identical bytes for 60 frames, then a hung socket). Two pixels animating
+   forever guarantee a commit every frame and cost nothing. */
+#vidHeartbeat{position:fixed; left:0; bottom:0; width:2px; height:2px; z-index:9999;
+  pointer-events:none; background:#fff; animation:vidBeat .5s linear infinite;}
+@keyframes vidBeat{0%{opacity:.03;} 50%{opacity:.08;} 100%{opacity:.03;}}
+
+/* ---------- lower third ---------- */
+.vid-lower{
+  position:absolute; left:64px; bottom:96px; max-width:1080px;
+  padding:22px 34px 24px; border-radius:20px;
+  background:linear-gradient(120deg, rgba(0,48,90,.94), rgba(0,91,172,.82));
+  border:1px solid rgba(240,214,120,.42);
+  box-shadow:0 26px 70px rgba(0,0,0,.5);
+  border-left:6px solid var(--vna-gold);
+  opacity:0; transform:translateY(26px);
+  animation:vidLowerIn .85s cubic-bezier(.16,.84,.34,1) .25s forwards;
+}
+@keyframes vidLowerIn{to{opacity:1; transform:translateY(0);}}
+.vid-lower.mid{bottom:auto; top:44%; max-width:980px;}
+.vid-lower .v-kicker{
+  font-family:var(--font-mono); font-size:15px; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--vna-gold-light); margin-bottom:8px;
+}
+.vid-lower .v-head{font-family:var(--font-display); font-weight:800; font-size:46px; line-height:1.06; color:#fff;}
+.vid-lower .v-sub{margin-top:12px; font-size:23px; line-height:1.42; color:rgba(255,255,255,.93); font-weight:500; max-width:960px;}
+.vid-lower .v-sub b{color:var(--vna-gold-light); font-weight:800;}
+
+.vid-rule{position:absolute; left:0; right:0; bottom:0; height:6px; transform-origin:left center;
+  background:linear-gradient(90deg, var(--vna-gold) 0%, var(--vna-blue-mid) 60%, transparent 100%);
+  opacity:.85; animation:vidWipe 1.1s cubic-bezier(.2,.7,.3,1) forwards;}
+@keyframes vidWipe{from{transform:scaleX(0);} to{transform:scaleX(1);}}
+
+.vid-brand{position:absolute; right:52px; top:40px; display:flex; align-items:center; gap:14px;
+  opacity:0; animation:vidFade .9s ease .35s forwards;}
+.vid-brand img{height:52px;}
+.vid-brand span{font-family:var(--font-display); font-weight:700; letter-spacing:.2em; font-size:15px;
+  color:var(--vna-gold-light); text-transform:uppercase;}
+@keyframes vidFade{to{opacity:.95;}}
+
+/* ---------- opening title ---------- */
+.vid-title-card{
+  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center;
+  background:radial-gradient(circle at 50% 45%, rgba(0,45,92,.30), rgba(0,16,38,.86) 78%);
+  opacity:0; animation:vidFadeFull 1.5s ease .35s forwards;
+}
+@keyframes vidFadeFull{to{opacity:1;}}
+.vid-title-card .v-logo{height:112px; margin-bottom:34px; filter:drop-shadow(0 12px 34px rgba(0,0,0,.6));
+  opacity:0; transform:translateY(20px); animation:vidUp 1.2s cubic-bezier(.16,.84,.34,1) .8s forwards;}
+.vid-title-card h1{
+  font-family:var(--font-display); font-weight:800; font-size:124px; letter-spacing:.02em; margin:0;
+  background:linear-gradient(180deg,#fff 28%, var(--vna-gold-light) 100%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 18px 50px rgba(0,0,0,.55));
+  opacity:0; transform:translateY(34px) scale(.965);
+  animation:vidTitleIn 1.6s cubic-bezier(.16,.84,.34,1) 1.25s forwards;
+}
+@keyframes vidTitleIn{to{opacity:1; transform:translateY(0) scale(1);}}
+@keyframes vidUp{to{opacity:1; transform:translateY(0);}}
+.vid-title-card .v-tag{margin-top:22px; font-size:31px; font-weight:600; color:rgba(255,255,255,.95);
+  letter-spacing:.03em; opacity:0; transform:translateY(18px);
+  animation:vidUp 1.1s cubic-bezier(.16,.84,.34,1) 2.5s forwards;}
+.vid-title-card .v-rule{width:0; height:4px; margin:34px auto 0; border-radius:3px;
+  background:linear-gradient(90deg, transparent, var(--vna-gold), transparent);
+  animation:vidRuleGrow 1.4s cubic-bezier(.2,.7,.3,1) 3.1s forwards;}
+@keyframes vidRuleGrow{to{width:240px;}}
+.vid-title-card .v-foot{margin-top:28px; font-family:var(--font-mono); font-size:19px; letter-spacing:.2em;
+  color:var(--vna-gold-light); text-transform:uppercase; opacity:0;
+  animation:vidFade 1.2s ease 3.7s forwards;}
+
+/* ---------- phone scenes ---------- */
+body.vid-phone{overflow:hidden;}
+body.vid-phone #vidPhoneBg{position:fixed; inset:0; z-index:1;}
+.vid-phone-wrap{
+  position:fixed; z-index:20; top:50%; right:170px;
+  width:430px; height:900px; border-radius:52px; padding:14px;
+  background:linear-gradient(160deg,#2b3440,#0d1218);
+  box-shadow:0 40px 110px rgba(0,0,0,.62), 0 0 0 2px rgba(255,255,255,.10) inset;
+  transform:translateY(-50%) translateX(70px); opacity:0;
+  animation:vidPhoneIn 1.2s cubic-bezier(.16,.84,.34,1) .2s forwards;
+}
+@keyframes vidPhoneIn{to{transform:translateY(-50%) translateX(0); opacity:1;}}
+.vid-phone-screen{position:relative; width:100%; height:100%; border-radius:40px; overflow:hidden;
+  background:linear-gradient(180deg,var(--sky-1) 0%,var(--sky-2) 55%,var(--sky-3) 100%);}
+.vid-phone-notch{position:absolute; z-index:5; top:12px; left:50%; transform:translateX(-50%);
+  width:118px; height:21px; border-radius:12px; background:#0d1218;}
+body.vid-phone.vid-zoom #view-player{
+  width:502px !important; min-height:1090px !important;
+  transform:scale(.8006); transform-origin:top left; padding:46px 18px 16px !important;
+}
+body.vid-phone #view-player{
+  position:absolute !important; inset:0 !important; max-width:none !important;
+  width:402px !important; min-height:872px !important; height:auto !important;
+  padding:26px 16px 18px !important; margin:0 !important;
+}
+
+.vid-copy{position:fixed; z-index:20; left:96px; top:50%; transform:translateY(-50%); width:820px;}
+.vid-copy .v-kicker{font-family:var(--font-mono); font-size:16px; letter-spacing:.24em; text-transform:uppercase;
+  color:var(--vna-gold-light); margin-bottom:14px; opacity:0; animation:vidFade .8s ease .3s forwards;}
+.vid-copy h2{font-family:var(--font-display); font-weight:800; font-size:62px; line-height:1.05; margin:0 0 26px;
+  color:#fff; opacity:0; transform:translateY(24px); animation:vidUp 1s cubic-bezier(.16,.84,.34,1) .45s forwards;}
+.vid-copy .gold-rule{width:0; height:5px; border-radius:3px; background:var(--vna-gold); margin-bottom:30px;
+  animation:vidRuleShort 1s cubic-bezier(.2,.7,.3,1) .9s forwards;}
+@keyframes vidRuleShort{to{width:120px;}}
+
+/* numbered steps / help cards: dim until their cue, then lift and glow */
+.vid-step, .vid-help{
+  opacity:.30; transform:translateX(-14px) scale(.985); filter:saturate(.5);
+  transition:opacity .5s ease, transform .5s cubic-bezier(.16,.84,.34,1),
+             filter .5s ease, box-shadow .5s ease, border-color .5s ease, background .5s ease;
+}
+.vid-step.hot, .vid-help.hot{opacity:1; transform:translateX(0) scale(1); filter:none;}
+.vid-step{display:flex; align-items:flex-start; gap:20px; margin-bottom:22px;}
+.vid-step .v-num{
+  flex:0 0 auto; width:52px; height:52px; border-radius:50%;
+  background:linear-gradient(150deg,var(--vna-gold),#b8901f); color:#00305A;
+  font-family:var(--font-display); font-weight:800; font-size:24px;
+  display:flex; align-items:center; justify-content:center; transition:box-shadow .5s ease;
+}
+.vid-step.hot .v-num{box-shadow:0 0 0 8px rgba(212,175,55,.18), 0 10px 26px rgba(212,175,55,.5);}
+.vid-step .v-txt{padding-top:8px; font-size:27px; font-weight:600; color:rgba(255,255,255,.95); line-height:1.32;}
+.vid-step .v-txt b{color:var(--vna-gold-light);}
+.vid-step .v-txt small{display:block; font-size:19px; font-weight:500; opacity:.72; margin-top:4px;}
+
+.vid-help{display:flex; align-items:center; gap:22px; margin-bottom:20px; padding:18px 24px; border-radius:18px;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); border-left:5px solid rgba(212,175,55,.4);}
+.vid-help.hot{background:rgba(212,175,55,.14); border-color:rgba(240,214,120,.55);
+  border-left-color:var(--vna-gold); box-shadow:0 14px 44px rgba(212,175,55,.22);}
+.vid-help .v-glyph{font-size:44px; line-height:1; width:56px; text-align:center;}
+.vid-help .v-nm{font-family:var(--font-display); font-weight:800; font-size:31px; color:#fff;}
+.vid-help .v-ds{font-size:22px; color:rgba(255,255,255,.86); margin-top:4px; line-height:1.34;}
+.vid-help .v-ds b{color:var(--vna-gold-light);}
+
+/* ---------- weather ---------- */
+body.vid-wx #view-presenter{animation:none !important;}
+body.vid-wx-turb  #view-presenter{filter:brightness(.60) saturate(.78) contrast(1.06) !important;}
+body.vid-wx-storm #view-presenter{filter:brightness(.60) saturate(1.12) contrast(1.20) !important;}
+body.vid-wx-sun   #view-presenter{filter:brightness(1.14) saturate(1.24) hue-rotate(-5deg) !important;}
+body.vid-wx-clear #view-presenter{filter:brightness(1.04) saturate(1.06) !important;}
+.vid-wx-wash{position:absolute; inset:0; pointer-events:none; z-index:30; border-radius:inherit;}
+.vid-wx-wash.turb{background:
+  radial-gradient(ellipse at 30% 15%, rgba(150,95,225,.30), transparent 58%),
+  linear-gradient(180deg, rgba(52,26,105,.44) 0%, rgba(20,10,54,.52) 100%);}
+.vid-wx-wash.storm{background:
+  radial-gradient(ellipse at 62% 10%, rgba(120,175,255,.26), transparent 52%),
+  linear-gradient(180deg, rgba(8,22,62,.42) 0%, rgba(4,12,38,.52) 100%);}
+.vid-wx-wash.sun{background:
+  radial-gradient(circle at 50% -12%, rgba(255,214,120,.52), rgba(255,168,60,.16) 46%, transparent 66%);}
+.vid-wx-wash.clear{background:
+  radial-gradient(circle at 78% 8%, rgba(255,236,180,.20), transparent 54%);}
+body.vid-wx-turb  .rain-drop{width:2.4px; height:104px;
+  background:linear-gradient(180deg, transparent, rgba(214,228,255,.85)) !important;}
+body.vid-wx-storm .rain-drop{width:3px; height:132px;
+  background:linear-gradient(180deg, transparent, rgba(196,222,255,.95)) !important;}
+
+.vid-wx-chip{
+  position:absolute; left:64px; top:52px; display:flex; align-items:center; gap:18px;
+  padding:18px 34px 18px 26px; border-radius:999px;   border:1px solid rgba(255,255,255,.3); background:rgba(0,20,45,.78);
+  opacity:0; transform:translateX(-26px); animation:vidChipIn .9s cubic-bezier(.16,.84,.34,1) .2s forwards;
+}
+@keyframes vidChipIn{to{opacity:1; transform:translateX(0);}}
+.vid-wx-chip .ic{font-size:52px; line-height:1;}
+.vid-wx-chip .tx .n{font-family:var(--font-display); font-weight:800; font-size:38px; color:#fff; line-height:1.1;}
+.vid-wx-chip .tx .r{font-size:21px; color:var(--vna-gold-light); font-weight:600; margin-top:2px;}
+
+/* ---------- map stop highlight ---------- */
+.airport-node.vid-hot{z-index:9 !important;}
+.airport-node.vid-hot .airport-dot{
+  animation:vidPinPop 1.5s cubic-bezier(.16,.84,.34,1) forwards;
+}
+@keyframes vidPinPop{
+  0%  {transform:scale(1);   box-shadow:0 0 0 0 rgba(255,214,120,.85);}
+  22% {transform:scale(1.5); box-shadow:0 0 0 22px rgba(255,214,120,0);}
+  55% {transform:scale(1.22); box-shadow:0 0 30px 12px rgba(255,214,120,.55);}
+  100%{transform:scale(1.14); box-shadow:0 0 24px 8px rgba(255,214,120,.42);}
+}
+.airport-node.vid-hot .airport-label .code{color:#fff !important; text-shadow:0 0 18px rgba(255,214,120,.95);}
+.cluster-halo.vid-hot{animation:vidHaloPulse 1.6s ease-in-out 2;}
+@keyframes vidHaloPulse{0%,100%{opacity:.5;} 50%{opacity:1; filter:brightness(1.6);}}
+
+/* ---------- prize scene ---------- */
+.vid-prize-scrim{position:absolute; inset:0; background:rgba(0,18,42,.90); 
+  opacity:0; animation:vidFadeFull .9s ease forwards;}
+.vid-prize-card{
+  position:absolute; left:50%; top:50%; width:1360px;
+  padding:52px 62px 56px; border-radius:28px;
+  background:linear-gradient(150deg, rgba(0,48,90,.96), rgba(0,26,54,.97));
+  border:1px solid rgba(212,175,55,.5); box-shadow:0 40px 120px rgba(0,0,0,.6);
+  transform:translate(-50%,-50%) scale(.96); opacity:0;
+  animation:vidCardIn 1s cubic-bezier(.16,.84,.34,1) .15s forwards;
+}
+@keyframes vidCardIn{to{transform:translate(-50%,-50%) scale(1); opacity:1;}}
+.vid-prize-card h2{font-family:var(--font-display); font-weight:800; font-size:54px; margin:0 0 8px; color:#fff; text-align:center;}
+.vid-prize-card .v-sub{text-align:center; font-size:22px; color:var(--vna-gold-light); margin-bottom:38px; letter-spacing:.04em;}
+.vid-prize-row{display:flex; align-items:center; gap:26px; padding:19px 28px; border-radius:16px; margin-bottom:14px;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.10);
+  opacity:.32; transform:translateX(-12px); filter:saturate(.4);
+  transition:opacity .45s ease, transform .55s cubic-bezier(.16,.84,.34,1), filter .45s ease,
+             background .45s ease, border-color .45s ease, box-shadow .45s ease;}
+.vid-prize-row.hot{opacity:1; transform:translateX(0); filter:none;
+  background:linear-gradient(100deg, rgba(212,175,55,.26), rgba(212,175,55,.07));
+  border-color:rgba(240,214,120,.62); box-shadow:0 16px 46px rgba(212,175,55,.24);}
+.vid-prize-row .v-medal{font-size:46px; width:62px; text-align:center; transition:transform .5s cubic-bezier(.16,.84,.34,1);}
+.vid-prize-row.hot .v-medal{transform:scale(1.22);}
+.vid-prize-row .v-rk{font-family:var(--font-mono); font-size:20px; color:rgba(255,255,255,.62);
+  width:172px; flex:0 0 172px; letter-spacing:.06em;}
+.vid-prize-row .v-pz{font-size:29px; font-weight:700; color:#fff;}
+.vid-prize-row.hot .v-pz{color:var(--vna-gold-light);}
+.vid-prize-note{text-align:center; margin-top:26px; font-size:22px; color:rgba(255,255,255,.8); font-style:italic;
+  opacity:.35; transition:opacity .5s ease;}
+.vid-prize-note.hot{opacity:1;}
+
+/* ---------- closing ---------- */
+.vid-out{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center;
+  background:radial-gradient(circle at 50% 45%, rgba(0,70,132,.90), rgba(0,18,42,.985) 70%);
+  opacity:0; animation:vidFadeFull 1.1s ease forwards;}
+.vid-out .v-logo{height:96px; margin-bottom:40px; opacity:0; transform:translateY(18px);
+  animation:vidUp 1.1s cubic-bezier(.16,.84,.34,1) .5s forwards;}
+.vid-out .v-big{font-family:var(--font-display); font-weight:800; font-size:74px; color:#fff; line-height:1.14;
+  margin-bottom:26px; opacity:0; transform:translateY(26px);
+  animation:vidUp 1.2s cubic-bezier(.16,.84,.34,1) .95s forwards;}
+.vid-out .v-big em{font-style:normal; color:var(--vna-gold-light);}
+.vid-out .v-small{font-size:29px; color:rgba(255,255,255,.9); font-weight:500; opacity:0;
+  animation:vidFade 1s ease 1.7s forwards;}
+.vid-out .v-rule{width:0; height:4px; margin:38px auto 30px; border-radius:3px;
+  background:linear-gradient(90deg,transparent,var(--vna-gold),transparent);
+  animation:vidRuleGrow 1.3s cubic-bezier(.2,.7,.3,1) 2.1s forwards;}
+.vid-out .v-qr{font-family:var(--font-mono); font-size:21px; letter-spacing:.2em; color:var(--vna-gold-light);
+  text-transform:uppercase; opacity:0; animation:vidFade 1.1s ease 2.7s forwards;}
+
+/* ---------- capture cost ----------
+   The ambient layers are full-viewport, blurred and drop-shadowed, and they animate
+   continuously — which means the compositor re-rasterises them on every single frame,
+   on every screen. Freezing the animations keeps the artwork exactly as designed (the
+   clouds are still there, still soft, still layered) while letting the layer be cached,
+   which is the difference between a render that finishes and one that does not. The
+   motion the film actually needs — aircraft, camera, rain, countdown, ticker — is
+   untouched. The front fog layer is dropped outright: it drifts over the aircraft, so
+   frozen it would read as a smudge parked on the map. */
+.cloud{animation:none !important;}
+/* map-life is dropped rather than frozen: its clouds are opaque enough that a stopped one
+   reads as a grey smear parked on the artwork, which is worse than not having it. The
+   page-level .cloud-field behind everything is soft and low-opacity, so frozen it just
+   looks like sky. */
+#mapLife, #mapFog, .final-round-fx .sun-disc{display:none !important;}
+
+/* a slow cinematic drift, much longer than the app's own 1.8s camera move */
+.vid-cam-slow #mapZoomWrap{transition:transform 9s cubic-bezier(.33,0,.35,1) !important;}
+.vid-cam-mid  #mapZoomWrap{transition:transform 3.2s cubic-bezier(.3,0,.25,1) !important;}
+</style>
+
+<script>
+/* =====================================================================
+   VIDEO SCENE DRIVER
+
+   Runs only with ?scene=… — the page is otherwise the shipped app minus
+   the three Firebase CDN tags, so every pin, icon, colour, weather theme
+   and question card on screen is the real thing.
+
+   Each scene is a timeline. `steps` returns [msFromSceneStart, fn] pairs
+   which are scheduled with setTimeout at __vid.start(). The capture rig
+   runs the page on virtual time, so those timers — and every CSS
+   animation and the app's own countdown — advance exactly one frame per
+   captured frame, however long the capture actually takes.
+   ===================================================================== */
+(function(){
+  const P = new URLSearchParams(location.search);
+  const SCENE = P.get('scene');
+  if(!SCENE) return;
+
+  const LEAD = parseInt(P.get('lead') || '350', 10);   // narration starts this late
+  let CUES = {};
+  try{ CUES = JSON.parse(P.get('cues') || '{}'); }catch(e){}
+  /* cue time -> ms from scene start; unknown cues fall back so a scene still runs */
+  const C = (name, fallback) => (name in CUES) ? (CUES[name] + LEAD)
+                                              : (fallback === undefined ? LEAD : fallback);
+
+  try{ FB.mode = 'offline'; }catch(e){}
+  /* A modal dialog blocks the renderer, and the capture then hangs on its own socket
+     timeout with nothing to show for it. Nothing in the player path should open one, but
+     the cost of being sure is three lines. */
+  window.alert = function(){}; window.confirm = function(){ return true; };
+  window.prompt = function(){ return ''; };
+  try{ window.toast = function(){}; }catch(e){}
+  document.documentElement.lang = 'vi';
+  try{ setLang('vi'); }catch(e){}
+
+  const $ = id => document.getElementById(id);
+  const R = code => ROUTE.findIndex(n => n.code === code);
+  const FIN = () => ROUTE.length - 1;
+
+  /* The one demo question the film uses, so the viewer reads the same card every time
+     it appears instead of a different real question in each scene. */
+  const DEMO_Q = {id:900, q:'Chúng ta đang ở đâu?', opts:['Milan','Amsterdam','Paris','London'], correct:0};
+  QUESTIONS_BY_ID[900] = DEMO_Q;
+
+  const NAMES = ['Minh Anh','Thu Hà','Đức Long','Lan Phương','Quốc Việt','Hải Yến',
+                 'Bảo Nam','Kim Chi','Trung Kiên','Mỹ Linh','Tuấn Vũ','Ngọc Bích'];
+
+  function seedPlayers(positions){
+    const players = {};
+    positions.forEach((pos, i) => {
+      const id = 'p'+i;
+      const answered = Math.max(1, pos + 1 + (i % 3));
+      players[id] = {
+        id, name: NAMES[i % NAMES.length], avatar: AVATARS[i % AVATARS.length],
+        position: pos, correctCount: Math.max(1, Math.min(answered, pos || 1)),
+        answeredCount: answered, currentStreak: (i % 4), longestStreak: 2 + (i % 4),
+        answers: {}, totalAnswerTime: 41200 + i*8600 + (i%3)*2300,
+        turboUsed: false, fiftyUsed: false, seatbeltUsed: false,
+        reachedMuc: pos >= R('MUC'), joinedAt: Date.now() - 900000
+      };
+    });
+    return players;
+  }
+  const FIELD = () => [R('SPC'), R('MOW'), R('MUC'), R('HUI'), R('DAD'),
+                       R('HAN'), R('HAN'), R('AMS'), R('AMS'), R('CDG'), R('CDG'), 0];
+
+  function baseState(){
+    const s = defaultState();
+    s.gameState = 'lobby';
+    s.currentQ = 3;
+    s.players = seedPlayers(FIELD());
+    s.revealedLegs = {0:true, 1:true, 2:true};
+    s.legBrief = {leg:2, total:12, correctCount:8, fastestName:'Minh Anh',
+                  fastestTime:4820, avgTime:9640, turbo:2};
+    return s;
+  }
+
+  // ---- actions -----------------------------------------------------------
+  function move(id, delta){
+    const p = state.players[id];
+    if(!p) return;
+    p.position = Math.max(0, Math.min(FIN(), p.position + delta));
+    renderAll();
+  }
+  function moveMany(pairs){
+    pairs.forEach(([id, d]) => {
+      const p = state.players[id];
+      if(p) p.position = Math.max(0, Math.min(FIN(), p.position + d));
+    });
+    renderAll();
+  }
+  function hotPin(code, ms){
+    const idx = R(code);
+    const el = document.querySelectorAll('#airportLayer .airport-node')[idx];
+    if(!el) return;
+    el.classList.remove('vid-hot');
+    void el.offsetWidth;              // restart the keyframes for a repeat highlight
+    el.classList.add('vid-hot');
+    if(ms) setTimeout(()=>el.classList.remove('vid-hot'), ms);
+  }
+  /* Take the camera off the app: applyCamera() runs on every presenter tick and would
+     undo any transform written from here on the very next second. */
+  function camTo(x, y, scale, cls){
+    document.body.classList.remove('vid-cam-slow','vid-cam-mid');
+    if(cls) document.body.classList.add(cls);
+    window.applyCamera = function(){
+      const zw = $('mapZoomWrap');
+      if(!zw) return;
+      zw.style.transformOrigin = (x/MAP_W*100)+'% '+(y/MAP_H*100)+'%';
+      zw.style.transform = 'scale('+scale+')';
+    };
+    window.applyCamera();
+  }
+  const camStop = (code, scale, cls) => camTo(ROUTE[R(code)].x, ROUTE[R(code)].y, scale, cls);
+  const camWide = cls => camTo(MAP_W/2, MAP_H/2, 1, cls);
+
+  function stageQuestion(leg, opts){
+    opts = opts || {};
+    state.currentQ = leg;
+    state.currentQuestionIndex = 900;
+    state.legAnnouncedAt = Date.now() - 40000;   // the weather card has already run
+    state.gameState = opts.open ? 'question' : 'lobby';
+    if(opts.open) state.questionOpenedAt = Date.now();
+    renderAll();
+  }
+  function revealQuestion(){
+    state.gameState = 'reveal';
+    state.currentCorrectIndex = shuffledCorrectIndex(900);
+    state.revealAt = Date.now();
+    renderAll();
+  }
+  /* The app shuffles A/B/C/D per question id, so the correct slot on screen is not
+     DEMO_Q.correct — ask the app's own table where Milan ended up. */
+  function shuffledCorrectIndex(id){
+    const q = QUESTIONS_BY_ID[id];
+    return q ? q.correct : 0;
+  }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'vidRoot';
+  document.body.appendChild(overlay);
+
+  const brand = () =>
+    '<div class="vid-brand"><img src="vendor/vna-logo.png" alt=""><span>Sky Race</span></div>';
+  const lower = (kicker, head, sub, cls) =>
+    '<div class="vid-lower' + (cls ? ' '+cls : '') + '"><div class="v-kicker">'+kicker+'</div>' +
+    '<div class="v-head">'+head+'</div>' + (sub?'<div class="v-sub">'+sub+'</div>':'') +
+    '</div><div class="vid-rule"></div>';
+  const wxChip = (ic, name, rule) =>
+    '<div class="vid-wx-chip"><div class="ic">'+ic+'</div><div class="tx"><div class="n">'+name+
+    '</div><div class="r">'+rule+'</div></div></div>';
+  function wxBody(kind){
+    document.body.classList.add('vid-wx', 'vid-wx-'+kind);
+    setTimeout(()=>{
+      const panel = $('mapPanel');
+      if(!panel || panel.querySelector('.vid-wx-wash')) return;
+      const w = document.createElement('div');
+      w.className = 'vid-wx-wash ' + kind;
+      panel.appendChild(w);
+    }, 120);
+    return '';
+  }
+  /* the app seeds 26 raindrops for a wall; double them for the camera */
+  function thickenRain(){
+    document.querySelectorAll('.storm-fx').forEach(fx=>{
+      const drops = fx.querySelectorAll('.rain-drop');
+      if(!drops.length || fx.dataset.thick) return;
+      fx.dataset.thick = '1';
+      const proto = drops[0];
+      for(let i=0;i<drops.length;i++){
+        const d = proto.cloneNode(true);
+        d.style.left = (Math.random()*100)+'%';
+        d.style.animationDelay = (Math.random()*1.2).toFixed(2)+'s';
+        fx.appendChild(d);
+      }
+    });
+  }
+
+  function goPresenter(){
+    ['view-landing','view-player','view-admin'].forEach(v=>{ const e=$(v); if(e) e.classList.add('hidden'); });
+    $('view-presenter').classList.remove('hidden');
+  }
+  function goPhone(zoom){
+    ['view-landing','view-presenter','view-admin'].forEach(v=>{ const e=$(v); if(e) e.classList.add('hidden'); });
+    $('view-player').classList.remove('hidden');
+    document.body.classList.add('vid-phone');
+    if(zoom) document.body.classList.add('vid-zoom');
+    const bg = document.createElement('div'); bg.id='vidPhoneBg';
+    bg.style.background = 'radial-gradient(circle at 74% 50%, rgba(11,113,199,.45), rgba(0,26,54,.98) 70%)';
+    document.body.insertBefore(bg, document.body.firstChild);
+    const wrap = document.createElement('div');
+    wrap.className = 'vid-phone-wrap';
+    wrap.innerHTML = '<div class="vid-phone-screen"><div class="vid-phone-notch"></div></div>';
+    document.body.appendChild(wrap);
+    wrap.querySelector('.vid-phone-screen').appendChild($('view-player'));
+  }
+  function hideChrome(){
+    ['backBtn','presFullscreenBtn','camSwitch','tickBtn'].forEach(id=>{ const e=$(id); if(e) e.classList.add('vid-hide'); });
+    document.querySelectorAll('.back-btn,.rules-help-btn,.lang-switch,#toastHost').forEach(e=>e.classList.add('vid-hide'));
+  }
+  /* The rig is offline by construction; the room will be live. Replacing the function
+     rather than the element keeps the presenter tick from repainting OFFLINE over it. */
+  function liveFlag(){
+    const flag = document.querySelector('.ticker-flag');
+    if(!flag) return;
+    flag.classList.remove('st-offline','st-init');
+    flag.innerHTML = '<span class="dot"></span><span>TRỰC TIẾP</span><span class="count">12 người chơi</span>';
+  }
+  const hot = (sel, on) => { const e = typeof sel === 'string' ? document.querySelector(sel) : sel;
+                             if(e) e.classList.toggle('hot', on !== false); };
+
+  // =====================================================================
+  const SCENES = {
+
+  /* ---------- 01 · silent cinematic open ---------- */
+  '01_open': {
+    build(){
+      state = baseState(); goPresenter();
+      camTo(MAP_W*0.52, MAP_H*0.46, 1.16, 'vid-cam-slow');
+      overlay.innerHTML =
+        '<div class="vid-title-card">' +
+          '<img class="v-logo" src="vendor/vna-logo.png" alt="">' +
+          '<h1>VNA SKY RACE</h1>' +
+          '<div class="v-tag">Đường đua bầu trời của Vietnam Airlines</div>' +
+          '<div class="v-rule"></div>' +
+          '<div class="v-foot">Hội nghị Đại lý Việt Nam tại Châu Âu</div>' +
+        '</div>';
+    },
+    steps(){ return [
+      [ 200, ()=>camTo(MAP_W*0.50, MAP_H*0.50, 1.0, 'vid-cam-slow')],
+      [ 700, ()=>moveMany([['p0',1],['p1',1],['p3',1]])],
+      [3200, ()=>moveMany([['p2',1],['p5',1],['p7',1]])],
+      [5600, ()=>moveMany([['p1',1],['p9',1]])],
+    ];}
+  },
+
+  /* ---------- 02 · what the game is ---------- */
+  '02_gioithieu': {
+    build(){
+      state = baseState(); goPresenter();
+      camTo(MAP_W*0.5, MAP_H*0.5, 1.06, 'vid-cam-slow');
+      overlay.innerHTML = lower('Giới thiệu', 'Cả hội trường cùng đua trên một bản đồ',
+        'Màn hình lớn là sa bàn chung · điện thoại của Quý vị là buồng lái · <b>mỗi câu đúng = tiến một chặng</b>');
+    },
+    steps(){ return [
+      [ 300, ()=>camTo(MAP_W*0.5, MAP_H*0.5, 1.0, 'vid-cam-slow')],
+      [C('MOVE1'), ()=>moveMany([['p0',1],['p4',1],['p8',1]])],
+      [C('MOVE2'), ()=>moveMany([['p1',1],['p2',1],['p9',1]])],
+      [C('MOVE3'), ()=>moveMany([['p3',1],['p5',1],['p7',1],['p11',1]])],
+    ];}
+  },
+
+  /* ---------- 03 · joining, acted out on the phone ---------- */
+  '03_batdau': {
+    build(){
+      state = baseState(); goPhone(false);
+      myPlayerId = null;
+      $('pRegistration').classList.remove('hidden');
+      $('pGame').classList.add('hidden');
+      $('pRoomCode').value = 'SKY01';
+      $('pName').value = '';
+      overlay.innerHTML = brand() +
+        '<div class="vid-copy">' +
+          '<div class="v-kicker">Bắt đầu chơi</div>' +
+          '<h2>Vào cuộc đua<br>trong 30 giây</h2><div class="gold-rule"></div>' +
+          '<div class="vid-step" id="vs1"><div class="v-num">1</div><div class="v-txt">Quét <b>mã QR</b> trên màn hình<small>Mở camera điện thoại và chạm vào đường dẫn hiện ra</small></div></div>' +
+          '<div class="vid-step" id="vs2"><div class="v-num">2</div><div class="v-txt">Nhập <b>tên</b> của Quý vị<small>Tên này hiện trên bản đồ và bảng xếp hạng</small></div></div>' +
+          '<div class="vid-step" id="vs3"><div class="v-num">3</div><div class="v-txt">Chọn một <b>chiếc máy bay</b><small>Biểu tượng nhận diện riêng suốt cuộc đua</small></div></div>' +
+          '<div class="vid-step" id="vs4"><div class="v-num">4</div><div class="v-txt">Bấm <b>Lên máy bay</b><small>Tên Quý vị xuất hiện ngay trên đường băng START</small></div></div>' +
+        '</div><div class="vid-rule"></div>';
+    },
+    steps(){
+      const s = [];
+      s.push([C('S1'), ()=>hot('#vs1')]);
+      // typed one character at a time, the way the guest will actually do it
+      const name = 'Minh Anh';
+      s.push([C('S2'), ()=>{ hot('#vs1', false); hot('#vs2'); $('pName').focus(); }]);
+      for(let i=1;i<=name.length;i++){
+        s.push([C('S2') + 260 + i*115, ()=>{ $('pName').value = name.slice(0, i); }]);
+      }
+      s.push([C('S3'), ()=>{ hot('#vs2', false); hot('#vs3'); }]);
+      // the eye lands on a few aircraft before settling on one
+      [0, 5, 8, 2].forEach((idx, k)=>{
+        s.push([C('S3') + 260 + k*380, ()=>{
+          const grid = $('pAvatarGrid');
+          if(grid && grid.children[idx]) grid.children[idx].onclick();
+        }]);
+      });
+      s.push([C('S4'), ()=>{
+        hot('#vs3', false); hot('#vs4');
+        const b = $('pJoinBtn');
+        if(b){ b.style.transition = 'transform .35s cubic-bezier(.16,.84,.34,1), box-shadow .35s ease';
+               b.style.transform = 'scale(1.045)';
+               b.style.boxShadow = '0 0 0 8px rgba(212,175,55,.20), 0 14px 34px rgba(212,175,55,.45)'; }
+      }]);
+      s.push([C('S5') - 400, ()=>{ const b = $('pJoinBtn'); if(b) b.style.transform = 'scale(.98)'; }]);
+      s.push([C('S5'), ()=>{
+        // joined: the real in-game screen, sitting on the runway
+        myPlayerId = 'me';
+        state.players['me'] = seedPlayers([0])['p0'];
+        state.players['me'].id = 'me';
+        state.players['me'].name = 'Minh Anh';
+        state.players['me'].avatar = AVATARS[2];
+        $('pRegistration').classList.add('hidden');
+        $('pGame').classList.remove('hidden');
+        renderAll();
+      }]);
+      return s;
+    }
+  },
+
+  /* ---------- 04 · the route, lit stop by stop ---------- */
+  '04_bando': {
+    build(){
+      state = baseState();
+      state.players = {};
+      goPresenter();
+      camTo(MAP_W*0.5, MAP_H*0.5, 1.18, 'vid-cam-slow');
+      overlay.innerHTML = lower('Bản đồ đường bay', '16 chặng · từ START đến FINISH',
+        'START → CDG → AMS → <b>HAN</b> → DAD → HUI → MUC → MOW → <b>SPC</b> → LHR → MXP → CPH → <b>SGN</b> → CXR → PQC → FRA → <b>FINISH</b>');
+    },
+    steps(){
+      const order = ['START','CDG','AMS','HAN','MUC','MOW','LHR','MXP','CPH','SGN','FRA','FINISH'];
+      const s = [[300, ()=>camTo(MAP_W*0.5, MAP_H*0.5, 1.0, 'vid-cam-slow')]];
+      order.forEach(code => s.push([C(code), ()=>hotPin(code)]));
+      // the four side stops belong to their cluster, so they light with it
+      s.push([C('HAN') + 380, ()=>{ hotPin('DAD'); hotPin('HUI'); }]);
+      s.push([C('SGN') + 380, ()=>{ hotPin('CXR'); hotPin('PQC'); }]);
+      return s;
+    }
+  },
+
+  /* ---------- 05 · checkpoints and the three-question clusters ---------- */
+  '05_checkpoint': {
+    build(){
+      state = baseState(); goPresenter();
+      camWide();
+      overlay.innerHTML = lower('Điểm mốc', '4 điểm mốc · và 2 cụm ba câu hỏi',
+        '★ <b>HAN · SPC · SGN · FINISH</b> là bốn điểm mốc. Tại <b>HAN</b> và <b>SGN</b>, phải trả lời đúng <b>3 câu</b> mới rời được cụm.');
+    },
+    steps(){
+      const cx = (ROUTE[R('HAN')].x + ROUTE[R('DAD')].x + ROUTE[R('HUI')].x) / 3;
+      const cy = (ROUTE[R('HAN')].y + ROUTE[R('DAD')].y + ROUTE[R('HUI')].y) / 3;
+      return [
+        [C('HAN'),     ()=>hotPin('HAN')],
+        [C('SPC'),     ()=>hotPin('SPC')],
+        [C('SGN'),     ()=>hotPin('SGN')],
+        [C('FINISH'),  ()=>hotPin('FINISH')],
+        [C('ZOOM'),    ()=>camTo(cx, cy, 1.75, 'vid-cam-mid')],
+        [C('CLUSTER'), ()=>{
+          hotPin('HAN'); hotPin('DAD'); hotPin('HUI');
+          document.querySelectorAll('.cluster-halo').forEach(h=>h.classList.add('vid-hot'));
+        }],
+        [C('CLUSTER') + 900,  ()=>{ state.players['p5'].position = R('DAD'); renderAll(); }],
+        [C('CLUSTER') + 2300, ()=>{ state.players['p5'].position = R('HUI'); renderAll(); }],
+      ];
+    }
+  },
+
+  /* ---------- 06 · one leg, played out ---------- */
+  '06_nhipchoi': {
+    build(){
+      state = baseState(); goPresenter(); camWide();
+      overlay.innerHTML = lower('Nhịp một chặng', 'Đọc đề trước · rồi 20 giây trả lời',
+        '1️⃣ Câu hỏi hiện ra cho cả phòng cùng đọc &nbsp;·&nbsp; 2️⃣ Bốn đáp án mở cùng <b>đồng hồ 20 giây</b>', 'mid');
+    },
+    steps(){ return [
+      [C('SHOWQ'),          ()=>stageQuestion(3, {open:false})],
+      [C('OPEN'),           ()=>stageQuestion(3, {open:true})],
+      [C('OPEN') + 250,     ()=>{
+        const l = overlay.querySelector('.vid-lower');
+        if(l){ l.style.transition = 'opacity .5s ease, transform .5s ease';
+               l.style.opacity = '0'; l.style.transform = 'translateY(18px)'; }
+      }],
+      [C('OPEN') + 900,     ()=>{
+        const l = overlay.querySelector('.vid-lower'); if(l) l.style.display = 'none';
+      }],
+      [C('REVEAL'),         ()=>revealQuestion()],
+      [C('REVEAL') + 1500,  ()=>moveMany([['p0',1],['p1',1],['p3',1],['p5',1],['p7',1],['p9',1]])],
+    ];}
+  },
+
+  /* ---------- 07 · clear skies ---------- */
+  '07_wx_clear': {
+    build(){
+      state = baseState(); goPresenter(); camStop('MUC', 1.5, 'vid-cam-slow');
+      state.currentQ = 3;
+      overlay.innerHTML = wxBody('clear') + wxChip('🌈','Trời quang','Clear Skies') +
+        '<div class="vid-lower"><div class="v-kicker">Thời tiết 1 / 4</div>' +
+        '<div class="v-head">Trời quang — đua bình thường</div>' +
+        '<div class="v-sub">Trả lời <b>đúng</b> → tiến <b>1 chặng</b>. Trả lời sai → đứng nguyên tại chỗ.</div>' +
+        '</div><div class="vid-rule"></div>';
+    },
+    steps(){ return [
+      [C('MOVE'),        ()=>move('p2', 1)],
+      [C('MOVE') + 1600, ()=>move('p1', 1)],
+    ];}
+  },
+
+  /* ---------- 08 · turbulence ---------- */
+  '08_wx_turb': {
+    build(){
+      state = baseState(); goPresenter(); camStop('MUC', 1.5, 'vid-cam-slow');
+      state.currentQ = TURBULENCE_LEGS[0];
+      overlay.innerHTML = wxBody('turb') + wxChip('🌪','Nhiễu động','Turbulence') +
+        '<div class="vid-lower"><div class="v-kicker">Thời tiết 2 / 4</div>' +
+        '<div class="v-head">Nhiễu động — sai là bị đẩy lùi</div>' +
+        '<div class="v-sub">Trả lời đúng → <b>đứng nguyên</b>. Trả lời sai hoặc không trả lời → <b>lùi 1 chặng</b>.</div>' +
+        '</div><div class="vid-rule"></div>';
+    },
+    steps(){ return [
+      [C('MOVE'), ()=>move('p2', -1)],
+    ];}
+  },
+
+  /* ---------- 09 · storm, with the ATC clearance list ---------- */
+  '09_wx_storm': {
+    build(){
+      state = baseState(); goPresenter(); camWide();
+      state.currentQ = STORM_LEG;
+      overlay.innerHTML = wxBody('storm') + wxChip('⛈','Bão','Storm') +
+        '<div class="vid-lower"><div class="v-kicker">Thời tiết 3 / 4</div>' +
+        '<div class="v-head">Bão — chỉ 10 suất bay tiếp</div>' +
+        '<div class="v-sub">Chỉ <b>10 người trả lời đúng nhanh nhất</b> được đài không lưu cấp phép bay tiếp <b>+1 chặng</b>.</div>' +
+        '</div><div class="vid-rule"></div>';
+    },
+    steps(){
+      const cleared = ['p0','p1','p2','p3','p4','p5','p6','p7','p8','p9'];
+      return [
+        [C('ATC'), ()=>{
+          // the app's own clearance overlay, fed the ten fastest
+          state.stormClearedIds = cleared;
+          state.stormRevealAt = Date.now();
+          renderAll();
+        }],
+        [C('MOVE'), ()=>moveMany(cleared.map(id=>[id, 1]))],
+      ];
+    }
+  },
+
+  /* ---------- 10 · sunshine, +1 and +2 ---------- */
+  '10_wx_sun': {
+    build(){
+      state = baseState(); goPresenter(); camWide();
+      state.currentQ = 4;
+      state.powerQuestionActive = true;
+      overlay.innerHTML = wxBody('sun') + wxChip('☀️','Trời nắng đẹp','Sunshine') +
+        '<div class="vid-lower"><div class="v-kicker">Thời tiết 4 / 4</div>' +
+        '<div class="v-head">Trời nắng đẹp — câu hỏi đặc biệt</div>' +
+        '<div class="v-sub">Đúng <b>nhanh nhất</b> → <b>+2 chặng</b> &nbsp;·&nbsp; các câu đúng khác → +1 chặng &nbsp;·&nbsp; một lần duy nhất cả ván.</div>' +
+        '</div><div class="vid-rule"></div>';
+    },
+    steps(){ return [
+      [C('PLUS1'),        ()=>moveMany([['p3',1],['p7',1]])],
+      [C('PLUS2'),        ()=>{ move('p1', 2); }],
+      [C('PLUS2') + 700,  ()=>camStop('SPC', 1.85, 'vid-cam-mid')],
+    ];}
+  },
+
+  /* ---------- 11 · the three helps, used for real ---------- */
+  '11_trogiup': {
+    build(){
+      state = baseState(); goPhone(true);
+      myPlayerId = 'p2';
+      state.players['p2'].position = R('MUC');
+      state.players['p2'].reachedMuc = true;
+      stageQuestion(6, {open:true});
+      $('pRegistration').classList.add('hidden');
+      $('pGame').classList.remove('hidden');
+      overlay.innerHTML = brand() +
+        '<div class="vid-copy">' +
+          '<div class="v-kicker">Ba sự trợ giúp · mở khoá tại MUC</div>' +
+          '<h2>Ba lá bài<br>của Quý vị</h2><div class="gold-rule"></div>' +
+          '<div class="vid-help" id="vh1"><div class="v-glyph">✂️</div><div><div class="v-nm">50 : 50</div>' +
+            '<div class="v-ds">Loại bỏ <b>2 đáp án sai</b>, chỉ còn hai lựa chọn.</div></div></div>' +
+          '<div class="vid-help" id="vh2"><div class="v-glyph">⚡</div><div><div class="v-nm">Turbo Boost</div>' +
+            '<div class="v-ds">Đúng → <b>+2 chặng</b>. Sai → <b>−1 chặng</b>.</div></div></div>' +
+          '<div class="vid-help" id="vh3"><div class="v-glyph">🔒</div><div><div class="v-nm">Fasten Seatbelt</div>' +
+            '<div class="v-ds">Chỉ dùng trong <b>nhiễu động</b> — trả lời sai vẫn không bị lùi.</div></div></div>' +
+        '</div><div class="vid-rule"></div>';
+    },
+    steps(){ return [
+      [C('FIFTY'),        ()=>hot('#vh1')],
+      [C('FIFTY') + 550,  ()=>{ try{ playerUseFifty(); }catch(e){} }],
+      [C('TURBO'),        ()=>{ hot('#vh1', false); hot('#vh2'); }],
+      [C('TURBO') + 550,  ()=>{ try{ playerToggleTurbo(); }catch(e){} }],
+      [C('BELT'),         ()=>{
+        hot('#vh2', false); hot('#vh3');
+        // the belt is only usable in turbulence, so the leg becomes one as it is named
+        try{ playerToggleTurbo(); }catch(e){}
+        state.currentQ = TURBULENCE_LEGS[0];
+        stageQuestion(TURBULENCE_LEGS[0], {open:true});
+      }],
+      [C('BELT') + 700,   ()=>{ try{ playerToggleSeatbelt(); }catch(e){} }],
+    ];}
+  },
+
+  /* ---------- 12 · the last leg into FINISH ---------- */
+  '12_vedich': {
+    build(){
+      state = baseState();
+      state.players = seedPlayers([R('FRA'), R('PQC'), R('CXR'), R('SGN'), R('CPH'),
+                                   R('MXP'), R('LHR'), R('SPC'), R('MOW'), R('MUC'),
+                                   R('HUI'), R('HAN')]);
+      state.currentQ = 15;
+      goPresenter();
+      camTo((ROUTE[R('FRA')].x + ROUTE[FIN()].x)/2, (ROUTE[R('FRA')].y + ROUTE[FIN()].y)/2,
+            1.7, 'vid-cam-mid');
+      overlay.innerHTML = lower('Về đích', 'Chiếc đầu tiên hạ cánh',
+        'Ai tới <b>FINISH</b> trước sẽ thắng. Cuộc đua khép lại khi có <b>5 máy bay</b> về đích.');
+    },
+    steps(){ return [
+      [C('FLY') + 900,  ()=>{ state.players['p0'].position = FIN(); renderAll(); }],
+      [C('LAND'),       ()=>{
+        state.players['p0'].finishRank = 1;
+        state.firstFinishId = 'p0';
+        state.firstFinishAt = Date.now();
+        renderAll();
+      }],
+      [C('LAND') + 1200, ()=>camStop('FINISH', 2.0, 'vid-cam-mid')],
+    ];}
+  },
+
+  /* ---------- 13 · prizes, one at a time ---------- */
+  '13_giaithuong': {
+    build(){
+      state = baseState();
+      const F = FIN();
+      state.players = seedPlayers([F, F, F, F, F, R('FRA'), R('PQC'), R('CXR'),
+                                   R('SGN'), R('CPH'), R('MXP'), R('LHR')]);
+      state.gameState = 'finished';
+      goPresenter(); camStop('FINISH', 1.6, 'vid-cam-slow');
+      overlay.innerHTML = '<div class="vid-prize-scrim"></div>' +
+        '<div class="vid-prize-card">' +
+          '<h2>🎁 Cơ cấu giải thưởng</h2>' +
+          '<div class="v-sub">VNA SKY RACE · HỘI NGHỊ ĐẠI LÝ VIỆT NAM TẠI CHÂU ÂU</div>' +
+          '<div class="vid-prize-row" id="vp1"><div class="v-medal">🏆</div><div class="v-rk">VÔ ĐỊCH</div>' +
+            '<div class="v-pz">1 voucher nâng hạng Thương gia</div></div>' +
+          '<div class="vid-prize-row" id="vp2"><div class="v-medal">🥇</div><div class="v-rk">HẠNG 2</div>' +
+            '<div class="v-pz">1 vé máy bay hạng Phổ thông Đặc biệt</div></div>' +
+          '<div class="vid-prize-row" id="vp3"><div class="v-medal">🥈</div><div class="v-rk">HẠNG 3</div>' +
+            '<div class="v-pz">1 vé máy bay hạng Phổ thông</div></div>' +
+          '<div class="vid-prize-row" id="vp4"><div class="v-medal">🥉</div><div class="v-rk">HẠNG 4 &amp; 5</div>' +
+            '<div class="v-pz">Voucher 1 kiện hành lý (đồng hạng)</div></div>' +
+          '<div class="vid-prize-note" id="vp5">Cùng rất nhiều phần quà nhỏ hấp dẫn khác</div>' +
+        '</div><div class="vid-rule"></div>';
+    },
+    steps(){ return [
+      [C('P1'), ()=>hot('#vp1')],
+      [C('P2'), ()=>hot('#vp2')],
+      [C('P3'), ()=>hot('#vp3')],
+      [C('P4'), ()=>hot('#vp4')],
+      [C('P5'), ()=>hot('#vp5')],
+    ];}
+  },
+
+  /* ---------- 14 · sign-off ---------- */
+  '14_loichuc': {
+    build(){
+      state = baseState();
+      const F = FIN();
+      state.players = seedPlayers([F, F, F, F, F, R('FRA'), R('PQC'), R('CXR'),
+                                   R('SGN'), R('CPH'), R('MXP'), R('LHR')]);
+      state.gameState = 'finished';
+      goPresenter(); camStop('FINISH', 1.35, 'vid-cam-slow');
+      overlay.innerHTML =
+        '<div class="vid-out">' +
+          '<img class="v-logo" src="vendor/vna-logo.png" alt="">' +
+          '<div class="v-big">Chúc Quý đại lý<br><em>một đường bay thuận lợi</em></div>' +
+          '<div class="v-small">và thật nhiều may mắn trên đường đua</div>' +
+          '<div class="v-rule"></div>' +
+          '<div class="v-qr">Hẹn gặp trên đường đua · Vietnam Airlines</div>' +
+        '</div>';
+    },
+    steps(){ return [
+      [1200, ()=>{ try{ confetti({particleCount:120, spread:82, origin:{y:.62},
+                                  colors:['#D4AF37','#F0D678','#ffffff','#0B71C7']}); }catch(e){} }],
+      [3000, ()=>{ try{ confetti({particleCount:90, spread:100, origin:{x:.2, y:.55},
+                                  colors:['#D4AF37','#F0D678','#ffffff']}); }catch(e){} }],
+      [4200, ()=>{ try{ confetti({particleCount:90, spread:100, origin:{x:.8, y:.55},
+                                  colors:['#D4AF37','#F0D678','#ffffff']}); }catch(e){} }],
+    ];}
+  }
+  };
+
+  // =====================================================================
+  function repaint(){
+    try{ renderAll(); }catch(e){ console.error(e); }
+    hideChrome(); liveFlag(); thickenRain();
+  }
+
+  const scene = SCENES[SCENE];
+  if(!scene){ document.title = 'NO SUCH SCENE: ' + SCENE; return; }
+
+  function boot(){
+    const hb = document.createElement('div');
+    hb.id = 'vidHeartbeat';
+    document.body.appendChild(hb);
+    hideChrome();
+    try{ window.paintTickerFlag = liveFlag; }catch(e){}
+    scene.build();
+    repaint();
+    try{ refreshEventFeed(true); }catch(e){}
+    setTimeout(repaint, 400);
+    window.__vidReady = true;
+  }
+
+  window.__vidStart = function(){
+    (scene.steps ? scene.steps() : []).forEach(([ms, fn])=>{
+      setTimeout(()=>{ try{ fn(); }catch(e){ console.error('step', ms, e); } }, Math.max(0, ms));
+    });
+    return true;
+  };
+
+  if(document.readyState === 'complete') setTimeout(boot, 200);
+  else window.addEventListener('load', ()=>setTimeout(boot, 200));
+})();
+</script>
