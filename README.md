@@ -54,6 +54,7 @@ File nằm ở `public/vendor/music/`. **Chỉ phát ở trình duyệt đang m�
 
 | Khi nào | File | Cách phát |
 |---|---|---|
+| **Câu hỏi hiện lên** (sau *Next question*, trước khi mở đáp án) | `question.mp3` (0:05) | một lần, vol 0.85 |
 | Đồng hồ chạy, **lượt 1–7** | `q1.mp3` (3:01) | lặp, vol 0.55 |
 | Đồng hồ chạy, **lượt 8–14** | `q2.mp3` (2:15) | lặp, vol 0.55 |
 | Đồng hồ chạy, **lượt 15–18** | `q3.mp3` (0:27) | lặp, vol 0.55 |
@@ -64,7 +65,11 @@ File nằm ở `public/vendor/music/`. **Chỉ phát ở trình duyệt đang m�
 
 Nhạc vào đúng lúc đồng hồ bắt đầu và ra đúng lúc đồng hồ dừng (fade 550ms — cắt phựt nghe như hỏng máy). Chọn bài theo **số lượt chơi** (`state.currentQ + 1`), **không phải id câu hỏi**: id nhảy lên 99 ở lượt Trời nắng đẹp và sẽ làm lệch cả mạch nhạc. Tất cả đều **lặp**, vì `q3.mp3` chỉ dài 27 giây, ngắn hơn một câu hỏi 20 giây cộng thời gian đọc đề.
 
+> **Nhạc câu hỏi vào đúng lúc chữ hiện ra.** Dùng lại `questionStagedOnScreen()` — hàm đã chờ hết thẻ thời tiết 10 giây (hoặc quãng chờ 4 giây khi trời quang) — nên sting không bao giờ vang lên trước khi có gì để đọc. Khoá theo `currentQ + legAnnouncedAt + id câu hỏi` để render lại cùng một câu đang stage không kích hoạt lại.
+
 > **Tiếng khoá đáp án đúng lúc đồng hồ về 0.** Nhạc nền của lượt đó đang fade ra trong cùng một nhịp (`updateRoundMusic` nhận `false` ở chính tick ấy), nên sting rơi lên trên nền nhạc đang lịm đi — nghe ra tiếng một cánh cửa đóng lại. `secondsRemaining()` kẹp ở 0 và **giữ nguyên 0 suốt nhiều tick** trong lúc chờ admin reveal, nên phải có cờ một-lần; cờ đó khoá theo `questionOpenedAt` chứ không theo số lượt, để host lùi lại và mở lại đúng câu đó vẫn có sting riêng. Ở giây 0 **không có tiếng tích tắc** — nhịp đó thuộc về sting.
+
+> **Nhạc về đích phải đợi màn câu hỏi tắt.** Máy bay hạ cánh được ghi nhận ngay lúc admin reveal — nhưng đúng lúc đó màn presenter vẫn đang treo thẻ đáp án và **mọi máy bay đều đang bị đóng băng** thêm `ANSWER_CARD_MS` = 5 giây nữa. Phát ngay tại đó thì nhạc đi trước hình 5 giây: cả phòng nghe fanfare xong mới thấy máy bay bay vào. Nay cue được **giữ lại** (`_finishCuePending`) và chỉ thả ra khi thẻ tắt — đúng khoảnh khắc máy bay được thả về FINISH. `presQuestionCardUp()` dùng chung cho cả thẻ đáp án lẫn cue nhạc nên hai bên không thể lệch nhau về việc "thẻ đã tắt chưa".
 
 > **Một lần cho mỗi đợt về đích, không phải một lần cho mỗi người.** Ba máy bay hạ cánh cùng một lượt công bố là **một khoảnh khắc** trong phòng; ba bản nhạc chồng lên nhau chỉ là tiếng ồn. Chỉ 5 hạng đầu có nhạc — người về thứ sáu không còn là sự kiện nữa. Cờ `_seenFinishers` cũng có nghĩa là **reload màn LED giữa chừng sẽ im lặng** chứ không phát lại toàn bộ những cú hạ cánh đã xảy ra.
 
@@ -73,6 +78,8 @@ Nhạc vào đúng lúc đồng hồ bắt đầu và ra đúng lúc đồng h�
 > **Nhạc chạy bằng `<audio>`, không phải Web Audio.** Đây là các file MP3 vài megabyte cần stream và seek; decode chúng thành AudioBuffer sẽ giữ ~12MB PCM trong RAM suốt cả buổi mà chẳng đổi lại được gì. Tiếng tích tắc và tiếng vỗ tay vẫn ở Web Audio, nơi việc điều khiển từng mẫu mới là mục đích.
 
 > **Tải sẵn toàn bộ ngay khi mở màn presenter** (~11.6MB). Nghe thì hơi thô bạo với một trang web, nhưng ở đây là đúng: màn LED được dựng lên từ rất lâu trước câu hỏi đầu tiên, và một cue vào trễ một giây vì wifi hội trường còn đang tải thì tệ hơn nhiều so với việc tải sớm.
+
+**Lễ trao giải làm tối hẳn cả phòng.** Lớp phủ cũ để tranh đảo lọt thẳng qua — nước sáng và bãi cát nằm ngay sau tên người thắng viết bằng chữ vàng, mà tên người thắng là thứ **bắt buộc** phải đọc được từ cuối hội trường. Nay là nền tối gần đặc (`rgba(2,8,20,.955)`), bản đồ bị `backdrop-filter: blur(9px)` xoá nhoè phía sau, chỉ giữ lại một vũng sáng vàng nhạt phía trên để khối vô địch vẫn có cảm giác được rọi đèn chứ không phải dán lên. Áp dụng cho cả màn Chúc mừng lẫn màn Trao giải, vì cả hai đều là chữ đặt trên bản đồ.
 
 > Nút loa 🔊 tắt **cả nhạc lẫn tiếng tích tắc**. MC với tay lên cái nút loa giữa sự kiện là muốn im lặng, không phải im-lặng-trừ-nhạc-nền.
 

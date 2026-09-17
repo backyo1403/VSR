@@ -651,7 +651,22 @@ input[type=text]:focus{border-color:var(--vna-gold);}
 .weather-rule-banner.wx-turbulence{ background:linear-gradient(135deg, rgba(150,90,220,.92), rgba(90,50,160,.88)); color:#fff; box-shadow:0 10px 34px rgba(120,60,180,.5); }
 .weather-rule-banner.wx-storm{ background:linear-gradient(135deg, rgba(60,110,220,.92), rgba(20,40,110,.9)); color:#fff; box-shadow:0 10px 34px rgba(30,60,160,.5); }
 
-.winner-overlay{position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; flex-direction:column; background:radial-gradient(circle at 50% 30%, rgba(212,175,55,.35), rgba(0,20,50,.92));}
+/* The ceremony overlays black the room out. The old wash let the island artwork read
+   straight through it — bright water and sand behind white-on-gold names — and a winner's
+   name is the one thing on this screen that has to be legible from the back of the hall.
+   Now: a near-opaque dark field, the map blurred out behind it, and only a soft gold pool
+   of light kept at the top so the champion block still feels lit rather than pasted on. */
+.winner-overlay{
+  position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center;
+  flex-direction:column;
+  background:
+    radial-gradient(circle at 50% 26%, rgba(212,175,55,.20), rgba(212,175,55,0) 46%),
+    rgba(2,8,20,.955);
+  backdrop-filter:blur(9px) saturate(.65);
+  -webkit-backdrop-filter:blur(9px) saturate(.65);
+  animation:overlayDim .45s ease both;
+}
+@keyframes overlayDim{ from{opacity:0;} to{opacity:1;} }
 .winner-overlay .trophy{font-size:80px; margin-bottom:10px;}
 .winner-overlay h1{font-size:44px; margin:0 0 6px;}
 .winner-overlay .pname{color:var(--vna-gold-light); font-weight:800;}
@@ -3628,16 +3643,19 @@ const MUSIC_ROUNDS = [
 const MUSIC_FINISH = 'finish.mp3';    // someone lands — a clipped 6s stab, see FINISH_CLIP
 const MUSIC_WINNING = 'winning.mp3';  // the award ceremony
 const MUSIC_LOCK = 'lock.mp3';        // the clock hitting zero — answers are locked
+const MUSIC_QUESTION = 'question.mp3';// the question going up, before the answers are opened
 // The finish file is played as an excerpt, not from the top: the first seconds are a run-up
 // the room does not need to sit through while an aircraft is landing.
 const FINISH_CLIP = { from: 5, to: 11 };
-const MUSIC_VOL = { round: 0.55, finish: 0.85, winning: 0.8, lock: 0.9 };
+const MUSIC_VOL = { round: 0.55, finish: 0.85, winning: 0.8, lock: 0.9, question: 0.85 };
 const MUSIC_FADE_MS = 550;
 
 let _musicMuted = false;
 const _musicEls = {};          // file -> HTMLAudioElement, created once and reused
 let _roundMusicFile = null;    // the round track currently playing, or null
 let _lockFiredFor = null;      // the questionOpenedAt whose time-up sting has already played
+let _questionCueFor = null;    // the staging whose "question is up" sting has already played
+let _finishCuePending = false; // a landing seen, waiting for the answer card to clear
 let _finishClipTimer = null;
 let _pendingMusic = null;      // a play() the browser refused for want of a gesture
 
@@ -3657,7 +3675,7 @@ let _musicPrimed = false;
 function primeMusic(){
   if(_musicPrimed) return;
   _musicPrimed = true;
-  const all = MUSIC_ROUNDS.map(b=>b.file).concat([MUSIC_FINISH, MUSIC_WINNING, MUSIC_LOCK]);
+  const all = MUSIC_ROUNDS.map(b=>b.file).concat([MUSIC_FINISH, MUSIC_WINNING, MUSIC_LOCK, MUSIC_QUESTION]);
   all.forEach(f=>{ try { musicEl(f).load(); } catch(e){} });
 }
 function roundMusicFile(roundNum){
@@ -3752,6 +3770,11 @@ function playLockMusic(){
   if(_musicMuted || !presenterOnScreen()) return;
   startMusic(MUSIC_LOCK, MUSIC_VOL.lock, {});
 }
+// The question going up on the wall — after "Next question", before the answers are opened.
+function playQuestionMusic(){
+  if(_musicMuted || !presenterOnScreen()) return;
+  startMusic(MUSIC_QUESTION, MUSIC_VOL.question, {});
+}
 
 function paintCountdowns(){
   const remain = secondsRemaining();
@@ -3772,6 +3795,14 @@ function paintCountdowns(){
   if(running && remain === 0 && presenterOnScreen() && _lockFiredFor !== state.questionOpenedAt){
     _lockFiredFor = state.questionOpenedAt;
     playLockMusic();
+  }
+  /* The question appearing on the wall — the staged window between "Next question" and
+     "Open answers". questionStagedOnScreen() already waits out the weather card / stage
+     delay, so this lands exactly as the text does, not before it. Keyed on the staging
+     itself so re-rendering the same staged question does not re-trigger it. */
+  if(presenterOnScreen() && state.gameState==='lobby' && questionStagedOnScreen()){
+    const key = state.currentQ + ':' + state.legAnnouncedAt + ':' + state.currentQuestionIndex;
+    if(_questionCueFor !== key){ _questionCueFor = key; playQuestionMusic(); }
   }
   const idle = state.gameState==='locked' ? t('a.locked')
              : state.gameState==='reveal' ? t('a.revealed') : '--';
@@ -5231,6 +5262,13 @@ function showNewLeaderBanner(name){
 function haveSnapshotForThisLeg(){
   return !!state.undoSnapshot && state.undoSnapshot.leg === state.currentQ && !!state.undoSnapshot.players;
 }
+/* True while the presenter is still holding the question card up showing the correct answer.
+   Aircraft do not move during this window, so anything that should land WITH an aircraft
+   has to wait it out. Shared by the overlay itself and by the landing music cue, so the
+   two can never disagree about when the card is gone. */
+function presQuestionCardUp(){
+  return state.gameState==='reveal' && !!state.revealAt && (Date.now() - state.revealAt) < ANSWER_CARD_MS;
+}
 function planesFrozen(){
   return state.gameState==='reveal'
     && !!state.revealAt && (Date.now() - state.revealAt) < ANSWER_CARD_MS
@@ -5720,10 +5758,19 @@ function watchMusicCues(){
     landed.forEach(p => _seenFinishers.add(p.id));
     return;
   }
+  /* A landing is spotted the instant the admin reveals — but at that moment the presenter is
+     still holding the answer card up and every aircraft is frozen. Firing here put the music
+     five seconds ahead of the picture, so the room heard the fanfare and only then saw the
+     aircraft fly in. The cue is parked instead and released when the card clears, which is
+     exactly when the aircraft is let go toward FINISH. */
   const fresh = landed.filter(p => !_seenFinishers.has(p.id));
   if(fresh.length){
     fresh.forEach(p => _seenFinishers.add(p.id));
-    playFinishMusic();   // once, however many arrived together
+    _finishCuePending = true;   // once, however many arrived together
+  }
+  if(_finishCuePending && !presQuestionCardUp()){
+    _finishCuePending = false;
+    playFinishMusic();
   }
   const award = !!state.awardShown;
   if(award && !_seenAwardShown) playWinningMusic();
@@ -5848,7 +5895,7 @@ function renderPresenter(){
   // It stays up for 3s after the reveal so everyone sees the correct answer, then clears
   // itself on the next tick.
   const mapPanelEl = document.getElementById('mapPanel');
-  const answerShowing = state.gameState==='reveal' && state.revealAt && (Date.now()-state.revealAt) < ANSWER_CARD_MS;
+  const answerShowing = presQuestionCardUp();
   // staged but not opened: the question is on the wall with the answers still hidden
   const previewing = state.gameState==='lobby' && qKnown && questionPreviewReady();
   const showPresQuestion = qKnown && (previewing || state.gameState==='question' || state.gameState==='locked' || answerShowing);
@@ -6406,6 +6453,8 @@ function resetPresenterCinematics(){
   _seenAwardShown = false;
   _musicCuesPrimed = false;
   _lockFiredFor = null;
+  _questionCueFor = null;
+  _finishCuePending = false;
   finishCinematicPlayed = false;
   _soloZoomOn = false;
   _finishCamHoldUntil = 0;
