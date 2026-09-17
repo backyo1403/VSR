@@ -58,10 +58,13 @@ File nằm ở `public/vendor/music/`. **Chỉ phát ở trình duyệt đang m�
 | Đồng hồ chạy, **lượt 8–14** | `q2.mp3` (2:15) | lặp, vol 0.55 |
 | Đồng hồ chạy, **lượt 15–18** | `q3.mp3` (0:27) | lặp, vol 0.55 |
 | Đồng hồ chạy, **lượt 19 → hết** | `q4.mp3` (2:40) | lặp, vol 0.55 |
+| **Đồng hồ về 0** | `lock.mp3` (0:05) | một lần, vol 0.90 |
 | Có người **về đích** (hạng 1–5) | `finish.mp3` (0:13) | **giây 5 → 11**, vol 0.85 |
 | Bấm **Lễ trao giải** | `winning.mp3` (2:58) | từ đầu, vol 0.80 |
 
 Nhạc vào đúng lúc đồng hồ bắt đầu và ra đúng lúc đồng hồ dừng (fade 550ms — cắt phựt nghe như hỏng máy). Chọn bài theo **số lượt chơi** (`state.currentQ + 1`), **không phải id câu hỏi**: id nhảy lên 99 ở lượt Trời nắng đẹp và sẽ làm lệch cả mạch nhạc. Tất cả đều **lặp**, vì `q3.mp3` chỉ dài 27 giây, ngắn hơn một câu hỏi 20 giây cộng thời gian đọc đề.
+
+> **Tiếng khoá đáp án đúng lúc đồng hồ về 0.** Nhạc nền của lượt đó đang fade ra trong cùng một nhịp (`updateRoundMusic` nhận `false` ở chính tick ấy), nên sting rơi lên trên nền nhạc đang lịm đi — nghe ra tiếng một cánh cửa đóng lại. `secondsRemaining()` kẹp ở 0 và **giữ nguyên 0 suốt nhiều tick** trong lúc chờ admin reveal, nên phải có cờ một-lần; cờ đó khoá theo `questionOpenedAt` chứ không theo số lượt, để host lùi lại và mở lại đúng câu đó vẫn có sting riêng. Ở giây 0 **không có tiếng tích tắc** — nhịp đó thuộc về sting.
 
 > **Một lần cho mỗi đợt về đích, không phải một lần cho mỗi người.** Ba máy bay hạ cánh cùng một lượt công bố là **một khoảnh khắc** trong phòng; ba bản nhạc chồng lên nhau chỉ là tiếng ồn. Chỉ 5 hạng đầu có nhạc — người về thứ sáu không còn là sự kiện nữa. Cờ `_seenFinishers` cũng có nghĩa là **reload màn LED giữa chừng sẽ im lặng** chứ không phát lại toàn bộ những cú hạ cánh đã xảy ra.
 

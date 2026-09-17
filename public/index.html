@@ -3627,15 +3627,17 @@ const MUSIC_ROUNDS = [
 ];
 const MUSIC_FINISH = 'finish.mp3';    // someone lands — a clipped 6s stab, see FINISH_CLIP
 const MUSIC_WINNING = 'winning.mp3';  // the award ceremony
+const MUSIC_LOCK = 'lock.mp3';        // the clock hitting zero — answers are locked
 // The finish file is played as an excerpt, not from the top: the first seconds are a run-up
 // the room does not need to sit through while an aircraft is landing.
 const FINISH_CLIP = { from: 5, to: 11 };
-const MUSIC_VOL = { round: 0.55, finish: 0.85, winning: 0.8 };
+const MUSIC_VOL = { round: 0.55, finish: 0.85, winning: 0.8, lock: 0.9 };
 const MUSIC_FADE_MS = 550;
 
 let _musicMuted = false;
 const _musicEls = {};          // file -> HTMLAudioElement, created once and reused
 let _roundMusicFile = null;    // the round track currently playing, or null
+let _lockFiredFor = null;      // the questionOpenedAt whose time-up sting has already played
 let _finishClipTimer = null;
 let _pendingMusic = null;      // a play() the browser refused for want of a gesture
 
@@ -3655,7 +3657,7 @@ let _musicPrimed = false;
 function primeMusic(){
   if(_musicPrimed) return;
   _musicPrimed = true;
-  const all = MUSIC_ROUNDS.map(b=>b.file).concat([MUSIC_FINISH, MUSIC_WINNING]);
+  const all = MUSIC_ROUNDS.map(b=>b.file).concat([MUSIC_FINISH, MUSIC_WINNING, MUSIC_LOCK]);
   all.forEach(f=>{ try { musicEl(f).load(); } catch(e){} });
 }
 function roundMusicFile(roundNum){
@@ -3743,6 +3745,13 @@ function playWinningMusic(){
   if(_roundMusicFile){ fadeOutMusic(_roundMusicFile, 250); _roundMusicFile = null; }
   startMusic(MUSIC_WINNING, MUSIC_VOL.winning, {});
 }
+/* Time's up. Deliberately NOT preceded by a fade of the round track: updateRoundMusic has
+   already been handed `false` for this same tick and is fading out over 550ms, so the sting
+   lands on top of the soundtrack ducking away — which is the sound of a door closing. */
+function playLockMusic(){
+  if(_musicMuted || !presenterOnScreen()) return;
+  startMusic(MUSIC_LOCK, MUSIC_VOL.lock, {});
+}
 
 function paintCountdowns(){
   const remain = secondsRemaining();
@@ -3755,6 +3764,14 @@ function paintCountdowns(){
     if(_lastTickSecond !== remain){ _lastTickSecond = remain; playTick(remain); }
   } else if(!running){
     _lastTickSecond = null;
+  }
+  /* The clock hitting zero. secondsRemaining() clamps at 0 and keeps returning it while the
+     question is still open, so this moment is visible for several ticks — hence the one-shot
+     guard. It is keyed on questionOpenedAt rather than the round number so that re-opening
+     the same question (the host stepping back a round) gets its own sting. */
+  if(running && remain === 0 && presenterOnScreen() && _lockFiredFor !== state.questionOpenedAt){
+    _lockFiredFor = state.questionOpenedAt;
+    playLockMusic();
   }
   const idle = state.gameState==='locked' ? t('a.locked')
              : state.gameState==='reveal' ? t('a.revealed') : '--';
@@ -6388,6 +6405,7 @@ function resetPresenterCinematics(){
   _seenFinishers = new Set();
   _seenAwardShown = false;
   _musicCuesPrimed = false;
+  _lockFiredFor = null;
   finishCinematicPlayed = false;
   _soloZoomOn = false;
   _finishCamHoldUntil = 0;
