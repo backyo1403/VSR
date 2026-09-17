@@ -3238,6 +3238,9 @@ function uid(){ return 'p_' + Math.random().toString(36).slice(2,9); }
 function go(view){
   document.querySelectorAll('.app > section').forEach(s=>s.classList.add('hidden'));
   document.getElementById('view-'+view).classList.remove('hidden');
+  // music belongs to the presenter wall alone: fetch it on the way in, kill it on the way out
+  if(view==='presenter') primeMusic();
+  else stopAllMusic();
   document.body.classList.toggle('on-landing', view==='landing'); // shows the floating VI/EN switch
   let back = document.getElementById('backBtn');
   if(view!=='landing'){
@@ -3549,11 +3552,22 @@ function presenterOnScreen(){
    how many a document may open and a second one here would be a slow leak across a long
    event. The listeners exist to get it out of "suspended" on the host's first click, so the
    first question of the game ticks rather than starting silently. */
-function unlockAudio(){ try { getAudioCtx(); } catch(e){} }
+function unlockAudio(){
+  try { getAudioCtx(); } catch(e){}
+  // ...and retry any music cue the browser refused before it had a gesture to point at
+  if(_pendingMusic && !_musicMuted){
+    const m = _pendingMusic; _pendingMusic = null;
+    startMusic(m.file, m.vol, m.opts);
+  }
+}
 document.addEventListener('pointerdown', unlockAudio, {passive:true});
 document.addEventListener('keydown', unlockAudio);
+/* One switch for everything the wall makes noise with — clock tick AND music. A host
+   reaching for the speaker icon mid-event wants silence, not silence-except-the-soundtrack. */
 function toggleTick(){
   _tickMuted = !_tickMuted;
+  _musicMuted = _tickMuted;
+  if(_musicMuted) stopAllMusic();
   unlockAudio();   // the un-mute click is itself the gesture that starts audio
   const b = document.getElementById('tickBtn');
   if(b){ b.textContent = _tickMuted ? '🔇' : '🔊'; b.classList.toggle('muted', _tickMuted); }
@@ -3586,10 +3600,155 @@ function playTick(remain){
   osc.stop(t0 + 0.07);
 }
 
+/* ============================================================
+   PRESENTER MUSIC
+   ============================================================
+   <audio> elements, not Web Audio: these are multi-megabyte MP3s that want to stream and
+   seek, and decoding them into AudioBuffers would hold ~12MB of PCM in memory for a whole
+   evening to gain nothing. The synthesised tick and applause stay on Web Audio, where
+   per-sample control is the entire point.
+
+   PRESENTER ONLY. Everything here is gated on presenterOnScreen(), the same guard the clock
+   tick uses — the phones and the admin dashboard stay silent.
+
+   Driven by OBSERVED STATE, never by calling into an admin handler. The presenter is a
+   separate browser that learns about a round starting from the synced `gameState`, so the
+   music has to react to the state it sees, exactly like the aircraft do. */
+const MUSIC_DIR = 'vendor/music/';
+/* Which track backs which round. `to` is the last round number the track covers; the final
+   entry carries every remaining round to the end of the game. Round number is 1-based
+   (state.currentQ + 1) — the same "lượt chơi" the players see, NOT the question id, which
+   jumps to 99 on the Sunshine round and would throw the progression off. */
+const MUSIC_ROUNDS = [
+  { to: 7,        file: 'q1.mp3' },
+  { to: 14,       file: 'q2.mp3' },
+  { to: 18,       file: 'q3.mp3' },
+  { to: Infinity, file: 'q4.mp3' },
+];
+const MUSIC_FINISH = 'finish.mp3';    // someone lands — a clipped 6s stab, see FINISH_CLIP
+const MUSIC_WINNING = 'winning.mp3';  // the award ceremony
+// The finish file is played as an excerpt, not from the top: the first seconds are a run-up
+// the room does not need to sit through while an aircraft is landing.
+const FINISH_CLIP = { from: 5, to: 11 };
+const MUSIC_VOL = { round: 0.55, finish: 0.85, winning: 0.8 };
+const MUSIC_FADE_MS = 550;
+
+let _musicMuted = false;
+const _musicEls = {};          // file -> HTMLAudioElement, created once and reused
+let _roundMusicFile = null;    // the round track currently playing, or null
+let _finishClipTimer = null;
+let _pendingMusic = null;      // a play() the browser refused for want of a gesture
+
+function musicEl(file){
+  if(!_musicEls[file]){
+    const a = new Audio(MUSIC_DIR + file);
+    a.preload = 'auto';
+    _musicEls[file] = a;
+  }
+  return _musicEls[file];
+}
+/* Fetch all of it the moment the presenter view opens. ~12MB, which sounds rude for a web
+   page and is exactly right here: the wall goes up long before the first question, and a
+   cue that arrives a second late because a venue's wifi was still downloading it is worse
+   than any amount of eager loading. Runs once. */
+let _musicPrimed = false;
+function primeMusic(){
+  if(_musicPrimed) return;
+  _musicPrimed = true;
+  const all = MUSIC_ROUNDS.map(b=>b.file).concat([MUSIC_FINISH, MUSIC_WINNING]);
+  all.forEach(f=>{ try { musicEl(f).load(); } catch(e){} });
+}
+function roundMusicFile(roundNum){
+  for(const band of MUSIC_ROUNDS){ if(roundNum <= band.to) return band.file; }
+  return MUSIC_ROUNDS[MUSIC_ROUNDS.length-1].file;
+}
+/* Browsers reject play() outright until the page has seen a user gesture. Rather than losing
+   the cue, the attempt is parked and retried from the same pointerdown/keydown listener that
+   unlocks the Web Audio context — so a host who opened #presenter directly still gets music
+   the moment they touch anything. */
+function startMusic(file, vol, opts){
+  if(_musicMuted || !presenterOnScreen()) return;
+  const a = musicEl(file);
+  const o = opts || {};
+  a.loop = !!o.loop;
+  a.volume = vol;
+  const seek = ()=>{
+    const from = o.from || 0;
+    // Guard against a shorter replacement file: seeking past the end parks the element at
+    // the finish playing nothing, which on stage looks exactly like the audio being broken.
+    const safe = (a.duration && isFinite(a.duration) && from >= a.duration - 0.5) ? 0 : from;
+    try { a.currentTime = safe; } catch(e){}
+  };
+  if(a.readyState >= 1) seek();
+  else a.addEventListener('loadedmetadata', seek, { once:true });
+  const p = a.play();
+  if(p && p.catch) p.catch(()=>{ _pendingMusic = { file, vol, opts:o }; });
+}
+function fadeOutMusic(file, ms){
+  const a = _musicEls[file];
+  if(!a || a.paused) return;
+  const from = a.volume, steps = 12, dt = Math.max(20, (ms||MUSIC_FADE_MS)/steps);
+  let i = 0;
+  const id = setInterval(()=>{
+    i++;
+    a.volume = Math.max(0, from * (1 - i/steps));
+    if(i >= steps){ clearInterval(id); a.pause(); try{ a.currentTime = 0; }catch(e){} a.volume = from; }
+  }, dt);
+}
+function stopAllMusic(){
+  if(_finishClipTimer && _musicEls[MUSIC_FINISH]){
+    _musicEls[MUSIC_FINISH].removeEventListener('timeupdate', _finishClipTimer);
+  }
+  _finishClipTimer = null;
+  Object.keys(_musicEls).forEach(f=>{ const a = _musicEls[f]; a.pause(); try{ a.currentTime = 0; }catch(e){} });
+  _roundMusicFile = null;
+  _pendingMusic = null;
+}
+/* The round soundtrack follows the clock exactly: in when it starts, out when it stops.
+   Called every tick, so it has to be idempotent — it only acts when the answer changes. */
+function updateRoundMusic(clockRunning){
+  if(!presenterOnScreen() || _musicMuted){
+    if(_roundMusicFile){ fadeOutMusic(_roundMusicFile); _roundMusicFile = null; }
+    return;
+  }
+  const want = clockRunning ? roundMusicFile((state.currentQ||0) + 1) : null;
+  if(want === _roundMusicFile) return;
+  if(_roundMusicFile) fadeOutMusic(_roundMusicFile);
+  _roundMusicFile = want;
+  // loops, because a 20s question can outlast a short track (q3 is only ~20s of audio)
+  if(want) startMusic(want, MUSIC_VOL.round, { loop:true });
+}
+// Someone landed. One play per arrival event however many aircraft touched down together,
+// and only the excerpt — hard-stopped at FINISH_CLIP.to.
+function playFinishMusic(){
+  if(_musicMuted || !presenterOnScreen()) return;
+  if(_roundMusicFile){ fadeOutMusic(_roundMusicFile, 250); _roundMusicFile = null; }
+  const a = musicEl(MUSIC_FINISH);
+  /* The clip ends on PLAYBACK POSITION, not on a wall-clock timer. A setTimeout started at
+     call time would cut the excerpt short by however long the file took to start — and
+     "second 11" has to mean second 11 of the music. */
+  if(_finishClipTimer){ a.removeEventListener('timeupdate', _finishClipTimer); }
+  _finishClipTimer = ()=>{
+    if(a.currentTime >= FINISH_CLIP.to){
+      a.removeEventListener('timeupdate', _finishClipTimer);
+      _finishClipTimer = null;
+      fadeOutMusic(MUSIC_FINISH, 400);
+    }
+  };
+  a.addEventListener('timeupdate', _finishClipTimer);
+  startMusic(MUSIC_FINISH, MUSIC_VOL.finish, { from: FINISH_CLIP.from });
+}
+function playWinningMusic(){
+  if(_musicMuted || !presenterOnScreen()) return;
+  if(_roundMusicFile){ fadeOutMusic(_roundMusicFile, 250); _roundMusicFile = null; }
+  startMusic(MUSIC_WINNING, MUSIC_VOL.winning, {});
+}
+
 function paintCountdowns(){
   const remain = secondsRemaining();
   const running = state.gameState==='question' && remain!==null;
   const urgent = running && remain<=URGENT_SECONDS;
+  updateRoundMusic(running && remain > 0);
   /* paintCountdowns runs several times a second so the three clocks stay in step; the tick
      must fire once per WHOLE second, so it keys off the number actually changing. */
   if(running && remain > 0 && presenterOnScreen()){
@@ -5521,6 +5680,40 @@ function syncFullscreenBtn(){
 document.addEventListener('fullscreenchange', syncFullscreenBtn);
 document.addEventListener('webkitfullscreenchange', syncFullscreenBtn);
 
+/* The two one-shot cues, spotted by watching synced state rather than by being called from
+   the admin's click handler — the presenter is a different browser and never runs that code.
+
+   A landing fires ONCE per arrival event, not once per aircraft: three players who land on
+   the same reveal are one moment in the room, and three overlapping copies of the same stab
+   is just a mess. Only the first FINISHERS_TO_END places get music; a sixth arrival is not
+   an occasion. `_seenFinishers` also means a late-joining presenter, or one that reloads
+   mid-race, does not replay the fanfare for landings that already happened. */
+let _seenFinishers = new Set();
+let _seenAwardShown = false;
+let _musicCuesPrimed = false;
+function watchMusicCues(){
+  if(!presenterOnScreen()) return;
+  const landed = Object.values(state.players)
+    .filter(p => p.finishRank && p.finishRank <= FINISHERS_TO_END);
+  if(!_musicCuesPrimed){
+    // First pass after opening the presenter: adopt whatever has already happened as the
+    // baseline, so reloading the wall mid-race is silent instead of a burst of old cues.
+    _musicCuesPrimed = true;
+    _seenAwardShown = !!state.awardShown;
+    landed.forEach(p => _seenFinishers.add(p.id));
+    return;
+  }
+  const fresh = landed.filter(p => !_seenFinishers.has(p.id));
+  if(fresh.length){
+    fresh.forEach(p => _seenFinishers.add(p.id));
+    playFinishMusic();   // once, however many arrived together
+  }
+  const award = !!state.awardShown;
+  if(award && !_seenAwardShown) playWinningMusic();
+  else if(!award && _seenAwardShown) fadeOutMusic(MUSIC_WINNING);
+  _seenAwardShown = award;
+}
+
 function renderPresenter(){
   const pill = document.getElementById('presStatePill');
   pill.textContent = t('st.'+state.gameState);
@@ -5535,6 +5728,7 @@ function renderPresenter(){
   syncCamButtons();
   applyCamera();         // CAM 2/3 follow the field, so re-aim every tick
   tickEventFeed();       // marks the ticker stale; it re-reads at its next wrap
+  watchMusicCues();      // landings and the award ceremony, spotted in the synced state
   if(state.gameState==='finished' && !finishCinematicPlayed){
     finishCinematicPlayed = true;
     triggerFinishCinematic();
@@ -6188,6 +6382,12 @@ function resetPresenterCinematics(){
   leaderCinematicUntil = 0;
   lastLeaderLocationCode = null;
   finishFlourishIds = new Set();
+  // the music cues are one-shots keyed off "have I seen this yet" — a reset has to forget,
+  // or a re-run of the game would land in silence
+  stopAllMusic();
+  _seenFinishers = new Set();
+  _seenAwardShown = false;
+  _musicCuesPrimed = false;
   finishCinematicPlayed = false;
   _soloZoomOn = false;
   _finishCamHoldUntil = 0;

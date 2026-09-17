@@ -48,6 +48,33 @@ Lựa chọn ngôn ngữ lưu **theo từng thiết bị** (`localStorage`), kh�
 
 > Âm thanh tổng hợp bằng Web Audio, **không phải file** — app đóng gói thành một file HTML chạy offline, nhét một file WAV đủ hay vào base64 sẽ nặng hơn toàn bộ phần còn lại. Dùng chung `getAudioCtx()` với tiếng vỗ tay: trình duyệt giới hạn số AudioContext mỗi trang, mở thêm cái thứ hai là rò rỉ dần suốt buổi. Có **nút loa 🔊 cạnh nút camera** để tắt — âm thanh mà MC không tắt được giữa chừng là một rủi ro, nếu dàn loa hội trường làm nó ù lên thì phải có đúng một nút bấm, không phải reload trang.
 
+### Nhạc nền (chỉ màn presenter)
+
+File nằm ở `public/vendor/music/`. **Chỉ phát ở trình duyệt đang mở màn presenter** — mọi thứ đều đi qua `presenterOnScreen()`, giống hệt tiếng tích tắc; điện thoại người chơi và dashboard admin im lặng hoàn toàn. Rời khỏi màn presenter là nhạc tắt ngay.
+
+| Khi nào | File | Cách phát |
+|---|---|---|
+| Đồng hồ chạy, **lượt 1–7** | `q1.mp3` (3:01) | lặp, vol 0.55 |
+| Đồng hồ chạy, **lượt 8–14** | `q2.mp3` (2:15) | lặp, vol 0.55 |
+| Đồng hồ chạy, **lượt 15–18** | `q3.mp3` (0:27) | lặp, vol 0.55 |
+| Đồng hồ chạy, **lượt 19 → hết** | `q4.mp3` (2:40) | lặp, vol 0.55 |
+| Có người **về đích** (hạng 1–5) | `finish.mp3` (0:13) | **giây 5 → 11**, vol 0.85 |
+| Bấm **Lễ trao giải** | `winning.mp3` (2:58) | từ đầu, vol 0.80 |
+
+Nhạc vào đúng lúc đồng hồ bắt đầu và ra đúng lúc đồng hồ dừng (fade 550ms — cắt phựt nghe như hỏng máy). Chọn bài theo **số lượt chơi** (`state.currentQ + 1`), **không phải id câu hỏi**: id nhảy lên 99 ở lượt Trời nắng đẹp và sẽ làm lệch cả mạch nhạc. Tất cả đều **lặp**, vì `q3.mp3` chỉ dài 27 giây, ngắn hơn một câu hỏi 20 giây cộng thời gian đọc đề.
+
+> **Một lần cho mỗi đợt về đích, không phải một lần cho mỗi người.** Ba máy bay hạ cánh cùng một lượt công bố là **một khoảnh khắc** trong phòng; ba bản nhạc chồng lên nhau chỉ là tiếng ồn. Chỉ 5 hạng đầu có nhạc — người về thứ sáu không còn là sự kiện nữa. Cờ `_seenFinishers` cũng có nghĩa là **reload màn LED giữa chừng sẽ im lặng** chứ không phát lại toàn bộ những cú hạ cánh đã xảy ra.
+
+> **Đoạn 5–11 giây kết thúc theo vị trí phát, không theo đồng hồ hệ thống.** Một `setTimeout` đặt lúc gọi sẽ bị ngắn đi đúng bằng thời gian file mất để khởi động — mà "giây thứ 11" phải có nghĩa là giây thứ 11 *của bản nhạc*. Đo thực tế: vào ở 5.0s, chạy tới 11.35s rồi fade.
+
+> **Nhạc chạy bằng `<audio>`, không phải Web Audio.** Đây là các file MP3 vài megabyte cần stream và seek; decode chúng thành AudioBuffer sẽ giữ ~12MB PCM trong RAM suốt cả buổi mà chẳng đổi lại được gì. Tiếng tích tắc và tiếng vỗ tay vẫn ở Web Audio, nơi việc điều khiển từng mẫu mới là mục đích.
+
+> **Tải sẵn toàn bộ ngay khi mở màn presenter** (~11.6MB). Nghe thì hơi thô bạo với một trang web, nhưng ở đây là đúng: màn LED được dựng lên từ rất lâu trước câu hỏi đầu tiên, và một cue vào trễ một giây vì wifi hội trường còn đang tải thì tệ hơn nhiều so với việc tải sớm.
+
+> Nút loa 🔊 tắt **cả nhạc lẫn tiếng tích tắc**. MC với tay lên cái nút loa giữa sự kiện là muốn im lặng, không phải im-lặng-trừ-nhạc-nền.
+
+> ⚠️ Ba file `q1`/`q2`/`q4` dài 2–3 phút nhưng mỗi lượt chỉ nghe ~20–30 giây rồi bị fade. Vì đã bật lặp, **cắt chúng xuống ~40 giây sẽ giảm repo đi khoảng 7MB mà người nghe không nhận ra khác biệt**. Tôi không tự đụng vào file nhạc của bạn — nói một câu là tôi cắt.
+
 **Chọn rồi mà không bấm Nộp:** hết giờ hệ thống **tự khoá đáp án đang chọn** — vẫn được tính bình thường. Chỉ mất lợi thế về thời gian: đáp án tự khoá được ghi nhận bằng **trọn 20 giây**.
 
 **Không chọn gì:** vẫn bị cộng **trọn 20 giây** vào tổng thời gian. Ngồi im không bao giờ thắng được tiêu chí phụ về thời gian.
