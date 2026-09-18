@@ -161,6 +161,8 @@ Bộ biểu tượng này dùng thống nhất ở **Live Leaderboard**, bảng 
 
 > Với 9 cột, HAN/DAD/HUI rơi vào ô 3-4-5 và SGN/CXR/PQC vào ô 3-4-5 của hàng dưới, nên **không cụm nào bị cắt ngang chỗ xuống dòng** — bộ test kiểm đúng điều này, vì nếu một cụm vắt qua hai hàng thì dải vàng sẽ đứt làm đôi. Phòng xa, hai đầu dải cũng bo tròn lại ở chỗ xuống dòng nên dải bị chia vẫn trông gọn chứ không như bị cắt cụt.
 
+> **Trong lúc đồng hồ chạy, bản đồ tự ẩn đi.** Dải route hai hàng (101px) cộng dòng chú thích vùng (38px) đẩy **đáp án C và D xuống dưới mép màn hình**: ở viewport 600px trang cao tới 979px, người chơi phải cuộn đúng vào 20 giây đang bị tính giờ. Nay khi `gameState === 'question'`, màn hình chỉ còn câu hỏi và bốn đáp án; bản đồ quay lại ngay khi hết giờ (locked/reveal/lobby) — đó mới là lúc người ta muốn nhìn mình đang ở đâu. Kèm một media query `max-height:640px` thu gọn padding **chỉ khi đang trả lời**, nút vẫn cao 63–93px (ngưỡng ngón tay là 44px). Đo lại: 390×640 với câu dài nhất ngân hàng → cả bốn đáp án hiện đủ và bấm được ngay, không cần cuộn.
+
 > **Hai hàng chứ không phải một hàng cuộn ngang.** Ở 17 điểm dừng thì tuyến cần ~430px mà không điện thoại nào có — bản cũ tràn ra khỏi thẻ và giấu nửa cuối sau một thanh cuộn không ai nghĩ tới việc kéo. Nay là grid `--rs-cols` cột (bằng `ceil(ROUTE.length/2)`, tức 9 + 8), **số cột do JS đặt** nên thêm điểm dừng vào `ROUTE` thì hai hàng tự cân lại thay vì lại tràn ra ngoài. Đoạn nối chặng vẽ ngược về điểm trước, nên **điểm đầu của MỖI hàng** phải tắt nó đi (`.rs-rowstart`) — không thì có một vạch thò ra mép thẻ.
 
 **📖 Hướng dẫn** có 5 trang: (1) luật chơi + giải thưởng, (2) **bản đồ hành trình vẽ tĩnh** — cùng đường cong chữ S và cùng toạ độ mà màn presenter dùng, để người chơi hình dung trước sa bàn sẽ đua, (3) các loại thời tiết, (4) ba trợ giúp, (5) tài liệu chương trình (Sales Kit tiếng Việt + tiếng Anh).
@@ -399,6 +401,21 @@ Quyền do **database cưỡng chế**, không phải UI che đi. Gõ `#admin` v
 | Tự rơi về offline | Không kết nối được trong 8 giây thì chuyển chế độ, chương trình không chết |
 
 **State nằm ở database, không nằm ở laptop admin.** Laptop admin sập thì mở laptop dự phòng, đăng nhập, chơi tiếp đúng chặng đang dừng.
+
+### Hai nút reset làm gì
+
+| | 🔄 Đặt lại tiến trình | ⚠️ Reset (xoá sạch) |
+|---|---|---|
+| Người chơi | **giữ nguyên** tên + máy bay, về START | **xoá hết**, phải đăng ký lại tên và máy bay |
+| Câu hỏi | về **lượt 1**, chưa mở câu nào | về **lượt 1**, chưa mở câu nào |
+| Ngân hàng câu hỏi | trả lại toàn bộ, hỏi lại từ Câu 1 | trả lại toàn bộ |
+| Màn presenter | không còn câu hỏi nào trên tường | không còn câu hỏi nào trên tường |
+| Trợ giúp, mốc, giải thưởng | xoá hết | xoá hết |
+| Xác nhận | hộp thoại thường | **phải gõ chữ `RESET`** |
+
+> **Câu trả lời cũ phải bị xoá ở cả ba nơi, không chỉ trên máy admin.** `fbWriteAdmin` chỉ ghi `admin` và `progress` — nên trước đây *Đặt lại tiến trình* xoá `p.answers` trong bộ nhớ admin nhưng **nhánh `answers` trên server vẫn còn nguyên**, và listener của chính admin nạp lại ngay ở snapshot kế tiếp. Vì `currentQ` vừa quay về 0, vòng đầu sau khi reset sẽ có sẵn câu trả lời cũ của mọi người và **chấm điểm luôn khi reveal**. Nay cả `answers` lẫn `boosts` đều bị xoá trên server (boosts cũng khoá theo số lượt, mà số lượt sắp được dùng lại).
+
+> **Điện thoại người chơi cũng phải quên.** Người chơi **không được phép đọc** nhánh `answers` (xem `database.rules.json`), nên trên máy họ `_answers` chỉ là **bản echo cục bộ** của chính những gì họ đã gửi — không có gì làm mới hay xoá nó. Sau khi admin reset, `currentQ` về 0 — **đúng số lượt họ vừa trả lời ở ván trước**. Echo cũ sống sót thì vòng 1 của ván mới hiện ra ở trạng thái *đã nộp bài*: bốn nút đáp án khoá cứng và người chơi **không bấm được gì cả**. Nay khi hồ sơ của chính máy đó biến mất, `rebuildPlayers()` xoá luôn echo của nó — chỉ của nó, và chỉ trên handset, vì admin phải giữ nguyên nhánh answers để chấm điểm.
 
 ---
 

@@ -303,6 +303,24 @@ input[type=text]:focus{border-color:var(--vna-gold);}
   color:rgba(255,255,255,.72);
 }
 .route-zone-note strong{color:var(--vna-gold-light);}
+/* ANSWERING: the clock is running and the only job on screen is picking an answer. The
+   route map and its caption are worth ~150px on a phone — enough to push options C and D
+   off the bottom — and neither is any use while being timed. They return at lock/reveal. */
+#view-player.answering .route-strip,
+#view-player.answering .route-zone-note{display:none;}
+/* On a short handset the longest question in the bank still pushed option D past the
+   bottom. This tightens the spacing ONLY while the clock is running and only on screens
+   that need it — between rounds the layout stays as roomy as it was. Nothing here touches
+   the tap target below ~44px, which is the size a thumb actually needs. */
+@media (max-height:640px){
+  #view-player.answering{padding-top:calc(7px + env(safe-area-inset-top));}
+  #view-player.answering .p-header{margin-bottom:5px;}
+  #view-player.answering .q-card{padding:10px;}
+  #view-player.answering .timer-ring-wrap{margin:2px 0 5px;}
+  #view-player.answering #pQText{margin-bottom:8px;}
+  #view-player.answering .opt-btn{padding:8px 12px; margin-bottom:5px;}
+  #view-player.answering .help-row{margin-top:2px;}
+}
 
 /* the lit dot is a fixed pixel size inside a 1fr column, so on the narrowest phones it has
    to come down or it spills over its neighbours — a grid cannot shrink it for us */
@@ -3008,6 +3026,22 @@ function applyAdminSlice(v){
   state.questionIndexByLeg = state.questionIndexByLeg || {};
 }
 function rebuildPlayers(){
+  /* A player's own answers are LOCAL ECHOES. Players may not read the answers tree (see
+     database.rules.json), so on a handset `_answers` only ever holds what this phone itself
+     submitted, and nothing on the server ever refreshes or clears it.
+
+     That matters at a reset. The host wiping the room empties profiles/progress and sends
+     currentQ back to 0 — the same leg number this phone already answered in the previous
+     game. Left in place, the echo comes back the moment the player re-registers, and round
+     one of the new game arrives already submitted: the options render locked and the player
+     cannot answer at all. So when this device's own profile is gone, its echoes describe a
+     race that no longer exists and go with it.
+
+     Only this device's own rows, and only on a handset: the admin legitimately reads the
+     whole tree from the server and scores from it. */
+  if(myPlayerId && FB.role !== 'admin' && !_profiles[myPlayerId]){
+    Object.keys(_answers).forEach(leg=>{ if(_answers[leg]) delete _answers[leg][myPlayerId]; });
+  }
   const out = {};
   Object.keys(_profiles).forEach(id=>{
     const pr = _progress[id] || {};
@@ -4028,6 +4062,14 @@ function applyPlayerWeatherSkin(){
   // the phone mirrors the wall's FINAL ROUND sunshine too
   const finalRound = finalRoundActive() && !turbulent && !stormy;
   view.classList.toggle('final-round-theme', finalRound);
+
+  /* While the clock is running the phone shows the question and the four answers, and gets
+     out of the way of everything else. The route strip grew to two rows and picked up a
+     zone caption, which together pushed answers C and D below the fold on an ordinary
+     phone: at a 600px viewport the page ran to 979px and the player had to scroll during
+     the 20 seconds they were being timed on. The map is what you look at BETWEEN rounds —
+     it comes straight back at lock and reveal. */
+  view.classList.toggle('answering', state.gameState==='question');
 
   const want = !visible ? null
     : (turbulent && live) ? 'rain'
@@ -6520,6 +6562,20 @@ function resetProgress(){
   state.revealAt = null;
   state.finishSeq = 0;
   state.legBrief = null;
+  /* Wipe the answers on the SERVER too, not just the copies in `state.players` above.
+     fbWriteAdmin only ever writes `admin` and `progress`, so without this the whole answer
+     tree survives — and the admin's own answers listener hands it straight back on the next
+     snapshot, undoing `p.answers = {}`. Since currentQ has just gone back to 0, the first
+     round after a progress reset would arrive with everybody's previous answers already in
+     place and score them at reveal. Boosts go the same way: they are keyed by leg, and leg
+     numbers are about to be reused. */
+  if(FB.mode==='online' && FB.role==='admin'){
+    db.ref().update({
+      ['rooms/'+ROOM+'/answers']: null,
+      ['rooms/'+ROOM+'/boosts']: null,
+    }).catch(e=>console.warn('[sync] answer wipe failed', e));
+  }
+  _answers = {}; _boosts = {};
   resetPresenterCinematics();
   saveState();
   toast(t('a.t.resetProgressDone'));
