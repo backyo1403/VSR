@@ -3018,9 +3018,15 @@ function pickAdminSlice(){
   ADMIN_KEYS.forEach(k=>{ o[k] = (state[k]===undefined ? null : state[k]); });
   return o;
 }
+/* A MISSING KEY MEANS null, NOT "leave it alone". RTDB does not store nulls: every key
+   pickAdminSlice() sends as null is simply absent from the snapshot that comes back. The
+   admin always writes the whole slice at once, so absent can only mean "cleared" — skipping
+   those keys is how a reset used to leave the presenter wall showing the PREVIOUS game's
+   question (currentQuestionIndex never came back to null on the wall, so it kept rendering
+   a stale question over a freshly reset Leg 1). */
 function applyAdminSlice(v){
   if(!v) return;
-  ADMIN_KEYS.forEach(k=>{ if(v[k]!==undefined) state[k] = v[k]; });
+  ADMIN_KEYS.forEach(k=>{ state[k] = (v[k]===undefined ? null : v[k]); });
   state.revealedLegs = state.revealedLegs || {};
   state.milestones = state.milestones || { HAN:null, SPC:null, SGN:null };
   state.questionIndexByLeg = state.questionIndexByLeg || {};
